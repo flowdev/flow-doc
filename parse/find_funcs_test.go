@@ -1,7 +1,6 @@
 package parse_test
 
 import (
-	"go/ast"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -11,26 +10,31 @@ import (
 )
 
 func TestFindFlowFuncs(t *testing.T) {
-	const expectedFuncNames = `DoAccountingMagic | DoSpecialAccountingMagic | SimpleFunc | funcWithEllipsis`
+	const expectedFuncNames = `github.com/flowdev/ea-flow-doc/parse/testdata/find_funcs: DoAccountingMagic, DoSpecialAccountingMagic, SimpleFunc, funcWithEllipsis`
 
-	pkgs, err := parse.Dir(mustAbs(filepath.Join("testdata", "find_flows")), false)
+	pkgs, err := parse.Dir(mustAbs(filepath.Join("testdata", "find_funcs")), false)
 	if err != nil {
 		t.Fatalf("received unexpected error: %v", err)
 	}
 
-	flowFuncs := parse.FindFlowFuncs(pkgs)
+	pkgFuncs := parse.FindFlowFuncs(pkgs)
 
-	actualFuncNames := funcNames(flowFuncs)
+	actualFuncNames := funcNames(pkgFuncs)
 	if actualFuncNames != expectedFuncNames {
 		t.Errorf("expected functions %q but got: %q", expectedFuncNames, actualFuncNames)
 	}
 }
 
-func funcNames(funcs []*ast.FuncDecl) string {
-	names := make([]string, len(funcs))
-	for i, fun := range funcs {
-		names[i] = fun.Name.Name
+func funcNames(pkgFuncs []parse.PackageFuncs) string {
+	files := make([]string, 0, len(pkgFuncs)*16)
+	for _, pkgFunc := range pkgFuncs {
+		names := make([]string, len(pkgFunc.Funcs))
+		for i, fun := range pkgFunc.Funcs {
+			names[i] = fun.Name.Name
+		}
+		sort.Strings(names)
+		files = append(files, pkgFunc.PkgPath+": "+strings.Join(names, ", "))
 	}
-	sort.Strings(names)
-	return strings.Join(names, " | ")
+	sort.Strings(files)
+	return strings.Join(files, " | ")
 }

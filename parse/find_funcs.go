@@ -8,82 +8,90 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// PackageFuncs contains all marked functions from parsing a package.
+type PackageFuncs struct {
+	PkgPath string
+	Funcs   []*ast.FuncDecl
+}
+
 // FindFlowFuncs finds FlowDev flows in the given packages and returns the
 // functions or methods containing them.
-func FindFlowFuncs(pkgs []*packages.Package) []*ast.FuncDecl {
+func FindFlowFuncs(pkgs []*packages.Package) []PackageFuncs {
 	return findMarkedFuncs(pkgs, "//flowdev:flow", true, false)
 }
 
-// FindFlowTests finds FlowDev flows in the given packages and returns the
+// FindFlowTests finds FlowDev tests in the given packages and returns the
 // functions or methods containing them.
-func FindFlowTests(pkgs []*packages.Package) []*ast.FuncDecl {
+func FindFlowTests(pkgs []*packages.Package) []PackageFuncs {
 	return findMarkedFuncs(pkgs, "//flowdev:test", false, true)
 }
 
 func findMarkedFuncs(pkgs []*packages.Package, mark string, searchProd, searchTest bool,
-) []*ast.FuncDecl {
-	flows := make([]*ast.FuncDecl, 0, 4096)
+) []PackageFuncs {
+	pkgFuncs := make([]PackageFuncs, 0, 4096)
 
 	for _, pkg := range pkgs {
-		flows = addMarkedFuncsFromPackage(flows, pkg, mark, searchProd, searchTest)
+		pkgFunc := markedFuncsFromPackage(pkg, mark, searchProd, searchTest)
+		if len(pkgFunc.Funcs) > 0 {
+			pkgFuncs = append(pkgFuncs, pkgFunc)
+		}
 	}
 
-	return flows
+	return pkgFuncs
 }
 
-func addMarkedFuncsFromPackage(flows []*ast.FuncDecl, pkg *packages.Package, mark string, searchProd, searchTest bool,
-) []*ast.FuncDecl {
-
+func markedFuncsFromPackage(pkg *packages.Package, mark string, searchProd, searchTest bool) PackageFuncs {
 	if pkgs.IsTestPackage(pkg) {
 		if !searchTest {
-			return nil
+			return PackageFuncs{}
 		}
 	} else {
 		if !searchProd {
-			return nil
+			return PackageFuncs{}
 		}
 	}
 
+	pkgFunc := PackageFuncs{PkgPath: pkg.PkgPath, Funcs: make([]*ast.FuncDecl, 0, 1024)}
 	for _, astf := range pkg.Syntax {
-		flows = addMarkedFuncsFromFile(flows, astf, mark)
+		pkgFunc.Funcs = addMarkedFuncsFromFile(pkgFunc.Funcs, astf, mark)
 	}
-	return flows
+	return pkgFunc
 }
 
-func addMarkedFuncsFromFile(flows []*ast.FuncDecl, astf *ast.File, mark string) []*ast.FuncDecl {
+func addMarkedFuncsFromFile(funcs []*ast.FuncDecl, astf *ast.File, mark string) []*ast.FuncDecl {
 	for _, decl := range astf.Decls {
-		flows = addMarkedFuncFromDecl(flows, decl, mark)
+		funcs = addMarkedFuncFromDecl(funcs, decl, mark)
 	}
-	return flows
+	return funcs
 }
 
-func addMarkedFuncFromDecl(flows []*ast.FuncDecl, decl ast.Decl, mark string) []*ast.FuncDecl {
+func addMarkedFuncFromDecl(funcs []*ast.FuncDecl, decl ast.Decl, mark string) []*ast.FuncDecl {
 	if isNilInterfaceOrPointer(decl) {
-		return flows
+		return funcs
 	}
 
 	switch d := decl.(type) {
 	case *ast.FuncDecl:
-		flows = addMarkedFuncFromFunc(flows, d, mark)
+		funcs = addMarkedFuncFromFunc(funcs, d, mark)
 	default:
-		// flows can only be implemented by functions or methods
+		// marked functions can only be functions or methods
 	}
-	return flows
+	return funcs
 }
 
-func addMarkedFuncFromFunc(flows []*ast.FuncDecl, fun *ast.FuncDecl, mark string) []*ast.FuncDecl {
+func addMarkedFuncFromFunc(funcs []*ast.FuncDecl, fun *ast.FuncDecl, mark string) []*ast.FuncDecl {
 	if fun.Doc == nil {
-		return flows
+		return funcs
 	}
 
 	for _, comm := range fun.Doc.List {
 		if comm.Text == mark {
-			flows = append(flows, fun)
-			return flows
+			funcs = append(funcs, fun)
+			return funcs
 		}
 	}
 
-	return flows
+	return funcs
 }
 
 func isNilInterfaceOrPointer(v interface{}) bool {

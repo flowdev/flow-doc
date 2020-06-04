@@ -1,4 +1,4 @@
-package find_flows
+package find_funcs
 
 import "fmt"
 
