@@ -10,31 +10,44 @@ import (
 )
 
 func TestFindFlowFuncs(t *testing.T) {
-	const expectedFuncNames = `github.com/flowdev/ea-flow-doc/parse/testdata/find_funcs: DoAccountingMagic, DoSpecialAccountingMagic, SimpleFunc, funcWithEllipsis`
+	const expectedFuncNames = `funcs.go: DoAccountingMagic | funcs.go: DoSpecialAccountingMagic | funcs.go: SimpleFunc | funcs.go: funcWithEllipsis`
 
-	pkgs, err := parse.Dir(mustAbs(filepath.Join("testdata", "find_funcs")), false)
+	root := mustAbs(filepath.Join("testdata", "find_funcs"))
+	pkgs, err := parse.Dir(root, false)
 	if err != nil {
 		t.Fatalf("received unexpected error: %v", err)
 	}
 
 	pkgFuncs := parse.FindFlowFuncs(pkgs)
 
-	actualFuncNames := funcNames(pkgFuncs)
+	actualFuncNames := funcNames(pkgFuncs, root)
 	if actualFuncNames != expectedFuncNames {
 		t.Errorf("expected functions %q but got: %q", expectedFuncNames, actualFuncNames)
 	}
 }
 
-func funcNames(pkgFuncs []parse.PackageFuncs) string {
-	files := make([]string, 0, len(pkgFuncs)*16)
+func funcNames(pkgFuncs []parse.PackageFuncs, root string) string {
+	names := make([]string, 0, 4096)
 	for _, pkgFunc := range pkgFuncs {
-		names := make([]string, len(pkgFunc.Funcs))
-		for i, fun := range pkgFunc.Funcs {
-			names[i] = fun.Name.Name
+		for _, fun := range pkgFunc.Funcs {
+			names = append(
+				names,
+				relativeFileName(pkgFunc.Fset.Position(fun.Name.NamePos).String(), root)+": "+fun.Name.Name)
 		}
-		sort.Strings(names)
-		files = append(files, pkgFunc.PkgPath+": "+strings.Join(names, ", "))
 	}
-	sort.Strings(files)
-	return strings.Join(files, " | ")
+	sort.Strings(names)
+	return strings.Join(names, " | ")
+}
+
+func relativeFileName(fname, root string) string {
+	fname = strings.SplitN(fname, ":", 2)[0]
+	if len(fname) <= len(root) {
+		return fname
+	}
+	fname = fname[len(root):]
+
+	if fname[0] == '/' {
+		return fname[1:]
+	}
+	return fname
 }
