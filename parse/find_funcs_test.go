@@ -26,6 +26,23 @@ func TestFindFlowFuncs(t *testing.T) {
 	}
 }
 
+func TestFindFlowTests(t *testing.T) {
+	const expectedFuncNames = `x/tool/tool_test.go: TestTool | x/tool2/tool2_test.go: TestTool2`
+
+	root := mustAbs(filepath.Join("testdata", "find_funcs"))
+	pkgs, err := parse.Dir(root, true)
+	if err != nil {
+		t.Fatalf("received unexpected error: %v", err)
+	}
+
+	pkgFuncs := parse.FindFlowTests(pkgs)
+
+	actualFuncNames := funcNames(pkgFuncs, root)
+	if actualFuncNames != expectedFuncNames {
+		t.Errorf("expected functions %q but got: %q", expectedFuncNames, actualFuncNames)
+	}
+}
+
 func funcNames(pkgFuncs []parse.PackageFuncs, root string) string {
 	names := make([]string, 0, 4096)
 	for _, pkgFunc := range pkgFuncs {
