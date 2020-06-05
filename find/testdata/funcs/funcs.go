@@ -1,4 +1,4 @@
-package find_funcs
+package funcs
 
 import "fmt"
 

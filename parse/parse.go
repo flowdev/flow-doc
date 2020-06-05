@@ -14,7 +14,7 @@ func Dir(dir string, tree bool) ([]*packages.Package, error) {
 		Logf:  nil, // log.Printf (for debug), nil (for release)
 		Dir:   dir,
 		Tests: true,
-		Mode:  packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedImports | packages.NeedDeps,
+		Mode:  packages.NeedName | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo | packages.NeedImports | packages.NeedDeps,
 	}
 
 	if tree {

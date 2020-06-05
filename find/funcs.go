@@ -3,6 +3,7 @@ package find
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 	"reflect"
 
 	"github.com/flowdev/ea-flow-doc/x/pkgs"
@@ -11,8 +12,9 @@ import (
 
 // PackageFuncs contains all marked functions from parsing a package.
 type PackageFuncs struct {
-	Fset  *token.FileSet
-	Funcs []*ast.FuncDecl
+	Fset      *token.FileSet
+	TypesInfo *types.Info
+	Funcs     []*ast.FuncDecl
 }
 
 // FlowFuncs finds FlowDev flows in the given packages and returns the
@@ -52,10 +54,11 @@ func markedFuncsFromPackage(pkg *packages.Package, mark string, searchProd, sear
 		}
 	}
 
-	pkgFunc := PackageFuncs{Fset: pkg.Fset, Funcs: make([]*ast.FuncDecl, 0, 1024)}
+	pkgFunc := PackageFuncs{Fset: pkg.Fset, TypesInfo: pkg.TypesInfo, Funcs: make([]*ast.FuncDecl, 0, 1024)}
 	for _, astf := range pkg.Syntax {
 		pkgFunc.Funcs = addMarkedFuncsFromFile(pkgFunc.Funcs, astf, mark)
 	}
+	//fmt.Println("TYPEs1:", pkg.TypesInfo)
 	return pkgFunc
 }
 

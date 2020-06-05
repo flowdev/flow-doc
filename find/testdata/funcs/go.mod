@@ -1,3 +1,3 @@
-module github.com/flowdev/ea-flow-doc/parse/testdata/find_funcs
+module github.com/flowdev/ea-flow-doc/find/testdata/funcs
 
 go 1.14
