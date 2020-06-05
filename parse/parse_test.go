@@ -71,17 +71,17 @@ func packagesAsString(pkgs []*packages.Package) string {
 	return strings.Join(strPkgs, " | ")
 }
 
+func isTestPkg(pkg *packages.Package) bool {
+	return strings.HasSuffix(pkg.PkgPath, "_test") ||
+		strings.HasSuffix(pkg.PkgPath, ".test") ||
+		strings.HasSuffix(pkg.ID, ".test]") ||
+		strings.HasSuffix(pkg.ID, ".test")
+}
+
 func mustAbs(path string) string {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		panic(err.Error())
 	}
 	return absPath
-}
-
-func isTestPkg(pkg *packages.Package) bool {
-	return strings.HasSuffix(pkg.PkgPath, "_test") ||
-		strings.HasSuffix(pkg.PkgPath, ".test") ||
-		strings.HasSuffix(pkg.ID, ".test]") ||
-		strings.HasSuffix(pkg.ID, ".test")
 }

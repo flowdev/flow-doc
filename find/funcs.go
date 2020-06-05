@@ -1,4 +1,4 @@
-package parse
+package find
 
 import (
 	"go/ast"
@@ -15,19 +15,19 @@ type PackageFuncs struct {
 	Funcs []*ast.FuncDecl
 }
 
-// FindFlowFuncs finds FlowDev flows in the given packages and returns the
+// FlowFuncs finds FlowDev flows in the given packages and returns the
 // functions or methods containing them.
-func FindFlowFuncs(pkgs []*packages.Package) []PackageFuncs {
-	return findMarkedFuncs(pkgs, "//flowdev:flow", true, false)
+func FlowFuncs(pkgs []*packages.Package) []PackageFuncs {
+	return allMarkedFuncs(pkgs, "//flowdev:flow", true, false)
 }
 
-// FindFlowTests finds FlowDev tests in the given packages and returns the
+// FlowTests finds FlowDev tests in the given packages and returns the
 // functions or methods containing them.
-func FindFlowTests(pkgs []*packages.Package) []PackageFuncs {
-	return findMarkedFuncs(pkgs, "//flowdev:test", false, true)
+func FlowTests(pkgs []*packages.Package) []PackageFuncs {
+	return allMarkedFuncs(pkgs, "//flowdev:test", false, true)
 }
 
-func findMarkedFuncs(pkgs []*packages.Package, mark string, searchProd, searchTest bool,
+func allMarkedFuncs(pkgs []*packages.Package, mark string, searchProd, searchTest bool,
 ) []PackageFuncs {
 	pkgFuncs := make([]PackageFuncs, 0, 4096)
 

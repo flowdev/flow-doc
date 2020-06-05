@@ -1,4 +1,4 @@
-package parse_test
+package find_test
 
 import (
 	"path/filepath"
@@ -6,19 +6,20 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/flowdev/ea-flow-doc/find"
 	"github.com/flowdev/ea-flow-doc/parse"
 )
 
-func TestFindFlowFuncs(t *testing.T) {
+func TestFlowFuncs(t *testing.T) {
 	const expectedFuncNames = `funcs.go: DoAccountingMagic | funcs.go: DoSpecialAccountingMagic | funcs.go: SimpleFunc | funcs.go: funcWithEllipsis`
 
-	root := mustAbs(filepath.Join("testdata", "find_funcs"))
+	root := mustAbs(filepath.Join("testdata", "funcs"))
 	pkgs, err := parse.Dir(root, false)
 	if err != nil {
 		t.Fatalf("received unexpected error: %v", err)
 	}
 
-	pkgFuncs := parse.FindFlowFuncs(pkgs)
+	pkgFuncs := find.FlowFuncs(pkgs)
 
 	actualFuncNames := funcNames(pkgFuncs, root)
 	if actualFuncNames != expectedFuncNames {
@@ -26,16 +27,16 @@ func TestFindFlowFuncs(t *testing.T) {
 	}
 }
 
-func TestFindFlowTests(t *testing.T) {
+func TestFlowTests(t *testing.T) {
 	const expectedFuncNames = `x/tool/tool_test.go: TestTool | x/tool2/tool2_test.go: TestTool2`
 
-	root := mustAbs(filepath.Join("testdata", "find_funcs"))
+	root := mustAbs(filepath.Join("testdata", "funcs"))
 	pkgs, err := parse.Dir(root, true)
 	if err != nil {
 		t.Fatalf("received unexpected error: %v", err)
 	}
 
-	pkgFuncs := parse.FindFlowTests(pkgs)
+	pkgFuncs := find.FlowTests(pkgs)
 
 	actualFuncNames := funcNames(pkgFuncs, root)
 	if actualFuncNames != expectedFuncNames {
@@ -43,7 +44,7 @@ func TestFindFlowTests(t *testing.T) {
 	}
 }
 
-func funcNames(pkgFuncs []parse.PackageFuncs, root string) string {
+func funcNames(pkgFuncs []find.PackageFuncs, root string) string {
 	names := make([]string, 0, 4096)
 	for _, pkgFunc := range pkgFuncs {
 		for _, fun := range pkgFunc.Funcs {
@@ -67,4 +68,12 @@ func relativeFileName(fname, root string) string {
 		return fname[1:]
 	}
 	return fname
+}
+
+func mustAbs(path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		panic(err.Error())
+	}
+	return absPath
 }
