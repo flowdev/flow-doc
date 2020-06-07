@@ -30,6 +30,8 @@ func typeOfExpr(sb *strings.Builder, expr ast.Expr) (stopExprType string) {
 	switch e := expr.(type) {
 	case *ast.Ident:
 		stopExprType = typeOfIdent(sb, e)
+	case *ast.SelectorExpr:
+		stopExprType = typeOfSelectorExpr(sb, e)
 	case *ast.ArrayType:
 		stopExprType = typeOfArrayType(sb, e)
 	case *ast.Ellipsis:
@@ -51,6 +53,15 @@ func typeOfExpr(sb *strings.Builder, expr ast.Expr) (stopExprType string) {
 
 func typeOfIdent(sb *strings.Builder, id *ast.Ident) (stopExprType string) {
 	sb.WriteString(id.Name)
+	return stopExprType
+}
+
+func typeOfSelectorExpr(sb *strings.Builder, sel *ast.SelectorExpr) (stopExprType string) {
+	stopExprType = typeOfExpr(sb, sel.X)
+	sb.WriteString(".")
+	if sel.Sel != nil {
+		sb.WriteString(sel.Sel.Name)
+	}
 	return stopExprType
 }
 

@@ -1,6 +1,10 @@
 package functyps
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/flowdev/ea-flow-doc/flow/testdata/functyps/tool"
+)
 
 // BankAccount represents a bank account.
 type BankAccount struct {
@@ -54,6 +58,11 @@ func funcWithErrorOnly() error {
 }
 
 //flowdev:flow
-func funcWithoutResults(m map[string]*SpecialBankAccount, s string) {
+func funcWithoutResults(
+	d *tool.Data,
+	m map[string]*SpecialBankAccount,
+	s string,
+) {
+
 	print(s)
 }
