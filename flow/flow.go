@@ -2,19 +2,27 @@ package flow
 
 import (
 	"errors"
-	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
+	"log"
 	"strings"
 	"unicode"
 
+	"github.com/flowdev/ea-flow-doc/data"
 	"github.com/flowdev/ea-flow-doc/find"
 )
+
+const portPrefix = "port"
 
 type port struct {
 	name     string
 	implicit bool
+}
+
+type dataTyp struct {
+	name string
+	typ  string
 }
 
 // Check validates the given flow functions.
@@ -23,33 +31,43 @@ func Check(allFlowFuncs []find.PackageFuncs) []error {
 	var allErrs []error
 	for _, pkgFlowFuncs := range allFlowFuncs {
 		for _, flowFunc := range pkgFlowFuncs.Funcs {
-			errs := checkFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo)
-			if len(errs) > 0 {
-				allErrs = append(allErrs, errs...)
-			}
+			allErrs = checkFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo, allErrs)
 		}
+	}
+
+	for _, err := range allErrs {
+		log.Printf("NOTICE - error: %v", err)
 	}
 	return allErrs
 }
 
 // Cases:
 // - one input port [x]
-//   - one output port
-//   - error output port
-//   - multiple output ports
+//   - one output port [x]
+//   - error output port [x]
+//   - multiple output ports [x]
 // - multiple input ports: simple [x]
 // - stateful components: no extra handling [x]
-func checkFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info) []error {
-	var errs []error
+func checkFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, errs []error) []error {
 	var componentName string
 	var inPort port
+	var datas []dataTyp
 	var outPorts []port
 
 	componentName, inPort, errs = checkFlowFuncName(flowFunc.Name, fset, errs)
 
+	datas, errs = checkInputData(flowFunc.Type.Params, fset, typesInfo, errs)
+	for _, dat := range datas {
+		log.Printf("DEBUG - data: %v", dat)
+	}
+
 	outPorts, errs = checkFlowFuncResults(flowFunc.Type.Results, fset, typesInfo, errs)
+	for _, port := range outPorts {
+		log.Printf("DEBUG - outPort: %v", port)
+	}
 
 	_, _ = componentName, inPort
+	_ = datas
 	_ = outPorts
 
 	return errs
@@ -106,10 +124,19 @@ func checkFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 	return componentName, inPort, errs
 }
 
-// Cases:
-//   - one output port
-//   - error output port
-//   - multiple output ports
+func checkInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
+) ([]dataTyp, []error) {
+
+	if params == nil || len(params.List) == 0 {
+		return nil, errs
+	}
+
+	var datas []dataTyp
+
+	datas, errs = flowDataTypes(params, fset, typesInfo, errs)
+	return datas, errs
+}
+
 func checkFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
 ) ([]port, []error) {
 
@@ -117,23 +144,89 @@ func checkFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 		return nil, errs
 	}
 
-	const portPrefix = "port"
-	portNamesCount := 0
-	resultsCount := 0
-	//defaultPort := port{name: "out", implicit: true}
+	portNames := 0
+	defaultPort := port{name: "out", implicit: true}
+	lastIsError := false
 	ports := []port{}
 
-	for _, result := range funcResults.List {
-		for _, id := range result.Names {
-			name := id.Name
-			resultsCount++
-			if strings.HasPrefix(name, portPrefix) && len(name) > len(portPrefix) {
-				portNamesCount++
-			}
+	datas, _ := flowDataTypes(funcResults, fset, typesInfo, []error{})
+	n := len(datas)
+
+	if datas[n-1].typ == "error" {
+		lastIsError = true
+	}
+
+	for _, dat := range datas {
+		if strings.HasPrefix(dat.name, portPrefix) && len(dat.name) > len(portPrefix) {
+			portNames++
 		}
-		//fmt.Println("TYPEs:", typesInfo)
-		fmt.Println("TYPE:", typesInfo.Types[result.Type].Type)
+	}
+
+	if portNames == n || (portNames == n-1 && lastIsError) {
+		for i, dat := range datas {
+			if i == n-1 && lastIsError {
+				break
+			}
+			ports = append(ports, port{name: portName(dat.name)})
+		}
+	} else if n > 1 || (n == 1 && !lastIsError) {
+		ports = append(ports, defaultPort)
+		if portNames > 0 {
+			position := ""
+			if len(funcResults.List[0].Names) > 0 {
+				position = fset.Position(funcResults.List[0].Names[0].NamePos).String()
+			} else {
+				position = fset.Position(funcResults.List[0].Type.Pos()).String()
+			}
+			log.Printf("WARNING - found only %d port names at: %s", portNames, position)
+		}
+	}
+
+	if lastIsError {
+		ports = append(ports, port{name: "error"})
 	}
 
 	return ports, errs
+}
+
+func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
+) ([]dataTyp, []error) {
+
+	datas := make([]dataTyp, 0, 32)
+	for _, field := range fl.List {
+		flowDataType, err := data.Type(field.Type)
+		if err != nil {
+			errs = append(errs, errors.New(
+				fset.Position(field.Type.Pos()).String()+
+					" "+err.Error()+"; Go data type: "+
+					typeInfo(field.Type, typesInfo),
+			))
+			log.Printf("DEBUG - data type error: %s",
+				fset.Position(field.Type.Pos()).String()+
+					" "+err.Error()+"; Go data type: "+
+					typeInfo(field.Type, typesInfo))
+		}
+		for _, id := range field.Names {
+			datas = append(datas, dataTyp{name: id.Name, typ: flowDataType})
+		}
+		if len(field.Names) == 0 {
+			datas = append(datas, dataTyp{typ: flowDataType})
+		}
+	}
+
+	return datas, errs
+}
+
+func typeInfo(typ ast.Expr, typesInfo *types.Info) string {
+	if typesInfo.Types[typ].Type == nil {
+		return "<types.Info not filled properly>"
+	}
+	return typesInfo.Types[typ].Type.String()
+}
+
+func portName(longName string) string {
+	name := longName[len(portPrefix):]
+	runes := []rune(name)
+	runes[0] = unicode.ToLower(runes[0])
+	return string(runes)
 }

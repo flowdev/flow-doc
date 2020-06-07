@@ -54,6 +54,6 @@ func funcWithErrorOnly() error {
 }
 
 //flowdev:flow
-func funcWithoutResults(s string) {
+func funcWithoutResults(m map[string]*SpecialBankAccount, s string) {
 	print(s)
 }
