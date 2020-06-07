@@ -56,6 +56,7 @@ func checkFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 
 	componentName, inPort, errs = checkFlowFuncName(flowFunc.Name, fset, errs)
 
+	log.Printf("DEBUG - componentName: %s, inPort: %v", componentName, inPort)
 	datas, errs = checkInputData(flowFunc.Type.Params, fset, typesInfo, errs)
 	for _, dat := range datas {
 		log.Printf("DEBUG - data: %v", dat)
@@ -160,6 +161,11 @@ func checkFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 		if strings.HasPrefix(dat.name, portPrefix) && len(dat.name) > len(portPrefix) {
 			portNames++
 		}
+	}
+
+	log.Printf("DEBUG - portNames: %d, n: %d, lastIsError: %t", portNames, n, lastIsError)
+	for _, dat := range datas {
+		log.Printf("DEBUG - data: %v", dat)
 	}
 
 	if portNames == n || (portNames == n-1 && lastIsError) {
