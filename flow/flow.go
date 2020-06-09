@@ -6,7 +6,6 @@ import (
 	"go/token"
 	"go/types"
 	"log"
-	"strings"
 	"unicode"
 
 	"github.com/flowdev/ea-flow-doc/data"
@@ -25,20 +24,30 @@ type dataTyp struct {
 	typ  string
 }
 
-// Check validates the given flow functions.
-// They have to satisfy the following rules:
-func Check(allFlowFuncs []find.PackageFuncs) []error {
+type flowData struct {
+	inPort        port
+	inputs        []dataTyp
+	dataMap       map[string]string
+	componentName string
+	outPorts      []port
+}
+
+func parse(allFlowFuncs []find.PackageFuncs) ([]flowData, []error) {
+	var flowDatas []flowData
 	var allErrs []error
+
 	for _, pkgFlowFuncs := range allFlowFuncs {
 		for _, flowFunc := range pkgFlowFuncs.Funcs {
-			allErrs = checkFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo, allErrs)
+			var flowDat flowData
+			flowDat, allErrs = parseFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo, allErrs)
+			flowDatas = append(flowDatas, flowDat)
 		}
 	}
 
 	for _, err := range allErrs {
 		log.Printf("NOTICE - error: %v", err)
 	}
-	return allErrs
+	return flowDatas, allErrs
 }
 
 // Cases:
@@ -48,151 +57,20 @@ func Check(allFlowFuncs []find.PackageFuncs) []error {
 //   - multiple output ports [x]
 // - multiple input ports: simple [x]
 // - stateful components: no extra handling [x]
-func checkFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, errs []error) []error {
-	var componentName string
-	var inPort port
-	var datas []dataTyp
-	var outPorts []port
+func parseFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, errs []error,
+) (flowData, []error) {
+	flowDat := flowData{}
 
-	componentName, inPort, errs = checkFlowFuncName(flowFunc.Name, fset, errs)
+	errs = parseFuncDecl(flowFunc, fset, typesInfo, &flowDat, errs)
+	errs = parseFuncBody(flowFunc, fset, typesInfo, &flowDat, errs)
 
-	log.Printf("DEBUG - componentName: %s, inPort: %v", componentName, inPort)
-	datas, errs = checkInputData(flowFunc.Type.Params, fset, typesInfo, errs)
-	for _, dat := range datas {
-		log.Printf("DEBUG - data: %v", dat)
-	}
+	return flowDat, errs
+}
 
-	outPorts, errs = checkFlowFuncResults(flowFunc.Type.Results, fset, typesInfo, errs)
-	for _, port := range outPorts {
-		log.Printf("DEBUG - outPort: %v", port)
-	}
-
-	_, _ = componentName, inPort
-	_ = datas
-	_ = outPorts
+func parseFuncBody(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+) []error {
 
 	return errs
-}
-
-func checkFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
-) (componentName string, inPort port, errs2 []error) {
-
-	funcName := funcNameID.Name
-	componentName = funcName
-	inPort.name = "in"
-	inPort.implicit = true
-
-	if !strings.Contains(funcName, "_") {
-		return componentName, inPort, errs
-	}
-	parts := strings.Split(funcName, "_")
-	if len(parts) != 2 {
-		errs = append(errs, errors.New(
-			fset.Position(funcNameID.Pos()).String()+
-				" flow function names must contain at most one underscore ('_'), got: "+
-				funcName,
-		))
-	}
-
-	if parts[0] == "" {
-		errs = append(errs, errors.New(
-			fset.Position(funcNameID.Pos()).String()+
-				" flow function names must contain a valid component name, got '' in: "+
-				funcName,
-		))
-	}
-	componentName = parts[0]
-
-	if parts[1] == "" {
-		errs = append(errs, errors.New(
-			fset.Position(funcNameID.Pos()).String()+
-				" flow function names with '_' must contain a valid port name, got '' in: "+
-				funcName,
-		))
-	}
-	inPort.name = parts[1]
-	inPort.implicit = false
-
-	if !unicode.IsLower([]rune(inPort.name)[0]) {
-		errs = append(errs, errors.New(
-			fset.Position(funcNameID.Pos()).String()+
-				" port names in flow function names must start with a lower case letter, got '"+
-				inPort.name+
-				"' in: "+
-				funcName,
-		))
-	}
-	return componentName, inPort, errs
-}
-
-func checkInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
-) ([]dataTyp, []error) {
-
-	if params == nil || len(params.List) == 0 {
-		return nil, errs
-	}
-
-	var datas []dataTyp
-
-	datas, errs = flowDataTypes(params, fset, typesInfo, errs)
-	return datas, errs
-}
-
-func checkFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
-) ([]port, []error) {
-
-	if funcResults == nil || len(funcResults.List) == 0 {
-		return nil, errs
-	}
-
-	portNames := 0
-	defaultPort := port{name: "out", implicit: true}
-	lastIsError := false
-	ports := []port{}
-
-	datas, _ := flowDataTypes(funcResults, fset, typesInfo, []error{})
-	n := len(datas)
-
-	if datas[n-1].typ == "error" {
-		lastIsError = true
-	}
-
-	for _, dat := range datas {
-		if strings.HasPrefix(dat.name, portPrefix) && len(dat.name) > len(portPrefix) {
-			portNames++
-		}
-	}
-
-	log.Printf("DEBUG - portNames: %d, n: %d, lastIsError: %t", portNames, n, lastIsError)
-	for _, dat := range datas {
-		log.Printf("DEBUG - data: %v", dat)
-	}
-
-	if portNames == n || (portNames == n-1 && lastIsError) {
-		for i, dat := range datas {
-			if i == n-1 && lastIsError {
-				break
-			}
-			ports = append(ports, port{name: portName(dat.name)})
-		}
-	} else if n > 1 || (n == 1 && !lastIsError) {
-		ports = append(ports, defaultPort)
-		if portNames > 0 {
-			position := ""
-			if len(funcResults.List[0].Names) > 0 {
-				position = fset.Position(funcResults.List[0].Names[0].NamePos).String()
-			} else {
-				position = fset.Position(funcResults.List[0].Type.Pos()).String()
-			}
-			log.Printf("WARNING - found only %d port names at: %s", portNames, position)
-		}
-	}
-
-	if lastIsError {
-		ports = append(ports, port{name: "error"})
-	}
-
-	return ports, errs
 }
 
 func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
@@ -221,6 +99,27 @@ func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info
 	}
 
 	return datas, errs
+}
+
+func addDatasToMap(m map[string]string, datas []dataTyp) map[string]string {
+	for _, dat := range datas {
+		if dat.name != "" {
+			m[dat.name] = dat.typ
+		}
+	}
+	return m
+}
+
+func dataTypToData(d dataTyp) string {
+	switch d.typ { // don't report 'boring' data types
+	case "bool", "byte", "complex64", "complex128", "float32", "float64",
+		"int", "int8", "int16", "int32", "int64",
+		"rune", "string", "uint", "uint8", "uint16", "uint32", "uint64",
+		"uintptr":
+		return d.name
+	default:
+		return d.typ
+	}
 }
 
 func typeInfo(typ ast.Expr, typesInfo *types.Info) string {
