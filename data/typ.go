@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"go/ast"
 	"log"
-	"reflect"
 	"strings"
+
+	"github.com/flowdev/ea-flow-doc/x/reflect"
 )
 
 // Type returns the string representation of the flow data type corresponding
@@ -23,7 +24,7 @@ func Type(expr ast.Expr) (string, error) {
 }
 
 func typeOfExpr(sb *strings.Builder, expr ast.Expr) (stopExprType string) {
-	if isNilInterfaceOrPointer(expr) {
+	if reflect.IsNilInterfaceOrPointer(expr) {
 		return stopExprType
 	}
 
@@ -88,9 +89,4 @@ func typeOfMapType(sb *strings.Builder, m *ast.MapType) (stopExprType string) {
 	}
 	sb.WriteString(")")
 	return stopExprType
-}
-
-func isNilInterfaceOrPointer(v interface{}) bool {
-	return v == nil ||
-		(reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }

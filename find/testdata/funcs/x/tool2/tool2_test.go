@@ -3,7 +3,7 @@ package tool2_test
 import (
 	"testing"
 
-	"github.com/flowdev/ea-flow-doc/parse/testdata/find_funcs/x/tool2"
+	"github.com/flowdev/ea-flow-doc/find/testdata/funcs/x/tool2"
 )
 
 // TestTool2 is just great.

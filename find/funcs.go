@@ -4,9 +4,9 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"reflect"
 
 	"github.com/flowdev/ea-flow-doc/x/pkgs"
+	"github.com/flowdev/ea-flow-doc/x/reflect"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -70,7 +70,7 @@ func addMarkedFuncsFromFile(funcs []*ast.FuncDecl, astf *ast.File, mark string) 
 }
 
 func addMarkedFuncFromDecl(funcs []*ast.FuncDecl, decl ast.Decl, mark string) []*ast.FuncDecl {
-	if isNilInterfaceOrPointer(decl) {
+	if reflect.IsNilInterfaceOrPointer(decl) {
 		return funcs
 	}
 
@@ -96,9 +96,4 @@ func addMarkedFuncFromFunc(funcs []*ast.FuncDecl, fun *ast.FuncDecl, mark string
 	}
 
 	return funcs
-}
-
-func isNilInterfaceOrPointer(v interface{}) bool {
-	return v == nil ||
-		(reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }

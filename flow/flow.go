@@ -10,6 +10,7 @@ import (
 
 	"github.com/flowdev/ea-flow-doc/data"
 	"github.com/flowdev/ea-flow-doc/find"
+	"github.com/flowdev/ea-flow-doc/x/reflect"
 )
 
 const portPrefix = "port"
@@ -20,8 +21,10 @@ type port struct {
 }
 
 type dataTyp struct {
-	name string
-	typ  string
+	name    string
+	namePos token.Pos
+	typ     string
+	typPos  token.Pos
 }
 
 type flowData struct {
@@ -32,7 +35,8 @@ type flowData struct {
 	outPorts      []port
 }
 
-func parse(allFlowFuncs []find.PackageFuncs) ([]flowData, []error) {
+// Parse is farsing flows.
+func Parse(allFlowFuncs []find.PackageFuncs) ([]flowData, []error) {
 	var flowDatas []flowData
 	var allErrs []error
 
@@ -62,13 +66,26 @@ func parseFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 	flowDat := flowData{}
 
 	errs = parseFuncDecl(flowFunc, fset, typesInfo, &flowDat, errs)
-	errs = parseFuncBody(flowFunc, fset, typesInfo, &flowDat, errs)
+	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, &flowDat, errs)
 
 	return flowDat, errs
 }
 
-func parseFuncBody(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+func parseFuncBody(body *ast.BlockStmt, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
 ) []error {
+
+	for _, stmt := range body.List {
+		errs = parseFuncStmt(stmt, fset, typesInfo, flowDat, errs)
+	}
+	return errs
+}
+
+func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+) []error {
+
+	if reflect.IsNilInterfaceOrPointer(stmt) {
+		return errs
+	}
 
 	return errs
 }
@@ -91,7 +108,10 @@ func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info
 					typeInfo(field.Type, typesInfo))
 		}
 		for _, id := range field.Names {
-			datas = append(datas, dataTyp{name: id.Name, typ: flowDataType})
+			datas = append(datas, dataTyp{
+				name: id.Name, namePos: id.NamePos,
+				typ: flowDataType, typPos: field.Type.Pos(),
+			})
 		}
 		if len(field.Names) == 0 {
 			datas = append(datas, dataTyp{typ: flowDataType})

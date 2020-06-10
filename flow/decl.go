@@ -23,6 +23,7 @@ func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 
 	var results []dataTyp
 	results, flowDat.outPorts, errs = parseFlowFuncResults(decl.Type.Results, fset, typesInfo, errs)
+	flowDat.dataMap = make(map[string]string, 64)
 	flowDat.dataMap = addDatasToMap(flowDat.dataMap, flowDat.inputs)
 	flowDat.dataMap = addDatasToMap(flowDat.dataMap, results)
 	for _, port := range flowDat.outPorts {
@@ -93,6 +94,20 @@ func parseInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types
 	var inputs []dataTyp
 
 	inputs, errs = flowDataTypes(params, fset, typesInfo, errs)
+
+	firstPlugin := -1
+	for i, input := range inputs {
+		if firstPlugin < 0 && isPlugin(input) {
+			firstPlugin = i
+		} else if firstPlugin >= 0 && !isPlugin(input) {
+			errs = append(errs, errors.New(
+				fset.Position(input.namePos).String()+
+					" flow plugins must all be at the end of the parameter list, found '"+
+					input.name+"' after plugin '"+inputs[firstPlugin].name+"'",
+			))
+		}
+	}
+
 	return inputs, errs
 }
 
@@ -151,4 +166,10 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 	}
 
 	return datas, ports, errs
+}
+
+func isPlugin(input dataTyp) bool {
+	const prefixPlugin = "plugin"
+	return strings.HasPrefix(input.name, prefixPlugin) &&
+		(len(input.name) > len(prefixPlugin))
 }

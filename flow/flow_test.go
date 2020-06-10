@@ -9,7 +9,7 @@ import (
 	"github.com/flowdev/ea-flow-doc/parse"
 )
 
-func TestFlowFuncs(t *testing.T) {
+func TestParse(t *testing.T) {
 	root := mustAbs(filepath.Join("testdata", "functyps"))
 	pkgs, err := parse.Dir(root, false)
 	if err != nil {
@@ -18,7 +18,7 @@ func TestFlowFuncs(t *testing.T) {
 
 	pkgFuncs := find.FlowFuncs(pkgs)
 
-	flow.Check(pkgFuncs)
+	flow.Parse(pkgFuncs)
 }
 
 func mustAbs(path string) string {
