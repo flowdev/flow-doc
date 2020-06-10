@@ -16,8 +16,10 @@ import (
 const portPrefix = "port"
 
 type port struct {
-	name     string
-	implicit bool
+	name       string
+	pos        token.Pos
+	isImplicit bool
+	isError    bool
 }
 
 type dataTyp struct {
@@ -87,6 +89,56 @@ func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, fl
 		return errs
 	}
 
+	switch s := stmt.(type) {
+	case *ast.AssignStmt:
+		// TODO: calls? new vars?
+		//sizeOfAssignStmt(s)
+	case *ast.IncDecStmt:
+		//sizeOfIncDecStmt(s)
+	case *ast.ReturnStmt:
+		// TODO: check Results: is error given? What out port is used?
+		//sizeOfReturnStmt(s)
+	case *ast.ExprStmt:
+		// TODO: call expr and others
+		//sizeOfExprStmt(s)
+	case *ast.IfStmt:
+		// TODO: for error handling
+		//sizeOfIfStmt(s)
+	case *ast.ForStmt:
+		//sizeOfForStmt(s)
+	case *ast.RangeStmt:
+		//sizeOfRangeStmt(s)
+	case *ast.BlockStmt:
+		//sizeOfBlockStmt(s)
+	case *ast.SwitchStmt:
+		//sizeOfSwitchStmt(s)
+	case *ast.TypeSwitchStmt:
+		//sizeOfTypeSwitchStmt(s)
+	case *ast.CaseClause:
+		//sizeOfCaseClause(s)
+	case *ast.SelectStmt:
+		//sizeOfSelectStmt(s)
+	case *ast.CommClause:
+		//sizeOfCommClause(s)
+	case *ast.SendStmt:
+		//sizeOfSendStmt(s)
+	case *ast.BranchStmt:
+		//sizeOfBranchStmt(s)
+	case *ast.GoStmt:
+		//sizeOfGoStmt(s)
+	case *ast.LabeledStmt:
+		//sizeOfLabeledStmt(s)
+	case *ast.DeferStmt:
+		//sizeOfDeferStmt(s)
+	case *ast.DeclStmt:
+		// TODO: new vars
+		//sizeOfDeclStmt(s)
+	case *ast.EmptyStmt,
+		nil:
+		// nothing to do
+	default:
+		log.Printf("WARNING - Don't know how to handle unknown stmt: %T", s)
+	}
 	return errs
 }
 

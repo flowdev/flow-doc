@@ -39,7 +39,7 @@ func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 	funcName := funcNameID.Name
 	componentName = funcName
 	inPort.name = "in"
-	inPort.implicit = true
+	inPort.isImplicit = true
 
 	if !strings.Contains(funcName, "_") {
 		return componentName, inPort, errs
@@ -70,7 +70,8 @@ func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 		))
 	}
 	inPort.name = parts[1]
-	inPort.implicit = false
+	inPort.pos = funcNameID.Pos()
+	inPort.isImplicit = false
 
 	if !unicode.IsLower([]rune(inPort.name)[0]) {
 		errs = append(errs, errors.New(
@@ -119,7 +120,7 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 	}
 
 	portNames := 0
-	defaultPort := port{name: "out", implicit: true}
+	defaultPort := port{name: "out", isImplicit: true}
 	lastIsError := false
 	ports := []port{}
 
@@ -146,7 +147,7 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 			if i == n-1 && lastIsError {
 				break
 			}
-			ports = append(ports, port{name: portName(dat.name)})
+			ports = append(ports, port{name: portName(dat.name), pos: dat.namePos})
 		}
 	} else if n > 1 || (n == 1 && !lastIsError) {
 		ports = append(ports, defaultPort)
@@ -162,7 +163,7 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 	}
 
 	if lastIsError {
-		ports = append(ports, port{name: "error"})
+		ports = append(ports, port{name: "error", isError: true})
 	}
 
 	return datas, ports, errs
