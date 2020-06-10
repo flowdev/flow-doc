@@ -70,6 +70,15 @@ func funcWithoutResults(
 }
 
 //flowdev:flow
-func funcWithTooComplexData(s string, f func(int) int, c chan<- int, i int) {
+func funcWithTooComplexData(
+	s string,
+	f func(int) int,
+	c chan<- int,
+	t struct {
+		i int
+		b bool
+	},
+	i int,
+) {
 	fmt.Println(s, i)
 }

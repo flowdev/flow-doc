@@ -47,9 +47,9 @@ func TestType(t *testing.T) {
 			expectedErrors:  0,
 		},
 		"funcWithTooComplexData": {
-			expectedParams:  `["string" "" "" "int"]`,
+			expectedParams:  `["string" "" "" "" "int"]`,
 			expectedResults: `[]`,
-			expectedErrors:  2,
+			expectedErrors:  3,
 		},
 	}
 	root := mustAbs(filepath.Join("testdata", "typ"))
