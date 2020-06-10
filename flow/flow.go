@@ -29,22 +29,53 @@ type dataTyp struct {
 	typPos  token.Pos
 }
 
+type call struct {
+	inputs        []string
+	inPort        port
+	componentName string
+	outputs       []string
+}
+
+type returnStep struct {
+	datas   []string
+	outPort port
+}
+
+type step interface {
+}
+
+type branch struct {
+	dataMap map[string]string
+	steps   []step
+}
+
+// a flow has got a mainBranch an possibly many sub-branches.
+// the main branch always starts with the first call expression of the function.
+// sub-branches are created with if expressions.
+// consequently a flow can't start with an if expression!
 type flowData struct {
 	inPort        port
 	inputs        []dataTyp
-	dataMap       map[string]string
 	componentName string
 	outPorts      []port
+	mainBranch    *branch
+}
+
+func newBranch() *branch {
+	return &branch{dataMap: make(map[string]string, 64), steps: make([]step, 0, 64)}
+}
+func newFlowData() *flowData {
+	return &flowData{mainBranch: newBranch()}
 }
 
 // Parse is farsing flows.
-func Parse(allFlowFuncs []find.PackageFuncs) ([]flowData, []error) {
-	var flowDatas []flowData
+func Parse(allFlowFuncs []find.PackageFuncs) ([]*flowData, []error) {
+	var flowDatas []*flowData
 	var allErrs []error
 
 	for _, pkgFlowFuncs := range allFlowFuncs {
 		for _, flowFunc := range pkgFlowFuncs.Funcs {
-			var flowDat flowData
+			var flowDat *flowData
 			flowDat, allErrs = parseFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo, allErrs)
 			flowDatas = append(flowDatas, flowDat)
 		}
@@ -64,14 +95,16 @@ func Parse(allFlowFuncs []find.PackageFuncs) ([]flowData, []error) {
 // - multiple input ports: simple [x]
 // - stateful components: no extra handling [x]
 func parseFlow(flowFunc *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, errs []error,
-) (flowData, []error) {
-	flowDat := flowData{}
+) (*flowData, []error) {
+	flowDat := newFlowData()
 
-	errs = parseFuncDecl(flowFunc, fset, typesInfo, &flowDat, errs)
-	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, &flowDat, errs)
+	errs = parseFuncDecl(flowFunc, fset, typesInfo, flowDat, errs)
+	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, flowDat, errs)
 
 	return flowDat, errs
 }
+
+// BODY: -----------------------------
 
 func parseFuncBody(body *ast.BlockStmt, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
 ) []error {
@@ -90,49 +123,36 @@ func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, fl
 	}
 
 	switch s := stmt.(type) {
+	case *ast.DeclStmt:
+		errs = parseDecl(s.Decl, fset, typesInfo, flowDat, errs)
 	case *ast.AssignStmt:
-		// TODO: calls? new vars?
-		//sizeOfAssignStmt(s)
-	case *ast.IncDecStmt:
-		//sizeOfIncDecStmt(s)
+		// TODO: Rhs: allow only calls?
 	case *ast.ReturnStmt:
 		// TODO: check Results: is error given? What out port is used?
-		//sizeOfReturnStmt(s)
 	case *ast.ExprStmt:
-		// TODO: call expr and others
-		//sizeOfExprStmt(s)
+		// TODO: only allow CallExpr!
 	case *ast.IfStmt:
 		// TODO: for error handling
-		//sizeOfIfStmt(s)
-	case *ast.ForStmt:
-		//sizeOfForStmt(s)
-	case *ast.RangeStmt:
-		//sizeOfRangeStmt(s)
-	case *ast.BlockStmt:
-		//sizeOfBlockStmt(s)
-	case *ast.SwitchStmt:
-		//sizeOfSwitchStmt(s)
-	case *ast.TypeSwitchStmt:
-		//sizeOfTypeSwitchStmt(s)
-	case *ast.CaseClause:
-		//sizeOfCaseClause(s)
-	case *ast.SelectStmt:
-		//sizeOfSelectStmt(s)
-	case *ast.CommClause:
-		//sizeOfCommClause(s)
-	case *ast.SendStmt:
-		//sizeOfSendStmt(s)
-	case *ast.BranchStmt:
-		//sizeOfBranchStmt(s)
-	case *ast.GoStmt:
-		//sizeOfGoStmt(s)
-	case *ast.LabeledStmt:
-		//sizeOfLabeledStmt(s)
-	case *ast.DeferStmt:
-		//sizeOfDeferStmt(s)
-	case *ast.DeclStmt:
-		// TODO: new vars
-		//sizeOfDeclStmt(s)
+	case *ast.ForStmt,
+		*ast.RangeStmt,
+		*ast.BlockStmt,
+		*ast.SwitchStmt,
+		*ast.TypeSwitchStmt,
+		*ast.CaseClause,
+		*ast.SelectStmt,
+		*ast.CommClause,
+		*ast.SendStmt,
+		*ast.BranchStmt,
+		*ast.GoStmt,
+		*ast.LabeledStmt,
+		*ast.DeferStmt,
+		*ast.IncDecStmt:
+
+		errs = append(errs, errors.New(
+			fset.Position(stmt.Pos()).String()+
+				" not supported statement in flow, allowed: "+
+				"variable declaration, assignment, function calls, return and if (err)",
+		))
 	case *ast.EmptyStmt,
 		nil:
 		// nothing to do
@@ -141,6 +161,21 @@ func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, fl
 	}
 	return errs
 }
+
+func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+) []error {
+
+	if reflect.IsNilInterfaceOrPointer(decl) {
+		return errs
+	}
+
+	// TODO: allow only CONST and VAR (no TYPE)
+	// TODO:
+
+	return errs
+}
+
+// BODY: -----------------------------
 
 func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
 ) ([]dataTyp, []error) {

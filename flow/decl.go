@@ -23,9 +23,8 @@ func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 
 	var results []dataTyp
 	results, flowDat.outPorts, errs = parseFlowFuncResults(decl.Type.Results, fset, typesInfo, errs)
-	flowDat.dataMap = make(map[string]string, 64)
-	flowDat.dataMap = addDatasToMap(flowDat.dataMap, flowDat.inputs)
-	flowDat.dataMap = addDatasToMap(flowDat.dataMap, results)
+	flowDat.mainBranch.dataMap = addDatasToMap(flowDat.mainBranch.dataMap, flowDat.inputs)
+	flowDat.mainBranch.dataMap = addDatasToMap(flowDat.mainBranch.dataMap, results)
 	for _, port := range flowDat.outPorts {
 		log.Printf("DEBUG - outPort: %v", port)
 	}
