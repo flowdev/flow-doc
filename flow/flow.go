@@ -2,6 +2,7 @@ package flow
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -110,12 +111,12 @@ func parseFuncBody(body *ast.BlockStmt, fset *token.FileSet, typesInfo *types.In
 ) []error {
 
 	for _, stmt := range body.List {
-		errs = parseFuncStmt(stmt, fset, typesInfo, flowDat, errs)
+		errs = parseFuncStmt(stmt, fset, typesInfo, flowDat, flowDat.mainBranch, errs)
 	}
 	return errs
 }
 
-func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, branch *branch, errs []error,
 ) []error {
 
 	if reflect.IsNilInterfaceOrPointer(stmt) {
@@ -124,13 +125,13 @@ func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, fl
 
 	switch s := stmt.(type) {
 	case *ast.DeclStmt:
-		errs = parseDecl(s.Decl, fset, typesInfo, flowDat, errs)
+		errs = parseDecl(s.Decl, fset, typesInfo, branch, errs)
+	case *ast.ExprStmt:
+		// TODO: only allow CallExpr!
 	case *ast.AssignStmt:
 		// TODO: Rhs: allow only calls?
 	case *ast.ReturnStmt:
 		// TODO: check Results: is error given? What out port is used?
-	case *ast.ExprStmt:
-		// TODO: only allow CallExpr!
 	case *ast.IfStmt:
 		// TODO: for error handling
 	case *ast.ForStmt,
@@ -150,27 +151,80 @@ func parseFuncStmt(stmt ast.Stmt, fset *token.FileSet, typesInfo *types.Info, fl
 
 		errs = append(errs, errors.New(
 			fset.Position(stmt.Pos()).String()+
-				" not supported statement in flow, allowed: "+
-				"variable declaration, assignment, function calls, return and if (err)",
+				" unsupported statement in flow, allowed are: "+
+				"variable declaration, assignment, function calls, return and 'if <port>!=nil'",
 		))
 	case *ast.EmptyStmt,
 		nil:
 		// nothing to do
 	default:
-		log.Printf("WARNING - Don't know how to handle unknown stmt: %T", s)
+		errs = append(errs, errors.New(
+			fset.Position(stmt.Pos()).String()+
+				fmt.Sprintf("don't know how to handle unknown statement in flow: %T", s),
+		))
 	}
 	return errs
 }
 
-func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch *branch, errs []error,
 ) []error {
 
 	if reflect.IsNilInterfaceOrPointer(decl) {
 		return errs
 	}
 
-	// TODO: allow only CONST and VAR (no TYPE)
-	// TODO:
+	switch d := decl.(type) {
+	case *ast.FuncDecl:
+		errs = append(errs, errors.New(
+			fset.Position(decl.Pos()).String()+
+				" function declarations aren't supported in flows, allowed are: "+
+				"variable declaration, assignment, function calls, return and 'if <port>!=nil'",
+		))
+	case *ast.GenDecl:
+		errs = parseGenDecl(d, fset, typesInfo, branch, errs)
+	default:
+		errs = append(errs, errors.New(
+			fset.Position(decl.Pos()).String()+
+				fmt.Sprintf("don't know how to handle unknown declaration in flow: %T", d),
+		))
+	}
+
+	return errs
+}
+
+func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info, branch *branch, errs []error,
+) []error {
+
+	if reflect.IsNilInterfaceOrPointer(decl) {
+		return errs
+	}
+
+	for _, spec := range decl.Specs {
+		switch s := spec.(type) {
+		case *ast.TypeSpec:
+			errs = append(errs, errors.New(
+				fset.Position(spec.Pos()).String()+
+					" function declarations aren't supported in flows, allowed are: "+
+					"variable declaration, assignment, function calls, return and 'if <port>!=nil'",
+			))
+		case *ast.ValueSpec:
+			var typ string
+			var err error
+			if s.Type != nil {
+				if typ, err = data.Type(s.Type); err != nil {
+					errs = append(errs, errors.New(
+						fset.Position(s.Type.Pos()).String()+
+							" "+err.Error()+"; Go data type: "+
+							typeInfo(s.Type, typesInfo),
+					))
+				}
+			}
+			for _, n := range s.Names {
+				branch.dataMap[n.Name] = typ
+			}
+		}
+		//default: import specs are ignored
+	}
 
 	return errs
 }
@@ -189,7 +243,7 @@ func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info
 					" "+err.Error()+"; Go data type: "+
 					typeInfo(field.Type, typesInfo),
 			))
-			log.Printf("DEBUG - data type error: %s",
+			log.Printf("DEBUG - data type error: %s", // TODO: remove debug log
 				fset.Position(field.Type.Pos()).String()+
 					" "+err.Error()+"; Go data type: "+
 					typeInfo(field.Type, typesInfo))
@@ -217,15 +271,14 @@ func addDatasToMap(m map[string]string, datas []dataTyp) map[string]string {
 	return m
 }
 
-func dataTypToData(d dataTyp) string {
-	switch d.typ { // don't report 'boring' data types
+func isBoring(typ string) bool {
+	switch typ { // simple builtin types are 'boring'
 	case "bool", "byte", "complex64", "complex128", "float32", "float64",
-		"int", "int8", "int16", "int32", "int64",
-		"rune", "string", "uint", "uint8", "uint16", "uint32", "uint64",
-		"uintptr":
-		return d.name
+		"int", "int8", "int16", "int32", "int64", "rune", "string",
+		"uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "":
+		return true
 	default:
-		return d.typ
+		return false
 	}
 }
 
