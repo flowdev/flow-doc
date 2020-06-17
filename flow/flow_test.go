@@ -1,11 +1,10 @@
-package flow_test
+package flow
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/flowdev/ea-flow-doc/find"
-	"github.com/flowdev/ea-flow-doc/flow"
 	"github.com/flowdev/ea-flow-doc/parse"
 )
 
@@ -18,7 +17,7 @@ func TestParse(t *testing.T) {
 
 	pkgFuncs := find.FlowFuncs(pkgs)
 
-	flow.Parse(pkgFuncs)
+	flow.parse(pkgFuncs)
 }
 
 func mustAbs(path string) string {
