@@ -58,6 +58,7 @@ func parseFuncStmt(
 		}
 	case *ast.ReturnStmt:
 		// TODO: check Results: is error given? What out port is used?
+		errs = parseReturn(s, fset, typesInfo, flowDat, branch, errs)
 	case *ast.IfStmt:
 		// TODO: for error handling
 	case *ast.ForStmt,
@@ -248,12 +249,12 @@ func getFunctionArguments(args []ast.Expr, fset *token.FileSet, errs []error,
 
 	strArgs := make([]string, len(args))
 	for i, arg := range args {
-		strArgs[i], errs = parseIdent(arg, fset, "function argument in call expression", errs)
+		strArgs[i], errs = parseIdent(arg, true, fset, "function argument in call expression", errs)
 	}
 	return strArgs, errs
 }
 
-func parseIdent(expr ast.Expr, fset *token.FileSet, errMsg string, errs []error,
+func parseIdent(expr ast.Expr, nilOK bool, fset *token.FileSet, errMsg string, errs []error,
 ) (string, []error) {
 
 	if reflect.IsNilInterfaceOrPointer(expr) {
@@ -269,6 +270,7 @@ func parseIdent(expr ast.Expr, fset *token.FileSet, errMsg string, errs []error,
 	case *ast.Ident:
 		return e.Name, errs
 	default:
+		// TODO: handle nil case
 		errs = append(errs, errors.New(
 			fset.Position(expr.Pos()).String()+
 				fmt.Sprintf("can't find %s in flow, got: %T", errMsg, e),
@@ -281,7 +283,8 @@ func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *branch, errs 
 ) []error {
 	for _, expr := range exprs {
 		id := ""
-		id, errs = parseIdent(expr, fset, "identifier in assignment", errs)
+		// TODO: handle underscore: '_'
+		id, errs = parseIdent(expr, false, fset, "identifier in assignment", errs)
 		if id != "" {
 			branch.dataMap = addDataToMap(id, "", branch.dataMap)
 		}
@@ -336,4 +339,89 @@ func parseSimpleExpression(
 	}
 
 	return errs
+}
+
+func parseReturn(
+	ret *ast.ReturnStmt,
+	fset *token.FileSet, typesInfo *types.Info,
+	flowDat *flowData, branch *branch,
+	errs []error,
+) []error {
+	ops := flowDat.outPorts
+	opsN := len(ops)
+
+	if opsN == 0 { // no output at all
+		branch.steps = append(branch.steps, &returnStep{})
+	} else if opsN == 1 && ops[0].isImplicit { // only 'out'
+		errs = parseImplicitOutPort(
+			ret.Results,
+			ops[0], flowDat.mainBranch.dataMap,
+			fset, branch,
+			errs,
+		)
+	} else if opsN == 2 && ops[0].isImplicit && ops[1].isError { // 'out' && 'error'
+		name := ""
+		if len(ret.Results) == 0 {
+			errs = append(errs, errors.New(fset.Position(ret.Return).String()+
+				fmt.Sprintf(" missing value in return statement in flow"),
+			))
+		}
+		// check error first:
+		name, errs = parseIdent(ret.Results[len(ret.Results)-1], true, fset, "name in return statement", errs)
+		if name != "" {
+			branch.steps = append(branch.steps,
+				&returnStep{
+					datas:   []string{dataForName(name, branch.dataMap, flowDat.mainBranch.dataMap)},
+					outPort: ops[1],
+				})
+			return errs
+		}
+
+		errs = parseImplicitOutPort(
+			ret.Results[:len(ret.Results)-1],
+			ops[0], flowDat.mainBranch.dataMap,
+			fset, branch,
+			errs,
+		)
+	} else if ops[opsN-1].isError { // explicit ports (including error)
+	} else { // explicit ports (excluding error)
+	}
+	// TODO: check Results: is error given? What out port is used?
+	return errs
+}
+
+func parseImplicitOutPort(
+	results []ast.Expr,
+	op port, globalData map[string]string,
+	fset *token.FileSet,
+	branch *branch,
+	errs []error,
+) []error {
+
+	name := ""
+	rs := &returnStep{datas: make([]string, 0, len(results)), outPort: op}
+	for _, result := range results {
+		name, errs = parseIdent(result, true, fset, "name in return statement", errs)
+		if name != "" {
+			rs.datas = append(rs.datas, dataForName(name, branch.dataMap, globalData))
+		}
+	}
+	branch.steps = append(branch.steps, rs)
+	return errs
+}
+
+func dataForName(name string, localData, globalData map[string]string) string {
+	if d, ok := localData[name]; ok {
+		if d == "" {
+			return name
+		}
+		return d
+	}
+	if d, ok := globalData[name]; ok {
+		if d == "" {
+			return name
+		}
+		return d
+	}
+	return name
 }
