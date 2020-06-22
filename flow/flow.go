@@ -46,6 +46,7 @@ type step interface {
 type branch struct {
 	dataMap map[string]string
 	steps   []step
+	parent  *branch
 }
 
 // a flow has got a mainBranch an possibly many sub-branches.
@@ -60,11 +61,15 @@ type flowData struct {
 	mainBranch    *branch
 }
 
-func newBranch() *branch {
-	return &branch{dataMap: make(map[string]string, 64), steps: make([]step, 0, 64)}
+func newBranch(parent *branch) *branch {
+	return &branch{
+		dataMap: make(map[string]string, 64),
+		steps:   make([]step, 0, 64),
+		parent:  parent,
+	}
 }
 func newFlowData() *flowData {
-	return &flowData{mainBranch: newBranch()}
+	return &flowData{mainBranch: newBranch(nil)}
 }
 
 func parse(allFlowFuncs []find.PackageFuncs) ([]*flowData, []error) {
@@ -93,7 +98,7 @@ func parseFlow(
 	flowDat := newFlowData()
 
 	errs = parseFuncDecl(flowFunc, fset, typesInfo, flowDat, errs)
-	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, flowDat, errs)
+	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, flowDat, flowDat.mainBranch, errs)
 
 	return flowDat, errs
 }
