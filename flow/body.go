@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/flowdev/ea-flow-doc/data"
+	"github.com/flowdev/ea-flow-doc/flow/base"
 	"github.com/flowdev/ea-flow-doc/x/reflect"
 )
 
@@ -26,7 +27,7 @@ const (
 func parseFuncBody(
 	body *ast.BlockStmt,
 	fset *token.FileSet, typesInfo *types.Info,
-	flowDat *flowData, branch *branch,
+	flowDat *base.FlowData, branch *base.Branch,
 	errs []error,
 ) []error {
 
@@ -39,9 +40,9 @@ func parseFuncBody(
 func parseFuncStmt(
 	stmt ast.Stmt,
 	fset *token.FileSet, typesInfo *types.Info,
-	flowDat *flowData, branch *branch,
+	flowDat *base.FlowData, branch *base.Branch,
 	errs []error,
-) (*branch, []error) {
+) (*base.Branch, []error) {
 
 	if reflect.IsNilInterfaceOrPointer(stmt) {
 		return branch, errs
@@ -51,26 +52,26 @@ func parseFuncStmt(
 	case *ast.DeclStmt:
 		errs = parseDecl(s.Decl, fset, typesInfo, branch, errs)
 	case *ast.ExprStmt:
-		var call *callStep
+		var call *base.CallStep
 		call, errs = parseCall(s.X, false, fset, errs)
 		if call != nil {
-			branch.steps = append(branch.steps, call)
+			branch.Steps = append(branch.Steps, call)
 		}
 	case *ast.AssignStmt:
 		errs = parseAssignLhs(s.Lhs, fset, branch, errs)
 		if len(s.Rhs) == 1 {
-			var call *callStep
+			var call *base.CallStep
 			call, errs = parseCall(s.Rhs[0], true, fset, errs)
 			if call != nil {
-				branch.steps = append(branch.steps, call)
+				branch.Steps = append(branch.Steps, call)
 			}
 		} else {
 			errs = parseAssignRhs(s.Rhs, fset, errs)
 		}
 	case *ast.ReturnStmt:
 		errs = parseReturn(s, fset, flowDat, branch, errs)
-		if branch.parent != nil {
-			branch = branch.parent
+		if branch.Parent != nil {
+			branch = branch.Parent
 		}
 	case *ast.IfStmt:
 		branch, errs = parseIf(s, fset, typesInfo, flowDat, branch, errs)
@@ -106,7 +107,7 @@ func parseFuncStmt(
 	return branch, errs
 }
 
-func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch *branch, errs []error,
+func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
 ) []error {
 
 	if reflect.IsNilInterfaceOrPointer(decl) {
@@ -132,7 +133,7 @@ func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch
 	return errs
 }
 
-func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info, branch *branch, errs []error,
+func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
 ) []error {
 
 	if reflect.IsNilInterfaceOrPointer(decl) {
@@ -160,7 +161,7 @@ func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info,
 				}
 			}
 			for _, n := range s.Names {
-				branch.dataMap[n.Name] = typ
+				branch.DataMap[n.Name] = typ
 			}
 		}
 		//default: import specs are ignored
@@ -173,7 +174,7 @@ func parseCall(
 	expr ast.Expr, allowLiteral bool,
 	fset *token.FileSet,
 	errs []error,
-) (*callStep, []error) {
+) (*base.CallStep, []error) {
 
 	if reflect.IsNilInterfaceOrPointer(expr) {
 		pos := "<unknown position>"
@@ -186,18 +187,18 @@ func parseCall(
 		return nil, errs
 	}
 
-	var call *callStep
+	var call *base.CallStep
 
 	switch e := expr.(type) {
 	case *ast.CallExpr:
-		call = &callStep{}
+		call = &base.CallStep{}
 		// check function name:
 		var funcNameID *ast.Ident
 		funcNameID, errs = getFunctionNameID(e.Fun, fset, errs)
 		if funcNameID != nil {
-			call.componentName, call.inPort, errs = parseFlowFuncName(funcNameID, fset, errs)
+			call.ComponentName, call.InPort, errs = parseFlowFuncName(funcNameID, fset, errs)
 		}
-		call.inputs, errs = getFunctionArguments(e.Args, fset, errs)
+		call.Inputs, errs = getFunctionArguments(e.Args, fset, errs)
 	case *ast.BasicLit:
 		if !allowLiteral {
 			errs = append(errs, errors.New(
@@ -300,13 +301,13 @@ func parseIdent(expr ast.Expr, idTyp identType, fset *token.FileSet, errMsg stri
 	}
 }
 
-func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *branch, errs []error,
+func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *base.Branch, errs []error,
 ) []error {
 	for _, expr := range exprs {
 		id := ""
 		id, errs = parseIdent(expr, identTypeOrUnderscore, fset, "identifier in assignment", errs)
 		if id != identNameError {
-			branch.dataMap = addDataToMap(id, "", branch.dataMap)
+			branch.DataMap = addDataToMap(id, "", branch.DataMap)
 		}
 	}
 	return errs
@@ -364,23 +365,23 @@ func parseSimpleExpression(
 func parseReturn(
 	ret *ast.ReturnStmt,
 	fset *token.FileSet,
-	flowDat *flowData, branch *branch,
+	flowDat *base.FlowData, branch *base.Branch,
 	errs []error,
 ) []error {
-	ops := flowDat.outPorts
+	ops := flowDat.OutPorts
 	opsN := len(ops)
 	resM := len(ret.Results) - 1
 
 	if opsN == 0 { // no output at all
 		// nothing to do
-	} else if opsN == 1 && ops[0].isImplicit { // only 'out'
+	} else if opsN == 1 && ops[0].IsImplicit { // only 'out'
 		errs = parseImplicitOutPort(
 			ret.Results,
-			ops[0], flowDat.mainBranch.dataMap,
+			ops[0], flowDat.MainBranch.DataMap,
 			fset, branch,
 			errs,
 		)
-	} else if opsN == 2 && ops[0].isImplicit && ops[1].isError { // 'out' && 'error'
+	} else if opsN == 2 && ops[0].IsImplicit && ops[1].IsError { // 'out' && 'error'
 		if len(ret.Results) == 0 {
 			errs = append(errs, errors.New(fset.Position(ret.Return).String()+
 				fmt.Sprintf(" missing value in return statement in flow"),
@@ -391,7 +392,7 @@ func parseReturn(
 		done := false
 		done, errs = parseExplicitPort(
 			ret.Results[resM], false,
-			ops[1], flowDat.mainBranch.dataMap,
+			ops[1], flowDat.MainBranch.DataMap,
 			fset, branch,
 			errs,
 		)
@@ -401,7 +402,7 @@ func parseReturn(
 
 		errs = parseImplicitOutPort(
 			ret.Results[:resM],
-			ops[0], flowDat.mainBranch.dataMap,
+			ops[0], flowDat.MainBranch.DataMap,
 			fset, branch,
 			errs,
 		)
@@ -423,7 +424,7 @@ func parseReturn(
 		for i := 0; i <= resM; i++ {
 			found, errs = parseExplicitPort(
 				ret.Results[i], found,
-				ops[i], flowDat.mainBranch.dataMap,
+				ops[i], flowDat.MainBranch.DataMap,
 				fset, branch,
 				errs,
 			)
@@ -441,9 +442,9 @@ func parseReturn(
 
 func parseExplicitPort(
 	result ast.Expr, found bool,
-	op port, globalData map[string]string,
+	op base.Port, globalData map[string]string,
 	fset *token.FileSet,
-	branch *branch,
+	branch *base.Branch,
 	errs []error,
 ) (done bool, errs2 []error) {
 	name := ""
@@ -453,15 +454,15 @@ func parseExplicitPort(
 			errs = append(errs, errors.New(fset.Position(result.Pos()).String()+
 				fmt.Sprintf(
 					" found value %q for port %q even though another port has been sent to already",
-					name, op.name,
+					name, op.Name,
 				),
 			))
 			return true, errs
 		}
-		branch.steps = append(branch.steps,
-			&returnStep{
-				datas:   []string{dataForName(name, branch.dataMap, globalData)},
-				outPort: op,
+		branch.Steps = append(branch.Steps,
+			&base.ReturnStep{
+				Datas:   []string{dataForName(name, branch.DataMap, globalData)},
+				OutPort: op,
 			})
 		return true, errs
 	}
@@ -470,39 +471,40 @@ func parseExplicitPort(
 
 func parseImplicitOutPort(
 	results []ast.Expr,
-	op port, globalData map[string]string,
+	op base.Port, globalData map[string]string,
 	fset *token.FileSet,
-	branch *branch,
+	branch *base.Branch,
 	errs []error,
 ) []error {
 
 	name := ""
-	rs := &returnStep{datas: make([]string, 0, len(results)), outPort: op}
+	rs := &base.ReturnStep{Datas: make([]string, 0, len(results)), OutPort: op}
 	for _, result := range results {
 		name, errs = parseIdent(result, identTypeOrNil, fset, "name in return statement", errs)
 		if name != identNameError {
-			rs.datas = append(rs.datas, dataForName(name, branch.dataMap, globalData))
+			rs.Datas = append(rs.Datas, dataForName(name, branch.DataMap, globalData))
 		}
 	}
-	branch.steps = append(branch.steps, rs)
+	branch.Steps = append(branch.Steps, rs)
 	return errs
 }
 
 func parseIf(
 	ifs *ast.IfStmt,
 	fset *token.FileSet, typesInfo *types.Info,
-	flowDat *flowData, branch *branch,
+	flowDat *base.FlowData, branch *base.Branch,
 	errs []error,
-) (*branch, []error) {
+) (*base.Branch, []error) {
 	if ifs.Else != nil {
 		errs = append(errs, errors.New(fset.Position(ifs.Else.Pos()).String()+
 			" else branch of 'if' statement isn't allowed in flows"),
 		)
 	}
 	errs = parseIfCond(ifs.Cond, fset, errs)
-	branch = newBranch(branch)
-	errs = parseFuncBody(ifs.Body, fset, typesInfo, flowDat, branch, errs)
-	return branch, errs
+	b := base.NewBranch(branch)
+	branch.Steps = append(branch.Steps, b)
+	errs = parseFuncBody(ifs.Body, fset, typesInfo, flowDat, b, errs)
+	return b, errs
 }
 
 func parseIfCond(

@@ -8,24 +8,26 @@ import (
 	"log"
 	"strings"
 	"unicode"
+
+	"github.com/flowdev/ea-flow-doc/flow/base"
 )
 
-func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *flowData, errs []error,
+func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *base.FlowData, errs []error,
 ) []error {
 
-	flowDat.componentName, flowDat.inPort, errs = parseFlowFuncName(decl.Name, fset, errs)
-	log.Printf("DEBUG - componentName: %s, inPort: %v", flowDat.componentName, flowDat.inPort)
+	flowDat.ComponentName, flowDat.InPort, errs = parseFlowFuncName(decl.Name, fset, errs)
+	log.Printf("DEBUG - componentName: %s, inPort: %v", flowDat.ComponentName, flowDat.InPort)
 
-	flowDat.inputs, errs = parseInputData(decl.Type.Params, fset, typesInfo, errs)
-	for _, dat := range flowDat.inputs {
+	flowDat.Inputs, errs = parseInputData(decl.Type.Params, fset, typesInfo, errs)
+	for _, dat := range flowDat.Inputs {
 		log.Printf("DEBUG - data: %v", dat)
 	}
 
-	var results []dataTyp
-	results, flowDat.outPorts, errs = parseFlowFuncResults(decl.Type.Results, fset, typesInfo, errs)
-	flowDat.mainBranch.dataMap = addDatasToMap(flowDat.mainBranch.dataMap, flowDat.inputs)
-	flowDat.mainBranch.dataMap = addDatasToMap(flowDat.mainBranch.dataMap, results)
-	for _, port := range flowDat.outPorts {
+	var results []base.DataTyp
+	results, flowDat.OutPorts, errs = parseFlowFuncResults(decl.Type.Results, fset, typesInfo, errs)
+	flowDat.MainBranch.DataMap = addDatasToMap(flowDat.MainBranch.DataMap, flowDat.Inputs)
+	flowDat.MainBranch.DataMap = addDatasToMap(flowDat.MainBranch.DataMap, results)
+	for _, port := range flowDat.OutPorts {
 		log.Printf("DEBUG - outPort: %v", port)
 	}
 
@@ -33,12 +35,12 @@ func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 }
 
 func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
-) (componentName string, inPort port, errs2 []error) {
+) (componentName string, inPort base.Port, errs2 []error) {
 
 	funcName := funcNameID.Name
 	componentName = funcName
-	inPort.name = "in"
-	inPort.isImplicit = true
+	inPort.Name = "in"
+	inPort.IsImplicit = true
 
 	if !strings.Contains(funcName, "_") {
 		return componentName, inPort, errs
@@ -68,15 +70,15 @@ func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 				funcName,
 		))
 	}
-	inPort.name = parts[1]
-	inPort.pos = funcNameID.Pos()
-	inPort.isImplicit = false
+	inPort.Name = parts[1]
+	inPort.Pos = funcNameID.Pos()
+	inPort.IsImplicit = false
 
-	if !unicode.IsLower([]rune(inPort.name)[0]) {
+	if !unicode.IsLower([]rune(inPort.Name)[0]) {
 		errs = append(errs, errors.New(
 			fset.Position(funcNameID.Pos()).String()+
 				" port names in flow function names must start with a lower case letter, got '"+
-				inPort.name+
+				inPort.Name+
 				"' in: "+
 				funcName,
 		))
@@ -85,13 +87,13 @@ func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 }
 
 func parseInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
-) ([]dataTyp, []error) {
+) ([]base.DataTyp, []error) {
 
 	if params == nil || len(params.List) == 0 {
 		return nil, errs
 	}
 
-	var inputs []dataTyp
+	var inputs []base.DataTyp
 
 	inputs, errs = flowDataTypes(params, fset, typesInfo, errs)
 
@@ -101,9 +103,9 @@ func parseInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types
 			firstPlugin = i
 		} else if firstPlugin >= 0 && !isPlugin(input) {
 			errs = append(errs, errors.New(
-				fset.Position(input.namePos).String()+
+				fset.Position(input.NamePos).String()+
 					" flow plugins must all be at the end of the parameter list, found '"+
-					input.name+"' after plugin '"+inputs[firstPlugin].name+"'",
+					input.Name+"' after plugin '"+inputs[firstPlugin].Name+"'",
 			))
 		}
 	}
@@ -112,26 +114,26 @@ func parseInputData(params *ast.FieldList, fset *token.FileSet, typesInfo *types
 }
 
 func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
-) ([]dataTyp, []port, []error) {
+) ([]base.DataTyp, []base.Port, []error) {
 
 	if funcResults == nil || len(funcResults.List) == 0 {
 		return nil, nil, errs
 	}
 
 	portNames := 0
-	defaultPort := port{name: "out", isImplicit: true}
+	defaultPort := base.Port{Name: "out", IsImplicit: true}
 	lastIsError := false
-	ports := []port{}
+	ports := []base.Port{}
 
 	datas, _ := flowDataTypes(funcResults, fset, typesInfo, []error{})
 	n := len(datas)
 
-	if datas[n-1].typ == "error" {
+	if datas[n-1].Typ == "error" {
 		lastIsError = true
 	}
 
 	for _, dat := range datas {
-		if strings.HasPrefix(dat.name, portPrefix) && len(dat.name) > len(portPrefix) {
+		if strings.HasPrefix(dat.Name, base.PortPrefix) && len(dat.Name) > len(base.PortPrefix) {
 			portNames++
 		}
 	}
@@ -146,7 +148,7 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 			if i == n-1 && lastIsError {
 				break
 			}
-			ports = append(ports, port{name: portName(dat.name), pos: dat.namePos})
+			ports = append(ports, base.Port{Name: portName(dat.Name), Pos: dat.NamePos})
 		}
 	} else if n > 1 || (n == 1 && !lastIsError) {
 		ports = append(ports, defaultPort)
@@ -162,14 +164,14 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 	}
 
 	if lastIsError {
-		ports = append(ports, port{name: "error", isError: true})
+		ports = append(ports, base.Port{Name: "error", IsError: true})
 	}
 
 	return datas, ports, errs
 }
 
-func isPlugin(input dataTyp) bool {
+func isPlugin(input base.DataTyp) bool {
 	const prefixPlugin = "plugin"
-	return strings.HasPrefix(input.name, prefixPlugin) &&
-		(len(input.name) > len(prefixPlugin))
+	return strings.HasPrefix(input.Name, prefixPlugin) &&
+		(len(input.Name) > len(prefixPlugin))
 }
