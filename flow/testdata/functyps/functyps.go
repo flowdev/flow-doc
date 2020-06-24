@@ -2,8 +2,6 @@ package functyps
 
 import (
 	"fmt"
-
-	"github.com/flowdev/ea-flow-doc/flow/testdata/functyps/tool"
 )
 
 // BankAccount represents a bank account.
@@ -22,9 +20,11 @@ type SpecialBankAccount struct {
 
 //flowdev:flow
 func simpleFunc() {
-	fmt.Println("vim-go")
+	msg := "vim-go"
+	fmt.Println(msg)
 }
 
+/*
 //flowdev:flow
 func (ba *BankAccount) doAccountingMagic(newHolder string, newType string) (iban, bic string) {
 	ba.HolderName = newHolder
@@ -66,3 +66,4 @@ func funcWithoutResults(
 
 	print(s)
 }
+*/

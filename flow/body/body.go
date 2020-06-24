@@ -60,7 +60,7 @@ func parseFuncStmt(
 			branch.Steps = append(branch.Steps, call)
 		}
 	case *ast.AssignStmt:
-		errs = parseAssignLhs(s.Lhs, fset, branch, errs)
+		errs = parseAssignLHS(s.Lhs, fset, branch, errs)
 		if len(s.Rhs) == 1 {
 			var call *base.CallStep
 			call, errs = parseCall(s.Rhs[0], true, fset, errs)
@@ -68,7 +68,7 @@ func parseFuncStmt(
 				branch.Steps = append(branch.Steps, call)
 			}
 		} else {
-			errs = parseAssignRhs(s.Rhs, fset, errs)
+			errs = parseAssignRHS(s.Rhs, fset, errs)
 		}
 	case *ast.ReturnStmt:
 		errs = parseReturn(s, fset, flowDat, branch, errs)
@@ -103,7 +103,7 @@ func parseFuncStmt(
 	default:
 		errs = append(errs, errors.New(
 			fset.Position(stmt.Pos()).String()+
-				fmt.Sprintf("don't know how to handle unknown statement in flow: %T", s),
+				fmt.Sprintf(" don't know how to handle unknown statement in flow: %T", s),
 		))
 	}
 	return branch, errs
@@ -128,7 +128,7 @@ func parseDecl(dcl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch 
 	default:
 		errs = append(errs, errors.New(
 			fset.Position(dcl.Pos()).String()+
-				fmt.Sprintf("don't know how to handle unknown declaration in flow: %T", d),
+				fmt.Sprintf(" don't know how to handle unknown declaration in flow: %T", d),
 		))
 	}
 
@@ -196,23 +196,27 @@ func parseCall(
 		call = &base.CallStep{}
 		// check function name:
 		var funcNameID *ast.Ident
-		funcNameID, errs = getFunctionNameID(e.Fun, fset, errs)
+		pkg := ""
+		pkg, funcNameID, errs = getFunctionNameID(e.Fun, fset, errs)
 		if funcNameID != nil {
 			call.ComponentName, call.InPort, errs = decl.ParseFlowFuncName(funcNameID, fset, errs)
+			if pkg != "" {
+				call.ComponentName = pkg + "." + call.ComponentName
+			}
 		}
 		call.Inputs, errs = getFunctionArguments(e.Args, fset, errs)
 	case *ast.BasicLit:
 		if !allowLiteral {
 			errs = append(errs, errors.New(
 				fset.Position(expr.Pos()).String()+
-					fmt.Sprintf("don't know how to handle literal at this position in flow: %T", e),
+					fmt.Sprintf(" don't know how to handle literal at this position in flow: %T", e),
 			))
 		}
 	case *ast.Ident:
 		if !allowLiteral {
 			errs = append(errs, errors.New(
 				fset.Position(expr.Pos()).String()+
-					fmt.Sprintf("don't know how to handle identifier at this position in flow: %T", e),
+					fmt.Sprintf(" don't know how to handle identifier at this position in flow: %T", e),
 			))
 		}
 	case nil:
@@ -225,7 +229,7 @@ func parseCall(
 	default:
 		errs = append(errs, errors.New(
 			fset.Position(expr.Pos()).String()+
-				fmt.Sprintf("don't know how to handle unknown expression in flow: %T", e),
+				fmt.Sprintf(" don't know how to handle unknown expression in flow: %T", e),
 		))
 	}
 
@@ -233,7 +237,7 @@ func parseCall(
 }
 
 func getFunctionNameID(expr ast.Expr, fset *token.FileSet, errs []error,
-) (*ast.Ident, []error) {
+) (string, *ast.Ident, []error) {
 
 	if reflect.IsNilInterfaceOrPointer(expr) {
 		pos := "<unknown position>"
@@ -241,23 +245,55 @@ func getFunctionNameID(expr ast.Expr, fset *token.FileSet, errs []error,
 			pos = fset.Position(expr.Pos()).String()
 		}
 		errs = append(errs, errors.New(pos+
-			fmt.Sprintf("missing function name in call expression in flow"),
+			fmt.Sprintf(" missing function name in call expression in flow"),
 		))
-		return nil, errs
+		return "", nil, errs
 	}
 
 	switch e := expr.(type) {
 	case *ast.Ident:
-		return e, errs
+		return "", e, errs
+	case *ast.SelectorExpr:
+		pkg := ""
+		pkg, errs = getPackageName(e.X, fset, errs)
+		return pkg, e.Sel, errs
 	default:
 		errs = append(errs, errors.New(
 			fset.Position(expr.Pos()).String()+
 				fmt.Sprintf(
-					"can't find function name in call expression in flow, got: %T", e,
+					" can't find function name in call expression in flow, got: %T", e,
 				),
 		))
 	}
-	return nil, errs
+	return "", nil, errs
+}
+
+func getPackageName(expr ast.Expr, fset *token.FileSet, errs []error,
+) (string, []error) {
+
+	if reflect.IsNilInterfaceOrPointer(expr) {
+		pos := "<unknown position>"
+		if expr != nil {
+			pos = fset.Position(expr.Pos()).String()
+		}
+		errs = append(errs, errors.New(pos+
+			fmt.Sprintf(" missing package name in call expression in flow"),
+		))
+		return "", errs
+	}
+
+	switch e := expr.(type) {
+	case *ast.Ident:
+		return e.Name, errs
+	default:
+		errs = append(errs, errors.New(
+			fset.Position(expr.Pos()).String()+
+				fmt.Sprintf(
+					" can't find package name in call expression in flow, got: %T", e,
+				),
+		))
+	}
+	return "", errs
 }
 
 func getFunctionArguments(args []ast.Expr, fset *token.FileSet, errs []error,
@@ -278,7 +314,7 @@ func parseIdent(expr ast.Expr, idTyp identType, fset *token.FileSet, errMsg stri
 		if expr != nil {
 			pos = fset.Position(expr.Pos()).String()
 		}
-		errs = append(errs, errors.New(pos+fmt.Sprintf("missing %s in flow", errMsg)))
+		errs = append(errs, errors.New(pos+fmt.Sprintf(" missing %s in flow", errMsg)))
 		return identNameError, errs
 	}
 
@@ -287,7 +323,7 @@ func parseIdent(expr ast.Expr, idTyp identType, fset *token.FileSet, errMsg stri
 		if idTyp == identTypeOnlyNil {
 			errs = append(errs, errors.New(
 				fset.Position(expr.Pos()).String()+
-					fmt.Sprintf("can't find %s in flow, got: %q", errMsg, e.Name),
+					fmt.Sprintf(" can't find %s in flow, got: %q", errMsg, e.Name),
 			))
 			return identNameError, errs
 		}
@@ -297,13 +333,13 @@ func parseIdent(expr ast.Expr, idTyp identType, fset *token.FileSet, errMsg stri
 	default:
 		errs = append(errs, errors.New(
 			fset.Position(expr.Pos()).String()+
-				fmt.Sprintf("can't find %s in flow, got: %T", errMsg, e),
+				fmt.Sprintf(" can't find %s in flow, got: %T", errMsg, e),
 		))
 		return identNameError, errs
 	}
 }
 
-func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *base.Branch, errs []error,
+func parseAssignLHS(exprs []ast.Expr, fset *token.FileSet, branch *base.Branch, errs []error,
 ) []error {
 	for _, expr := range exprs {
 		id := ""
@@ -315,7 +351,7 @@ func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *base.Branch, 
 	return errs
 }
 
-func parseAssignRhs(exprs []ast.Expr, fset *token.FileSet, errs []error) []error {
+func parseAssignRHS(exprs []ast.Expr, fset *token.FileSet, errs []error) []error {
 	for _, expr := range exprs {
 		errs = parseSimpleExpression(expr, fset, errs)
 	}

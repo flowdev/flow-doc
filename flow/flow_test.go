@@ -17,7 +17,14 @@ func TestParse(t *testing.T) {
 
 	pkgFuncs := find.FlowFuncs(pkgs)
 
-	flow.parse(pkgFuncs)
+	flowDats, errs := parseAll(pkgFuncs)
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got: %v", errs)
+	}
+	t.Logf("len(flowDats): %d, flowDats:", len(flowDats))
+	for i, fd := range flowDats {
+		t.Logf("flowDats[%d]: %s", i, fd.String())
+	}
 }
 
 func mustAbs(path string) string {

@@ -12,7 +12,7 @@ import (
 	"github.com/flowdev/ea-flow-doc/flow/decl"
 )
 
-func parse(allFlowFuncs []find.PackageFuncs) ([]*base.FlowData, []error) {
+func parseAll(allFlowFuncs []find.PackageFuncs) ([]*base.FlowData, []error) {
 	var flowDatas []*base.FlowData
 	var allErrs []error
 

@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"strings"
 )
 
 // PortPrefix is the prefix of all output ports.
@@ -43,6 +44,7 @@ type ReturnStep struct {
 
 // Step is a step in a flow. It can be one of: CallStep, ReturnStep or Branch
 type Step interface {
+	IdentString(string) string
 }
 
 // Branch is a control flow branch. It can be either the main branch of a flow
@@ -76,9 +78,136 @@ func NewBranch(parent *Branch) *Branch {
 	}
 }
 
+// IdentString returns an idented, formated string representation.
+func (b *Branch) IdentString(ident string) string {
+	sb := &strings.Builder{}
+	sb.WriteString(ident)
+	sb.WriteString("&Branch{\n")
+	newIdent := ident + "    "
+	for _, step := range b.Steps {
+		switch s := step.(type) {
+		case *Branch:
+			sb.WriteString(s.IdentString(newIdent))
+			sb.WriteString("\n")
+		case *ReturnStep:
+			sb.WriteString(s.IdentString(newIdent))
+			sb.WriteString("\n")
+		case *CallStep:
+			sb.WriteString(s.IdentString(newIdent))
+			sb.WriteString("\n")
+		default:
+			sb.WriteString(s.IdentString(newIdent))
+			sb.WriteString("\n")
+		}
+	}
+	sb.WriteString(ident)
+	sb.WriteString("}")
+	return sb.String()
+}
+
 // NewFlowData creates a flow data structure with a main branch.
 func NewFlowData() *FlowData {
 	return &FlowData{MainBranch: NewBranch(nil)}
+}
+
+// String returns a string representation.
+func (fd *FlowData) String() string {
+	sb := &strings.Builder{}
+	sb.WriteString("&FlowData{\n")
+
+	sb.WriteString("    InPort: ")
+	sb.WriteString(fd.InPort.Name)
+	sb.WriteString("\n")
+
+	sb.WriteString("    Inputs: ")
+	for i, d := range fd.Inputs {
+		if i > 0 {
+			sb.WriteString("; ")
+		}
+		sb.WriteString(d.Name)
+		sb.WriteString(" ")
+		sb.WriteString(d.Typ)
+	}
+	sb.WriteString("\n")
+
+	sb.WriteString("    ComponentName: ")
+	sb.WriteString(fd.ComponentName)
+	sb.WriteString("\n")
+
+	sb.WriteString("    OutPorts: ")
+	for i, p := range fd.OutPorts {
+		if i > 0 {
+			sb.WriteString("; ")
+		}
+		sb.WriteString(p.Name)
+	}
+	sb.WriteString("\n")
+
+	sb.WriteString("    MainBranch:\n")
+	sb.WriteString(fd.MainBranch.IdentString("        "))
+	sb.WriteString("\n")
+
+	sb.WriteString("}")
+	return sb.String()
+}
+
+func (cs *CallStep) String() string {
+	return cs.IdentString("")
+}
+
+func (cs *CallStep) IdentString(ident string) string {
+	sb := &strings.Builder{}
+	sb.WriteString(ident)
+	sb.WriteString("&CallStep{\n")
+	sb.WriteString(ident)
+	sb.WriteString("    InPort: ")
+	sb.WriteString(cs.InPort.Name)
+	sb.WriteString("\n")
+
+	sb.WriteString(ident)
+	sb.WriteString("    Inputs: ")
+	for i, d := range cs.Inputs {
+		if i > 0 {
+			sb.WriteString("; ")
+		}
+		sb.WriteString(d)
+	}
+	sb.WriteString("\n")
+
+	sb.WriteString(ident)
+	sb.WriteString("    ComponentName: ")
+	sb.WriteString(cs.ComponentName)
+	sb.WriteString("\n")
+
+	sb.WriteString(ident)
+	sb.WriteString("}")
+
+	return sb.String()
+}
+
+// IdentString returns an idented, formated string representation.
+func (rs *ReturnStep) IdentString(ident string) string {
+	sb := &strings.Builder{}
+	sb.WriteString(ident)
+	sb.WriteString("&ReturnStep{\n")
+	sb.WriteString(ident)
+	sb.WriteString("    OutPort: ")
+	sb.WriteString(rs.OutPort.Name)
+	sb.WriteString("\n")
+
+	sb.WriteString(ident)
+	sb.WriteString("    Datas: ")
+	for i, d := range rs.Datas {
+		if i > 0 {
+			sb.WriteString("; ")
+		}
+		sb.WriteString(d)
+	}
+	sb.WriteString("\n")
+
+	sb.WriteString(ident)
+	sb.WriteString("}")
+	return sb.String()
 }
 
 // AddDatasToMap adds the given data types to the map.
