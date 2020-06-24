@@ -8,6 +8,7 @@ import (
 
 	"github.com/flowdev/ea-flow-doc/find"
 	"github.com/flowdev/ea-flow-doc/flow/base"
+	"github.com/flowdev/ea-flow-doc/flow/body"
 	"github.com/flowdev/ea-flow-doc/flow/decl"
 )
 
@@ -37,7 +38,7 @@ func parseFlow(
 	flowDat := base.NewFlowData()
 
 	errs = decl.ParseFuncDecl(flowFunc, fset, typesInfo, flowDat, errs)
-	errs = parseFuncBody(flowFunc.Body, fset, typesInfo, flowDat, flowDat.MainBranch, errs)
+	errs = body.ParseFuncBody(flowFunc.Body, fset, typesInfo, flowDat, flowDat.MainBranch, errs)
 
 	return flowDat, errs
 }

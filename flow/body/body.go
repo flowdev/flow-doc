@@ -1,4 +1,4 @@
-package flow
+package body
 
 import (
 	"errors"
@@ -25,7 +25,8 @@ const (
 	identTypeOnlyNil
 )
 
-func parseFuncBody(
+// ParseFuncBody parses a flow function body.
+func ParseFuncBody(
 	body *ast.BlockStmt,
 	fset *token.FileSet, typesInfo *types.Info,
 	flowDat *base.FlowData, branch *base.Branch,
@@ -504,7 +505,7 @@ func parseIf(
 	errs = parseIfCond(ifs.Cond, fset, errs)
 	b := base.NewBranch(branch)
 	branch.Steps = append(branch.Steps, b)
-	errs = parseFuncBody(ifs.Body, fset, typesInfo, flowDat, b, errs)
+	errs = ParseFuncBody(ifs.Body, fset, typesInfo, flowDat, b, errs)
 	return b, errs
 }
 
