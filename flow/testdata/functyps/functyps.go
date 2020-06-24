@@ -2,6 +2,8 @@ package functyps
 
 import (
 	"fmt"
+
+	"github.com/flowdev/ea-flow-doc/flow/testdata/functyps/tool"
 )
 
 // BankAccount represents a bank account.
@@ -24,7 +26,6 @@ func simpleFunc() {
 	fmt.Println(msg)
 }
 
-/*
 //flowdev:flow
 func (ba *BankAccount) doAccountingMagic(newHolder string, newType string) (iban, bic string) {
 	ba.HolderName = newHolder
@@ -33,6 +34,16 @@ func (ba *BankAccount) doAccountingMagic(newHolder string, newType string) (iban
 	return ba.IBAN, ba.BIC
 }
 
+//flowdev:flow
+func nilUnderscoreFlow() {
+	i, _ := tool.GiveIt()
+	var j *int
+	j = nil
+
+	fmt.Println(i, j)
+}
+
+/*
 //flowdev:flow
 func (sba *SpecialBankAccount) doSpecialAccountingMagic(newHolder string, newTitle string,
 ) (portOut1 string, portSpecialOut *SpecialBankAccount, err error) {

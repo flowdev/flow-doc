@@ -328,6 +328,10 @@ func parseIdent(expr ast.Expr, idTyp identType, fset *token.FileSet, errMsg stri
 			return identNameError, errs
 		}
 		return e.Name, errs
+	case *ast.SelectorExpr:
+		pkg := ""
+		pkg, errs = getPackageName(e.X, fset, errs)
+		return pkg + "." + e.Sel.Name, errs
 		// TODO: handle nil case
 		// TODO: handle _ case
 	default:
@@ -379,6 +383,8 @@ func parseSimpleExpression(
 	case *ast.BasicLit:
 		// all good
 	case *ast.Ident:
+		// all good
+	case *ast.SelectorExpr:
 		// all good
 	case nil:
 		// should be very rare

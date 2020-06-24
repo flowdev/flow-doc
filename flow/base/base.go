@@ -81,24 +81,12 @@ func NewBranch(parent *Branch) *Branch {
 // IdentString returns an idented, formated string representation.
 func (b *Branch) IdentString(ident string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(ident)
 	sb.WriteString("&Branch{\n")
 	newIdent := ident + "    "
 	for _, step := range b.Steps {
-		switch s := step.(type) {
-		case *Branch:
-			sb.WriteString(s.IdentString(newIdent))
-			sb.WriteString("\n")
-		case *ReturnStep:
-			sb.WriteString(s.IdentString(newIdent))
-			sb.WriteString("\n")
-		case *CallStep:
-			sb.WriteString(s.IdentString(newIdent))
-			sb.WriteString("\n")
-		default:
-			sb.WriteString(s.IdentString(newIdent))
-			sb.WriteString("\n")
-		}
+		sb.WriteString(newIdent)
+		sb.WriteString(step.IdentString(newIdent))
+		sb.WriteString("\n")
 	}
 	sb.WriteString(ident)
 	sb.WriteString("}")
@@ -143,8 +131,8 @@ func (fd *FlowData) String() string {
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString("    MainBranch:\n")
-	sb.WriteString(fd.MainBranch.IdentString("        "))
+	sb.WriteString("    MainBranch: ")
+	sb.WriteString(fd.MainBranch.IdentString("    "))
 	sb.WriteString("\n")
 
 	sb.WriteString("}")
@@ -155,9 +143,9 @@ func (cs *CallStep) String() string {
 	return cs.IdentString("")
 }
 
+// IdentString returns an idented, formated string representation.
 func (cs *CallStep) IdentString(ident string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(ident)
 	sb.WriteString("&CallStep{\n")
 	sb.WriteString(ident)
 	sb.WriteString("    InPort: ")
@@ -188,7 +176,6 @@ func (cs *CallStep) IdentString(ident string) string {
 // IdentString returns an idented, formated string representation.
 func (rs *ReturnStep) IdentString(ident string) string {
 	sb := &strings.Builder{}
-	sb.WriteString(ident)
 	sb.WriteString("&ReturnStep{\n")
 	sb.WriteString(ident)
 	sb.WriteString("    OutPort: ")

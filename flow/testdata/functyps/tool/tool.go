@@ -11,3 +11,8 @@ type Data struct {
 func DoIt() {
 	fmt.Println("Hello world!")
 }
+
+// GiveIt returns a number.
+func GiveIt() (int, string) {
+	return 7, "foo"
+}
