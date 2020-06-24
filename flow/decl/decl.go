@@ -1,4 +1,4 @@
-package flow
+package decl
 
 import (
 	"errors"
@@ -9,13 +9,15 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/flowdev/ea-flow-doc/data"
 	"github.com/flowdev/ea-flow-doc/flow/base"
 )
 
-func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *base.FlowData, errs []error,
+// ParseFuncDecl parses a flow function (or method) declaration.
+func ParseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Info, flowDat *base.FlowData, errs []error,
 ) []error {
 
-	flowDat.ComponentName, flowDat.InPort, errs = parseFlowFuncName(decl.Name, fset, errs)
+	flowDat.ComponentName, flowDat.InPort, errs = ParseFlowFuncName(decl.Name, fset, errs)
 	log.Printf("DEBUG - componentName: %s, inPort: %v", flowDat.ComponentName, flowDat.InPort)
 
 	flowDat.Inputs, errs = parseInputData(decl.Type.Params, fset, typesInfo, errs)
@@ -25,8 +27,8 @@ func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 
 	var results []base.DataTyp
 	results, flowDat.OutPorts, errs = parseFlowFuncResults(decl.Type.Results, fset, typesInfo, errs)
-	flowDat.MainBranch.DataMap = addDatasToMap(flowDat.MainBranch.DataMap, flowDat.Inputs)
-	flowDat.MainBranch.DataMap = addDatasToMap(flowDat.MainBranch.DataMap, results)
+	flowDat.MainBranch.DataMap = base.AddDatasToMap(flowDat.MainBranch.DataMap, flowDat.Inputs)
+	flowDat.MainBranch.DataMap = base.AddDatasToMap(flowDat.MainBranch.DataMap, results)
 	for _, port := range flowDat.OutPorts {
 		log.Printf("DEBUG - outPort: %v", port)
 	}
@@ -34,7 +36,8 @@ func parseFuncDecl(decl *ast.FuncDecl, fset *token.FileSet, typesInfo *types.Inf
 	return errs
 }
 
-func parseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
+// ParseFlowFuncName parses a flow function name.
+func ParseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 ) (componentName string, inPort base.Port, errs2 []error) {
 
 	funcName := funcNameID.Name
@@ -170,8 +173,46 @@ func parseFlowFuncResults(funcResults *ast.FieldList, fset *token.FileSet, types
 	return datas, ports, errs
 }
 
+func flowDataTypes(fl *ast.FieldList, fset *token.FileSet, typesInfo *types.Info, errs []error,
+) ([]base.DataTyp, []error) {
+
+	datas := make([]base.DataTyp, 0, 32)
+	for _, field := range fl.List {
+		flowDataType, err := data.Type(field.Type)
+		if err != nil {
+			errs = append(errs, errors.New(
+				fset.Position(field.Type.Pos()).String()+
+					" "+err.Error()+"; Go data type: "+
+					base.TypeInfo(field.Type, typesInfo),
+			))
+			log.Printf("DEBUG - data type error: %s", // TODO: remove debug log
+				fset.Position(field.Type.Pos()).String()+
+					" "+err.Error()+"; Go data type: "+
+					base.TypeInfo(field.Type, typesInfo))
+		}
+		for _, id := range field.Names {
+			datas = append(datas, base.DataTyp{
+				Name: id.Name, NamePos: id.NamePos,
+				Typ: flowDataType, TypPos: field.Type.Pos(),
+			})
+		}
+		if len(field.Names) == 0 {
+			datas = append(datas, base.DataTyp{Typ: flowDataType})
+		}
+	}
+
+	return datas, errs
+}
+
 func isPlugin(input base.DataTyp) bool {
 	const prefixPlugin = "plugin"
 	return strings.HasPrefix(input.Name, prefixPlugin) &&
 		(len(input.Name) > len(prefixPlugin))
+}
+
+func portName(longName string) string {
+	name := longName[len(base.PortPrefix):]
+	runes := []rune(name)
+	runes[0] = unicode.ToLower(runes[0])
+	return string(runes)
 }

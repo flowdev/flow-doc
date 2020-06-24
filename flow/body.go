@@ -10,6 +10,7 @@ import (
 
 	"github.com/flowdev/ea-flow-doc/data"
 	"github.com/flowdev/ea-flow-doc/flow/base"
+	"github.com/flowdev/ea-flow-doc/flow/decl"
 	"github.com/flowdev/ea-flow-doc/x/reflect"
 )
 
@@ -107,17 +108,17 @@ func parseFuncStmt(
 	return branch, errs
 }
 
-func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
+func parseDecl(dcl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
 ) []error {
 
-	if reflect.IsNilInterfaceOrPointer(decl) {
+	if reflect.IsNilInterfaceOrPointer(dcl) {
 		return errs
 	}
 
-	switch d := decl.(type) {
+	switch d := dcl.(type) {
 	case *ast.FuncDecl:
 		errs = append(errs, errors.New(
-			fset.Position(decl.Pos()).String()+
+			fset.Position(dcl.Pos()).String()+
 				" function declarations aren't supported in flows, allowed are: "+
 				"variable declaration, assignment, function calls, return and 'if <port>!=nil'",
 		))
@@ -125,7 +126,7 @@ func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch
 		errs = parseGenDecl(d, fset, typesInfo, branch, errs)
 	default:
 		errs = append(errs, errors.New(
-			fset.Position(decl.Pos()).String()+
+			fset.Position(dcl.Pos()).String()+
 				fmt.Sprintf("don't know how to handle unknown declaration in flow: %T", d),
 		))
 	}
@@ -133,14 +134,14 @@ func parseDecl(decl ast.Decl, fset *token.FileSet, typesInfo *types.Info, branch
 	return errs
 }
 
-func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
+func parseGenDecl(dcl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info, branch *base.Branch, errs []error,
 ) []error {
 
-	if reflect.IsNilInterfaceOrPointer(decl) {
+	if reflect.IsNilInterfaceOrPointer(dcl) {
 		return errs
 	}
 
-	for _, spec := range decl.Specs {
+	for _, spec := range dcl.Specs {
 		switch s := spec.(type) {
 		case *ast.TypeSpec:
 			errs = append(errs, errors.New(
@@ -156,7 +157,7 @@ func parseGenDecl(decl *ast.GenDecl, fset *token.FileSet, typesInfo *types.Info,
 					errs = append(errs, errors.New(
 						fset.Position(s.Type.Pos()).String()+
 							" "+err.Error()+"; Go data type: "+
-							typeInfo(s.Type, typesInfo),
+							base.TypeInfo(s.Type, typesInfo),
 					))
 				}
 			}
@@ -196,7 +197,7 @@ func parseCall(
 		var funcNameID *ast.Ident
 		funcNameID, errs = getFunctionNameID(e.Fun, fset, errs)
 		if funcNameID != nil {
-			call.ComponentName, call.InPort, errs = parseFlowFuncName(funcNameID, fset, errs)
+			call.ComponentName, call.InPort, errs = decl.ParseFlowFuncName(funcNameID, fset, errs)
 		}
 		call.Inputs, errs = getFunctionArguments(e.Args, fset, errs)
 	case *ast.BasicLit:
@@ -307,7 +308,7 @@ func parseAssignLhs(exprs []ast.Expr, fset *token.FileSet, branch *base.Branch, 
 		id := ""
 		id, errs = parseIdent(expr, identTypeOrUnderscore, fset, "identifier in assignment", errs)
 		if id != identNameError {
-			branch.DataMap = addDataToMap(id, "", branch.DataMap)
+			branch.DataMap = base.AddDataToMap(id, "", branch.DataMap)
 		}
 	}
 	return errs

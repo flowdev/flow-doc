@@ -1,9 +1,12 @@
 package base
 
 import (
+	"go/ast"
 	"go/token"
+	"go/types"
 )
 
+// PortPrefix is the prefix of all output ports.
 const PortPrefix = "port"
 
 // Port is a full description of a flow port.
@@ -76,4 +79,45 @@ func NewBranch(parent *Branch) *Branch {
 // NewFlowData creates a flow data structure with a main branch.
 func NewFlowData() *FlowData {
 	return &FlowData{MainBranch: NewBranch(nil)}
+}
+
+// AddDatasToMap adds the given data types to the map.
+// If a name is already registered in map, the longer type is kept.
+func AddDatasToMap(m map[string]string, datas []DataTyp) map[string]string {
+	for _, dat := range datas {
+		if dat.Name != "" {
+			m = AddDataToMap(dat.Name, dat.Typ, m)
+		}
+	}
+	return m
+}
+
+// AddDataToMap adds the given name and type to the map.
+// If name is already registered in map, the longer type is stored.
+func AddDataToMap(name, typ string, m map[string]string) map[string]string {
+	t, ok := m[name]
+	if !ok || len(typ) > len(t) {
+		m[name] = typ
+	}
+	return m
+}
+
+// IsBoring returns true for builtin types.
+func IsBoring(typ string) bool {
+	switch typ { // simple builtin types are 'boring'
+	case "bool", "byte", "complex64", "complex128", "float32", "float64",
+		"int", "int8", "int16", "int32", "int64", "rune", "string",
+		"uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "":
+		return true
+	default:
+		return false
+	}
+}
+
+// TypeInfo returns the Go type definition for the given type expression.
+func TypeInfo(typ ast.Expr, typesInfo *types.Info) string {
+	if typesInfo.Types[typ].Type == nil {
+		return "<types.Info not filled properly>"
+	}
+	return typesInfo.Types[typ].Type.String()
 }
