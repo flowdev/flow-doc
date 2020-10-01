@@ -78,17 +78,17 @@ func NewBranch(parent *Branch) *Branch {
 	}
 }
 
-// IdentString returns an idented, formated string representation.
-func (b *Branch) IdentString(ident string) string {
+// IdentString returns an indented, formated string representation.
+func (b *Branch) IdentString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&Branch{\n")
-	newIdent := ident + "    "
+	newIdent := indent + "    "
 	for _, step := range b.Steps {
 		sb.WriteString(newIdent)
 		sb.WriteString(step.IdentString(newIdent))
 		sb.WriteString("\n")
 	}
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("}")
 	return sb.String()
 }
@@ -143,16 +143,16 @@ func (cs *CallStep) String() string {
 	return cs.IdentString("")
 }
 
-// IdentString returns an idented, formated string representation.
-func (cs *CallStep) IdentString(ident string) string {
+// IdentString returns an indented, formated string representation.
+func (cs *CallStep) IdentString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&CallStep{\n")
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("    InPort: ")
 	sb.WriteString(cs.InPort.Name)
 	sb.WriteString("\n")
 
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("    Inputs: ")
 	for i, d := range cs.Inputs {
 		if i > 0 {
@@ -162,27 +162,27 @@ func (cs *CallStep) IdentString(ident string) string {
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("    ComponentName: ")
 	sb.WriteString(cs.ComponentName)
 	sb.WriteString("\n")
 
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("}")
 
 	return sb.String()
 }
 
-// IdentString returns an idented, formated string representation.
-func (rs *ReturnStep) IdentString(ident string) string {
+// IdentString returns an indented, formated string representation.
+func (rs *ReturnStep) IdentString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&ReturnStep{\n")
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("    OutPort: ")
 	sb.WriteString(rs.OutPort.Name)
 	sb.WriteString("\n")
 
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("    Datas: ")
 	for i, d := range rs.Datas {
 		if i > 0 {
@@ -192,7 +192,7 @@ func (rs *ReturnStep) IdentString(ident string) string {
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString(ident)
+	sb.WriteString(indent)
 	sb.WriteString("}")
 	return sb.String()
 }

@@ -11,7 +11,7 @@ import (
 
 // Value returns the string representation of the flow literal value
 // corresponding to `expr`.
-// The result is one of the standard types:
+// The result is a basic Go literal or one of the standard types:
 // "bool", "byte", "complex64", "complex128", "float32", "float64",
 // "int", "int8", "int16", "int32", "int64",
 // "rune", "string", "uint", "uint8", "uint16", "uint32", "uint64",

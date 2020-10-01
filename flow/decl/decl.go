@@ -60,7 +60,7 @@ func ParseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 	if parts[0] == "" {
 		errs = append(errs, errors.New(
 			fset.Position(funcNameID.Pos()).String()+
-				" flow function names must contain a valid component name, got '' in: "+
+				" flow function names must contain a component name before the underscore ('_'), found none in: "+
 				funcName,
 		))
 	}
@@ -69,7 +69,7 @@ func ParseFlowFuncName(funcNameID *ast.Ident, fset *token.FileSet, errs []error,
 	if parts[1] == "" {
 		errs = append(errs, errors.New(
 			fset.Position(funcNameID.Pos()).String()+
-				" flow function names with '_' must contain a valid port name, got '' in: "+
+				" flow function names with '_' must contain a valid port name after the underscore ('_'), got none in: "+
 				funcName,
 		))
 	}
