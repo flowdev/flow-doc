@@ -44,7 +44,7 @@ type ReturnStep struct {
 
 // Step is a step in a flow. It can be one of: CallStep, ReturnStep or Branch
 type Step interface {
-	IdentString(string) string
+	indentedString(string) string
 }
 
 // Branch is a control flow branch. It can be either the main branch of a flow
@@ -78,14 +78,14 @@ func NewBranch(parent *Branch) *Branch {
 	}
 }
 
-// IdentString returns an indented, formated string representation.
-func (b *Branch) IdentString(indent string) string {
+// indentedString returns an indented, formated string representation.
+func (b *Branch) indentedString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&Branch{\n")
 	newIdent := indent + "    "
 	for _, step := range b.Steps {
 		sb.WriteString(newIdent)
-		sb.WriteString(step.IdentString(newIdent))
+		sb.WriteString(step.indentedString(newIdent))
 		sb.WriteString("\n")
 	}
 	sb.WriteString(indent)
@@ -132,7 +132,7 @@ func (fd *FlowData) String() string {
 	sb.WriteString("\n")
 
 	sb.WriteString("    MainBranch: ")
-	sb.WriteString(fd.MainBranch.IdentString("    "))
+	sb.WriteString(fd.MainBranch.indentedString("    "))
 	sb.WriteString("\n")
 
 	sb.WriteString("}")
@@ -140,11 +140,11 @@ func (fd *FlowData) String() string {
 }
 
 func (cs *CallStep) String() string {
-	return cs.IdentString("")
+	return cs.indentedString("")
 }
 
-// IdentString returns an indented, formated string representation.
-func (cs *CallStep) IdentString(indent string) string {
+// indentedString returns an indented, formated string representation.
+func (cs *CallStep) indentedString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&CallStep{\n")
 	sb.WriteString(indent)
@@ -173,8 +173,8 @@ func (cs *CallStep) IdentString(indent string) string {
 	return sb.String()
 }
 
-// IdentString returns an indented, formated string representation.
-func (rs *ReturnStep) IdentString(indent string) string {
+// indentedString returns an indented, formated string representation.
+func (rs *ReturnStep) indentedString(indent string) string {
 	sb := &strings.Builder{}
 	sb.WriteString("&ReturnStep{\n")
 	sb.WriteString(indent)
