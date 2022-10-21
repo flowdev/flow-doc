@@ -1,0 +1,14 @@
+# find the root directory for this command.
+# A given root (1. argument) has priority.
+# `go.mod` and `vendor` are searched up the directory tree.
+# `vendor` can be ignored (2. argument).
+# The expected result root is the 3. argument.
+cd in/some/subdir
+env
+expectFindRoot '' false $WORK
+
+-- in/some/subdir/other-file --
+test data
+
+-- vendor/modules.txt --
+modules

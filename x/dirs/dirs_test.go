@@ -2,75 +2,55 @@ package dirs_test
 
 import (
 	"os"
-	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/flowdev/ea-flow-doc/x/dirs"
+	"github.com/rogpeppe/go-internal/testscript"
 )
 
 func TestFindRoot(t *testing.T) {
-	testDataDir := mustAbs(filepath.Join("testdata", "find-root"))
-	givenStartDir := filepath.Join("in", "some", "subdir")
-	specs := []struct {
-		name              string
-		givenRoot         string
-		givenIgnoreVendor bool
-		expectedRoot      string
-	}{
-		{
-			name:              "go-mod",
-			givenRoot:         "",
-			givenIgnoreVendor: false,
-			expectedRoot:      filepath.Join(testDataDir, "go-mod"),
-		}, {
-			name:              "given-root",
-			givenRoot:         "/my/given/root/dir",
-			givenIgnoreVendor: false,
-			expectedRoot:      "/my/given/root/dir",
-		}, {
-			name:              "vendor-dir",
-			givenRoot:         "",
-			givenIgnoreVendor: false,
-			expectedRoot:      filepath.Join(testDataDir, "vendor-dir"),
-		}, {
-			name:              "ignore-vendor",
-			givenRoot:         "",
-			givenIgnoreVendor: true,
-			expectedRoot:      filepath.Join(testDataDir, "ignore-vendor"),
+	testscript.Run(t, testscript.Params{
+		Dir: "testdata/find-root",
+		Cmds: map[string]func(*testscript.TestScript, bool, []string){
+			"expectFindRoot": func(ts *testscript.TestScript, _ bool, args []string) {
+				workDir := ts.Getenv("WORK")
+				ts.Logf("$WORK: %q", workDir)
+				curDir, err := os.Getwd()
+				if err != nil {
+					ts.Fatalf("unable to read the current directory: %v", err)
+				}
+				if len(args) != 3 {
+					ts.Fatalf("expected 3 arguments ("+
+						"givenRoot, givenIgnoreVendor, expectedRoot"+
+						") but got: : %q", args)
+				}
+				givenIgnoreVendor, err := strconv.ParseBool(args[1])
+				if err != nil {
+					ts.Fatalf("the 2. argument (givenIgnoreVendor) "+
+						"should be 'true' or 'false' but is: %q", args[1])
+				}
+				givenRoot, expectedRoot := args[0], args[2]
+				expectedRoot = strings.ReplaceAll(expectedRoot, "$WORK", workDir)
+
+				err = os.Chdir(ts.MkAbs("."))
+				if err != nil {
+					ts.Fatalf("unable to change the current directory: %v", err)
+				}
+
+				actualRoot, err := dirs.FindRoot(givenRoot, givenIgnoreVendor)
+				os.Chdir(curDir)
+				if err != nil {
+					ts.Fatalf("expected no error but got: %v", err)
+				}
+				ts.Logf("expectedRoot: %q, actualRoot: %q", expectedRoot, actualRoot)
+				if actualRoot != expectedRoot {
+					ts.Fatalf("expected project root %q, got: %q",
+						expectedRoot, actualRoot)
+				}
+			},
 		},
-	}
-
-	initDir := mustAbs(".")
-	t.Cleanup(func() {
-		mustChdir(initDir)
+		TestWork: false,
 	})
-	for _, spec := range specs {
-		t.Run(spec.name, func(t *testing.T) {
-			mustChdir(filepath.Join(testDataDir, spec.name, givenStartDir))
-
-			actualRoot, err := dirs.FindRoot(spec.givenRoot, spec.givenIgnoreVendor)
-			if err != nil {
-				t.Fatalf("expected no error but got: %v", err)
-			}
-			if actualRoot != spec.expectedRoot {
-				t.Errorf("expected project root %q, actual %q",
-					spec.expectedRoot, actualRoot)
-			}
-		})
-	}
-}
-
-func mustChdir(path string) {
-	err := os.Chdir(path)
-	if err != nil {
-		panic(err.Error())
-	}
-}
-
-func mustAbs(path string) string {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		panic(err.Error())
-	}
-	return absPath
 }

@@ -1,0 +1,116 @@
+# parse all Go files in the the directory tree and compare the types found in
+# flow functions with the expected results (name of function, expectedParams,
+# expectedResults, expectedErrors):
+expectTypeFunc simpleFunc '[]' '[]' 0
+expectTypeFunc doAccountingMagic '["string" "string"]' '["string"]' 0
+expectTypeFunc doSpecialAccountingMagic '["string" "string" "BankAccount"]' '["string" "SpecialBankAccount" "error"]' 0
+expectTypeFunc funcWithEllipsis_in2 '["int" "list(string)" "list(string)" "list(bool)"]' '["list(string)" "error"]' 0
+expectTypeFunc funcWithErrorOnly '[]' '["error"]' 0
+expectTypeFunc funcWithoutResults '["tool.Data" "map(string, SpecialBankAccount)" "list(map(string, map(int, list(tool.Data))))" "string"]' '[]' 0
+expectTypeFunc funcWithTooComplexData '["string" "" "" "" "int"]' '[]' 3
+
+-- go.mod --
+module github.com/flowdev/ea-flow-doc/data/testdata/typ
+
+go 1.19
+
+-- typ.go --
+package typ
+
+import (
+	"fmt"
+
+	"github.com/flowdev/ea-flow-doc/data/testdata/typ/tool"
+)
+
+// BankAccount represents a bank account.
+type BankAccount struct {
+	HolderName  string
+	IBAN        string
+	BIC         string
+	AccountType string
+}
+
+// SpecialBankAccount represents a special bank account.
+type SpecialBankAccount struct {
+	BankAccount
+	HolderTitle string
+}
+
+//flowdev:flow
+func simpleFunc() {
+	fmt.Println("vim-go")
+}
+
+//flowdev:flow
+func (ba *BankAccount) doAccountingMagic(newHolder string, newType string) (iban, bic string) {
+	ba.HolderName = newHolder
+	ba.AccountType = newType
+
+	return ba.IBAN, ba.BIC
+}
+
+//flowdev:flow
+func (sba *SpecialBankAccount) doSpecialAccountingMagic(newHolder string, newTitle string, ba *BankAccount,
+) (portOut1 string, portSpecialOut *SpecialBankAccount, err error) {
+
+	sba.doAccountingMagic(newHolder, "special")
+	sba.HolderTitle = newTitle
+	return sba.IBAN, sba, nil
+}
+
+//flowdev:flow
+func funcWithEllipsis_in2(i, j int, names [16]string, moreNames []string, mostNames ...bool,
+) (newNames []string, err error) {
+	var addNames []string
+	for k := i; k < j; k++ {
+		addNames = append(addNames, names[k])
+	}
+
+	return append(addNames, moreNames...), nil
+}
+
+//flowdev:flow
+func funcWithErrorOnly() error {
+	return nil
+}
+
+//flowdev:flow
+func funcWithoutResults(
+	d *tool.Data,
+	m map[string]*SpecialBankAccount,
+	m2 []map[string]map[*int][]*tool.Data,
+	s string,
+) {
+
+	print(s)
+}
+
+//flowdev:flow
+func funcWithTooComplexData(
+	s string,
+	f func(int) int,
+	c chan<- int,
+	t struct {
+		i int
+		b bool
+	},
+	i int,
+) {
+	fmt.Println(s, i)
+}
+
+-- tool/tool.go --
+package tool
+
+import "fmt"
+
+// Data is just data.
+type Data struct {
+	Foo string
+}
+
+// DoIt just does it.
+func DoIt() {
+	fmt.Println("Hello world!")
+}

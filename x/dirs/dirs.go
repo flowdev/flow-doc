@@ -2,7 +2,6 @@ package dirs
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -18,22 +17,15 @@ func FindRoot(dir string, ignoreVendor bool) (string, error) {
 	}
 
 	if ignoreVendor {
-		dir = crawlUpAndFindDirOf(".", "go.mod")
-	} else {
-		dir = crawlUpAndFindDirOf(".", "go.mod", "vendor")
+		return crawlUpAndFindDirOf(".", "go.mod")
 	}
-	if dir == "" {
-		absDir, _ := filepath.Abs(".") // we checked this just inside of crawlUpAndFindDirOf()
-		return "", fmt.Errorf("unable to find root directory for: %s", absDir)
-	}
-
-	return dir, nil
+	return crawlUpAndFindDirOf(".", "go.mod", "vendor")
 }
 
-func crawlUpAndFindDirOf(startDir string, files ...string) string {
+func crawlUpAndFindDirOf(startDir string, files ...string) (string, error) {
 	absDir, err := filepath.Abs(startDir)
 	if err != nil {
-		log.Fatalf("FATAL - Unable to find absolute directory (for %s): %v", startDir, err)
+		return "", fmt.Errorf("unable to find absolute directory (for %q): %w", startDir, err)
 	}
 	volName := filepath.VolumeName(absDir)
 	oldDir := "" // set to impossible value first!
@@ -42,10 +34,10 @@ func crawlUpAndFindDirOf(startDir string, files ...string) string {
 		for _, file := range files {
 			path := filepath.Join(absDir, file)
 			if _, err = os.Stat(path); err == nil {
-				return absDir
+				return absDir, nil
 			}
 		}
 		oldDir = absDir
 	}
-	return ""
+	return "", fmt.Errorf("unable to find root directory for: %s", absDir)
 }
