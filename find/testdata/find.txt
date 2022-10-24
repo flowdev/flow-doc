@@ -1,0 +1,137 @@
+# find all flow functions and compare them to the expected result:
+findFlowFuncs
+cmp flowFuncs.actual flowFuncs.expected
+
+# find all flow tests and compare them to the expected result:
+findFlowTests
+cmp flowTests.actual flowTests.expected
+
+
+-- flowFuncs.expected --
+funcs.go: DoAccountingMagic
+funcs.go: DoSpecialAccountingMagic
+funcs.go: SimpleFunc
+funcs.go: funcWithEllipsis
+
+-- flowTests.expected --
+x/tool/tool_test.go: TestTool
+x/tool2/tool2_test.go: TestTool2
+
+-- x/tool/tool_test.go --
+package tool
+
+import (
+	"testing"
+)
+
+//flowdev:test
+func TestTool(t *testing.T) {
+	t.Log("Executing TestTool")
+	Tool()
+}
+
+-- x/tool/tool.go --
+package tool
+
+import "log"
+
+// Tool is logging its execution.
+func Tool() {
+	log.Printf("INFO - tool.Tool")
+}
+
+-- x/tool2/tool2_test.go --
+package tool2_test
+
+import (
+	"testing"
+
+	"github.com/flowdev/ea-flow-doc/find/testdata/funcs/x/tool2"
+)
+
+// TestTool2 is just great.
+//flowdev:test
+func TestTool2(t *testing.T) {
+	t.Log("Executing TestTool")
+	tool2.Tool2()
+}
+
+-- x/tool2/tool2.go --
+package tool2
+
+import (
+	"log"
+)
+
+// Tool2 is logging its execution.
+func Tool2() {
+	log.Printf("INFO - tool.Tool")
+}
+
+-- funcs.go --
+package funcs
+
+import "fmt"
+
+// BankAccount represents a bank account.
+type BankAccount struct {
+	HolderName  string
+	IBAN        string
+	BIC         string
+	AccountType string
+}
+
+// SpecialBankAccount represents a special bank account.
+type SpecialBankAccount struct {
+	BankAccount
+	HolderTitle string
+}
+
+// SimpleFunc does bla.
+//flowdev:flow
+// And it is really simple.
+func SimpleFunc() {
+	fmt.Println("vim-go")
+}
+
+// DoAccountingMagic func does bla.
+//
+//flowdev:flow
+func (ba *BankAccount) DoAccountingMagic(newHolder string, newType string) (iban, bic string) {
+	ba.HolderName = newHolder
+	ba.AccountType = newType
+
+	return ba.IBAN, ba.BIC
+}
+
+//flowdev:flow
+// DoSpecialAccountingMagic func does bla.
+func (sba *SpecialBankAccount) DoSpecialAccountingMagic(newHolder string, newTitle string) (iban string) {
+	sba.DoAccountingMagic(newHolder, "special")
+	sba.HolderTitle = newTitle
+	return sba.IBAN
+}
+
+//flowdev:flow
+func funcWithEllipsis(i, j int, names ...string) []string {
+	var addNames []string
+	for k := i; k < j; k++ {
+		addNames = append(addNames, names[k])
+	}
+
+	return append(names, addNames...)
+}
+
+// funcWithoutAFlow returns foo.
+func funcWithoutAFlow() string {
+	return "foo"
+}
+
+func funcWithoutComment() string {
+	return "bar"
+}
+
+-- go.mod --
+module github.com/flowdev/ea-flow-doc/find/testdata/funcs
+
+go 1.14
