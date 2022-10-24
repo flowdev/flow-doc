@@ -1,0 +1,23 @@
+# parse all Go files in the the directory (tree) and compare it to the expected result:
+parseDir
+cmp packages.actual packages.expected
+
+
+-- packages.expected --
+error: true
+
+-- main.go --
+package main
+
+import (
+	"log"
+	"os"
+)
+
+func main() {
+	log.Printf("INFO - this is the main package, args: %q", os.Args[1:])
+
+-- go.mod --
+module github.com/flowdev/ea-flow-doc/parse/testdata/error-path
+
+go 1.19
