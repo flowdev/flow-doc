@@ -8,12 +8,12 @@ import (
 
 // Error contains all errors for a parsing operation.
 // So it really is a slice of FileError.
-type Error []*FileError
+type Error []FileError
 
-func (err *Error) Error() string {
+func (errs Error) Error() string {
 	sb := &strings.Builder{}
 
-	for _, fe := range *err {
+	for _, fe := range errs {
 		sb.WriteString(fe.Error())
 		fmt.Fprintln(sb)
 	}
@@ -26,13 +26,13 @@ type FileError struct {
 	Errors   []error
 }
 
-func (err *FileError) Error() string {
+func (fe FileError) Error() string {
 	sb := &strings.Builder{}
-	sb.WriteString(err.FileName)
+	sb.WriteString(fe.FileName)
 	sb.WriteString(":")
 	fmt.Fprintln(sb)
 
-	for _, e := range err.Errors {
+	for _, e := range fe.Errors {
 		sb.WriteString("\t")
 		sb.WriteString(e.Error())
 		fmt.Fprintln(sb)
@@ -40,18 +40,19 @@ func (err *FileError) Error() string {
 	return sb.String()
 }
 
-func addFileError(pe *Error, pfe *FileError) *Error {
+func addFileError(pe Error, fe FileError) Error {
 	if pe == nil {
-		pe = new(Error)
+		pe = make([]FileError, 0, 64)
 	}
-	*pe = append(*pe, pfe)
+	pe = append(pe, fe)
 	return pe
 }
 
-func addError(pfe *FileError, astf *ast.File, err error) *FileError {
-	if pfe == nil {
-		pfe = &FileError{FileName: astf.Name.Name}
+func addError(fe FileError, astf *ast.File, err error) FileError {
+	if fe.FileName == "" {
+		fe.FileName = astf.Name.Name
+		fe.Errors = make([]error, 0, 64)
 	}
-	pfe.Errors = append(pfe.Errors, err)
-	return pfe
+	fe.Errors = append(fe.Errors, err)
+	return fe
 }

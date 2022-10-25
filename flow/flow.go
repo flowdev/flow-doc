@@ -18,9 +18,9 @@ func parseAll(allFlowFuncs []find.PackageFuncs) ([]*base.FlowData, []error) {
 
 	for _, pkgFlowFuncs := range allFlowFuncs {
 		for _, flowFunc := range pkgFlowFuncs.Funcs {
-			var flowDat *base.FlowData
-			flowDat, allErrs = parseFlow(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo, allErrs)
+			flowDat, errs := parseFlowFunc(flowFunc, pkgFlowFuncs.Fset, pkgFlowFuncs.TypesInfo)
 			flowDatas = append(flowDatas, flowDat)
+			allErrs = append(allErrs, errs...)
 		}
 	}
 
@@ -30,11 +30,11 @@ func parseAll(allFlowFuncs []find.PackageFuncs) ([]*base.FlowData, []error) {
 	return flowDatas, allErrs
 }
 
-func parseFlow(
+func parseFlowFunc(
 	flowFunc *ast.FuncDecl,
 	fset *token.FileSet, typesInfo *types.Info,
-	errs []error,
 ) (*base.FlowData, []error) {
+	errs := make([]error, 0, 32)
 	flowDat := base.NewFlowData()
 
 	errs = decl.ParseFuncDecl(flowFunc, fset, typesInfo, flowDat, errs)
