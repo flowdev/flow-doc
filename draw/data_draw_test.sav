@@ -2,11 +2,6 @@ package draw_test
 
 import "github.com/flowdev/ea-flow-doc/draw"
 
-var bigMerge = draw.Merge{
-	ID:   "bigMerge",
-	Size: 3,
-}
-
 var BigTestFlowData = draw.Flow{
 	Shapes: [][]interface{}{
 		{
@@ -49,7 +44,10 @@ var BigTestFlowData = draw.Flow{
 							HasSrcOp:  true, SrcPort: "out",
 							HasDstOp: true, DstPort: "in1",
 						},
-						bigMerge,
+						draw.Merge{
+							ID:   "bigMerge",
+							Size: 3,
+						},
 					}, {
 						draw.Arrow{
 							DataTypes: []draw.DataType{{Name: "data", Type: "Data"}},
@@ -68,50 +66,62 @@ var BigTestFlowData = draw.Flow{
 				},
 			},
 		}, {
-			draw.Arrow{
-				DataTypes: []draw.DataType{},
-				HasSrcOp:  false, SrcPort: "...",
-				HasDstOp: true, DstPort: "in",
-			},
-			draw.Op{
-				Main: draw.DataType{Name: "bla2", Type: "Blue"},
-			},
-			draw.Arrow{
-				DataTypes: []draw.DataType{{Name: "data", Type: "Data"}},
-				HasSrcOp:  true, SrcPort: "out",
-				HasDstOp: true, DstPort: "in2",
-			},
-			bigMerge,
-		}, {
-			draw.Arrow{
-				DataTypes: []draw.DataType{{Name: "data3", Type: "Data3"}},
-				HasSrcOp:  false, SrcPort: "in2",
-				HasDstOp: true, DstPort: "in",
-			},
-			draw.Op{
-				Main: draw.DataType{Name: "megaParser", Type: "MegaParser"},
-				Plugins: []draw.Plugin{
+			draw.Split{
+				Shapes: [][]interface{}{
 					{
-						Title: "semantics",
-						Types: []draw.PluginType{
-							{Type: "TextSemantics"},
+						draw.Arrow{
+							DataTypes: []draw.DataType{},
+							HasSrcOp:  false, SrcPort: "...",
+							HasDstOp: true, DstPort: "in",
 						},
-					},
-					{
-						Title: "subParser",
-						Types: []draw.PluginType{
-							{Type: "LitralParser"},
-							{Type: "NaturalParser"},
+						draw.Op{
+							Main: draw.DataType{Name: "bla2", Type: "Blue"},
+						},
+						draw.Arrow{
+							DataTypes: []draw.DataType{{Name: "data", Type: "Data"}},
+							HasSrcOp:  true, SrcPort: "out",
+							HasDstOp: true, DstPort: "in2",
+						},
+						draw.Merge{
+							ID:   "bigMerge",
+							Size: 3,
+						},
+					}, {
+						draw.Arrow{
+							DataTypes: []draw.DataType{{Name: "data3", Type: "Data3"}},
+							HasSrcOp:  false, SrcPort: "in2",
+							HasDstOp: true, DstPort: "in",
+						},
+						draw.Op{
+							Main: draw.DataType{Name: "megaParser", Type: "MegaParser"},
+							Plugins: []draw.Plugin{
+								{
+									Title: "semantics",
+									Types: []draw.PluginType{
+										{Type: "TextSemantics"},
+									},
+								},
+								{
+									Title: "subParser",
+									Types: []draw.PluginType{
+										{Type: "LitralParser"},
+										{Type: "NaturalParser"},
+									},
+								},
+							},
+						},
+						draw.Arrow{
+							DataTypes: []draw.DataType{{Name: "data", Type: "Data"}, {Name: "data2", Type: "data2"}, {Name: "data3", Type: "Data3"}},
+							HasSrcOp:  true, SrcPort: "out",
+							HasDstOp: true, DstPort: "in3",
+						},
+						draw.Merge{
+							ID:   "bigMerge",
+							Size: 3,
 						},
 					},
 				},
 			},
-			draw.Arrow{
-				DataTypes: []draw.DataType{{Name: "data", Type: "Data"}, {Name: "data2", Type: "data2"}, {Name: "data3", Type: "Data3"}},
-				HasSrcOp:  true, SrcPort: "out",
-				HasDstOp: true, DstPort: "in3",
-			},
-			bigMerge,
 		}, {
 			draw.Op{
 				Main: draw.DataType{Type: "bigMerge"},
@@ -139,7 +149,7 @@ var BigTestFlowData = draw.Flow{
 				HasSrcOp:  true, SrcPort: "out",
 				HasDstOp: true, DstPort: "",
 			},
-			draw.Text{Text: "recursive"},
+			draw.Text("recursive"),
 		},
 	},
 }

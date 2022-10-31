@@ -37,6 +37,7 @@ type DataType struct {
 	Name string
 	Type string
 	Link string
+	Line int
 }
 
 // Arrow contains all information for displaying an Arrow including data type
@@ -47,28 +48,36 @@ type Arrow struct {
 	SrcPort   string
 	HasDstOp  bool
 	DstPort   string
+	Line      int
 }
 
 // Text is the text to display as a flow output port.
-type Text string
+type Text struct {
+	Text string
+	Line int
+}
 
 // PluginType contains the type of the plugin.
 // And optionally a link to its definition.
 type PluginType struct {
 	Type string
 	Link string
+	Line int
 }
 
 // Plugin is a helper operation that is used inside a proper operation.
 type Plugin struct {
 	Title string
+	Line  int
 	Types []PluginType
 }
 
 // Op holds all data to describe a single operation including possible plugins.
 type Op struct {
+	MinLine int
 	Main    DataType
 	Plugins []Plugin
+	MaxLine int
 }
 
 // Split contains data for multiple paths/arrows originating from a single Op.
