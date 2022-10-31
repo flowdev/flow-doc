@@ -1,13 +1,13 @@
 package draw
 
-func splitDataToSVG(s *Split, sf *svgFlow, lsr *svgRect, x0, y0 int,
+func splitDataToSVG(s Split, sf *svgFlow, lsr *svgRect, x0, y0 int,
 ) (nsf *svgFlow, xn, yn int) {
 	nsf, xn, yn = shapesToSVG(
 		s.Shapes,
 		sf, x0, y0,
 		arrowDataToSVG,
 		opDataToSVG,
-		rectDataToSVG,
+		textDataToSVG,
 		splitDataToSVG,
 		mergeDataToSVG,
 	)

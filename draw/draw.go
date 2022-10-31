@@ -31,31 +31,44 @@ const svgDiagram = `<?xml version="1.0" ?>
 </svg>
 `
 
+// DataType contains the optional name of the data and its type.
+// Plus an optional link to the definition of the type.
+type DataType struct {
+	Name string
+	Type string
+	Link string
+}
+
 // Arrow contains all information for displaying an Arrow including data type
 // and ports.
 type Arrow struct {
-	DataType []string
-	HasSrcOp bool
-	SrcPort  string
-	HasDstOp bool
-	DstPort  string
+	DataTypes []DataType
+	HasSrcOp  bool
+	SrcPort   string
+	HasDstOp  bool
+	DstPort   string
 }
 
-// Rect just contains the text lines to display in a rectangle.
-type Rect struct {
-	Text []string
+// Text is the text to display as a flow output port.
+type Text string
+
+// PluginType contains the type of the plugin.
+// And optionally a link to its definition.
+type PluginType struct {
+	Type string
+	Link string
 }
 
 // Plugin is a helper operation that is used inside a proper operation.
 type Plugin struct {
 	Title string
-	Rects []*Rect
+	Types []PluginType
 }
 
 // Op holds all data to describe a single operation including possible plugins.
 type Op struct {
-	Main    *Rect
-	Plugins []*Plugin
+	Main    DataType
+	Plugins []Plugin
 }
 
 // Split contains data for multiple paths/arrows originating from a single Op.
@@ -153,9 +166,9 @@ func validateShapes(shapes [][]interface{}) error {
 	for i, row := range shapes {
 		for j, ishape := range row {
 			switch shape := ishape.(type) {
-			case *Arrow, *Op, *Merge, *Rect:
+			case Arrow, Op, Merge, Text:
 				break
-			case *Split:
+			case Split:
 				err := validateShapes(shape.Shapes)
 				if err != nil {
 					return err
@@ -186,7 +199,7 @@ func flowDataToSVGFlow(f Flow) *svgFlow {
 		sf, x, y,
 		arrowDataToSVG,
 		opDataToSVG,
-		rectDataToSVG,
+		textDataToSVG,
 		splitDataToSVG,
 		mergeDataToSVG,
 	)
@@ -211,11 +224,11 @@ func adjustDimensions(sf *svgFlow, xn, yn int) *svgFlow {
 
 func shapesToSVG(
 	shapes [][]interface{}, sf *svgFlow, x0 int, y0 int,
-	pluginArrowDataToSVG func(*Arrow, *svgFlow, *svgRect, int, int) (*svgFlow, int, int, *moveData),
-	pluginOpDataToSVG func(*Op, *svgFlow, int, int, int) (*svgFlow, *svgRect, int, int, int),
-	pluginRectDataToSVG func(*Rect, *svgFlow, int, int) (*svgFlow, int, int),
-	pluginSplitDataToSVG func(*Split, *svgFlow, *svgRect, int, int) (*svgFlow, int, int),
-	pluginMergeDataToSVG func(*Merge, *svgFlow, *moveData, int, int) *myMergeData,
+	pluginArrowDataToSVG func(Arrow, *svgFlow, *svgRect, int, int) (*svgFlow, int, int, *moveData),
+	pluginOpDataToSVG func(Op, *svgFlow, int, int, int) (*svgFlow, *svgRect, int, int, int),
+	pluginTextDataToSVG func(Text, *svgFlow, int, int) (*svgFlow, int, int),
+	pluginSplitDataToSVG func(Split, *svgFlow, *svgRect, int, int) (*svgFlow, int, int),
+	pluginMergeDataToSVG func(Merge, *svgFlow, *moveData, int, int) *myMergeData,
 ) (nsf *svgFlow, xn, yn int) {
 	var xmax, ymax int
 	var mod *moveData
@@ -232,21 +245,21 @@ func shapesToSVG(
 		for _, is := range ss {
 			y := y0
 			switch s := is.(type) {
-			case *Arrow:
+			case Arrow:
 				sf, x, y, mod = pluginArrowDataToSVG(s, sf, lsr, x, y)
 				ya = y - 48 // use the upper arrow Y not the lowest Y
 				lsr = nil
-			case *Op:
+			case Op:
 				sf, lsr, y0, x, y = pluginOpDataToSVG(s, sf, x, y0, ymax)
 				sf.completedMerge = nil
 				ya = y0
-			case *Rect:
-				sf, x, y = pluginRectDataToSVG(s, sf, x, ya)
-			case *Split:
+			case Text:
+				sf, x, y = pluginTextDataToSVG(s, sf, x, ya)
+			case Split:
 				sf, x, y = pluginSplitDataToSVG(s, sf, lsr, x, y)
 				lsr = nil
 				ya = y0
-			case *Merge:
+			case Merge:
 				sf.completedMerge = pluginMergeDataToSVG(s, sf, mod, x, y)
 				mod = nil
 				ya = y0

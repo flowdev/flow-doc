@@ -1,6 +1,6 @@
 package draw
 
-func mergeDataToSVG(m *Merge, sf *svgFlow, mod *moveData, x0, y0 int,
+func mergeDataToSVG(m Merge, sf *svgFlow, mod *moveData, x0, y0 int,
 ) (completedMerge *myMergeData) {
 	md := sf.allMerges[m.ID]
 	if md == nil { // first merge

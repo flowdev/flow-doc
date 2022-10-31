@@ -1,7 +1,7 @@
 package draw
 
-func rectDataToSVG(r *Rect, sf *svgFlow, x int, y int) (nsf *svgFlow, nx, ny int) {
-	txt := "... back to: " + r.Text[0]
+func textDataToSVG(t Text, sf *svgFlow, x int, y int) (nsf *svgFlow, nx, ny int) {
+	txt := "... back to: " + string(t)
 	width := len(txt) * 12
 
 	y += 12 + 24 - 6

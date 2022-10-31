@@ -1,9 +1,9 @@
 package draw
 
-func arrowDataToSVG(a *Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
+func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 ) (nsf *svgFlow, nx, ny int, mod *moveData) {
 	var srcPortText, dstPortText *svgText
-	dataTexts := make([]*svgText, 0, 8)
+	dataTexts := make([]*svgText, 0, 16)
 
 	y += 24
 	portLen := 0 // length in chars NOT pixels
@@ -14,10 +14,10 @@ func arrowDataToSVG(a *Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 		portLen += len(a.DstPort)
 	}
 
-	dataLen := maxLen(a.DataType)
+	dataNameLen, dataTypeLen := maxStretchedLen(a.DataTypes)
 	width := max(
 		portLen+2,
-		dataLen+2,
+		dataNameLen+1+dataTypeLen+2,
 	)*12 + 6 + // 6 so the source port text isn't glued to the op
 		12 // last 12 is for tip of arrow
 
@@ -26,22 +26,41 @@ func arrowDataToSVG(a *Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 		srcPortText = sf.Texts[len(sf.Texts)-1]
 	}
 
-	if len(a.DataType) != 0 {
-		dataX := x + ((width-12)-dataLen*12)/2
-		for i, text := range a.DataType {
+	ldts := len(a.DataTypes) - 1
+	if ldts >= 0 {
+		namX := x + ((width-12)-(dataNameLen+1+dataTypeLen)*12)/2
+		typX := namX + (dataNameLen+1)*12
+		for i, d := range a.DataTypes {
 			if i > 0 {
 				y += 22
 				if srcPortText != nil {
 					srcPortText.Y += 22
 				}
 			}
-			st := &svgText{
-				X: dataX, Y: y - 8,
-				Width: len(text) * 12,
-				Text:  text,
+
+			namST := &svgText{
+				X: namX, Y: y - 8,
+				Width: (len(d.Name) + 1) * 12,
+				Text:  d.Name,
 			}
-			sf.Texts = append(sf.Texts, st)
-			dataTexts = append(dataTexts, st)
+			if i == 0 {
+				namST.Text = "(" + d.Name
+			} else {
+				namST.Text = " " + d.Name
+			}
+
+			typST := &svgText{
+				X: typX, Y: y - 8,
+				Width: (len(d.Type) + 1) * 12,
+			}
+			if i == ldts {
+				typST.Text = d.Type + ")"
+			} else {
+				typST.Text = d.Type + ","
+			}
+
+			sf.Texts = append(sf.Texts, namST, typST)
+			dataTexts = append(dataTexts, namST, typST)
 		}
 	}
 
@@ -69,7 +88,7 @@ func arrowDataToSVG(a *Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 	}
 }
 
-func addSrcPort(a *Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
+func addSrcPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 	if !a.HasSrcOp { // text before the arrow
 		if a.SrcPort != "" {
 			sts = append(sts, &svgText{
@@ -91,7 +110,7 @@ func addSrcPort(a *Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 	return sts, x
 }
 
-func addDstPort(a *Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
+func addDstPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 	if !a.HasDstOp {
 		if a.DstPort != "" { // text after the arrow
 			sts = append(sts, &svgText{
@@ -109,4 +128,24 @@ func addDstPort(a *Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 		})
 	}
 	return sts, x
+}
+
+func maxStretchedLen(dts []DataType) (maxNameLen, maxTypeLen int) {
+	mnl := 0
+	mtl := 0
+	n := len(dts) - 1
+	for i, dt := range dts {
+		nl := len(dt.Name)
+		tl := len(dt.Type)
+		if nl == 0 {
+			nl = tl
+		}
+		mnl = max(mnl, nl+1) // 1 for the opening '(' or space
+		if i == n {
+			mtl = max(mtl, tl+1) // 1 for the closing ')'
+		} else {
+			mtl = max(mtl, tl)
+		}
+	}
+	return mnl, mtl
 }
