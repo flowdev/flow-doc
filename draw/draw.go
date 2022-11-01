@@ -29,9 +29,9 @@ const svgDiagram = `<?xml version="1.0" ?>
 {{- end}}
 {{range .Texts}}
 {{- if .UnderArrow}}
-	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-family="monospace" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs" xml:space="preserve">{{.Text}}</text>
+	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
 {{- else}}
-	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-family="monospace" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs" xml:space="preserve">{{.Text}}</text>
+	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
 {{- end}}
 {{- end}}
 </svg>

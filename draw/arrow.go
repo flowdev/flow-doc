@@ -18,7 +18,7 @@ func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 	width := max(
 		portLen+2,
 		dataNameLen+1+dataTypeLen+2,
-	)*12 + 6 + // 6 so the source port text isn't glued to the op
+	)*8 + 6 + // 6 so the source port text isn't glued to the op
 		12 // last 12 is for tip of arrow
 
 	sf.Texts, x = addSrcPort(a, sf.Texts, x, y)
@@ -28,8 +28,8 @@ func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 
 	ldts := len(a.DataTypes) - 1
 	if ldts >= 0 {
-		namX := x + ((width-12)-(dataNameLen+1+dataTypeLen)*12)/2
-		typX := namX + (dataNameLen+1)*12
+		namX := x + ((width-12)-(dataNameLen+1+dataTypeLen)*8)/2
+		typX := namX + (dataNameLen+1)*8
 		for i, d := range a.DataTypes {
 			if i > 0 {
 				y += 24
@@ -40,7 +40,7 @@ func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 
 			namST := &svgText{
 				X: namX, Y: y - 6,
-				Width: (len(d.Name) + 1) * 12,
+				Width: (len(d.Name) + 1) * 8,
 				Text:  " " + d.Name,
 			}
 			if i == 0 {
@@ -49,7 +49,7 @@ func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 
 			typST := &svgText{
 				X: typX, Y: y - 6,
-				Width: (len(d.Type) + 1) * 12,
+				Width: (len(d.Type) + 1) * 8,
 				Text:  d.Type + ",",
 			}
 			if i == ldts {
@@ -91,16 +91,16 @@ func addSrcPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 		if a.SrcPort != "" {
 			sts = append(sts, &svgText{
 				X: x + 1, Y: y + 10,
-				Width: len(a.SrcPort) * 12,
+				Width: len(a.SrcPort) * 8,
 				Text:  a.SrcPort,
 			})
 		}
-		x += 12*len(a.SrcPort) + 6
+		x += len(a.SrcPort)*8 + 6
 	} else { // text under the arrow
 		if a.SrcPort != "" {
 			sts = append(sts, &svgText{
 				X: x + 6, Y: y + 20,
-				Width:      len(a.SrcPort) * 12,
+				Width:      len(a.SrcPort) * 8,
 				Text:       a.SrcPort,
 				UnderArrow: true,
 			})
@@ -114,15 +114,15 @@ func addDstPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 		if a.DstPort != "" { // text after the arrow
 			sts = append(sts, &svgText{
 				X: x + 3, Y: y + 10,
-				Width: len(a.DstPort) * 12,
+				Width: len(a.DstPort) * 8,
 				Text:  a.DstPort,
 			})
 		}
-		x += 3 + 12*len(a.DstPort)
+		x += 3 + 8*len(a.DstPort)
 	} else if a.DstPort != "" { // text under the arrow
 		sts = append(sts, &svgText{
-			X: x - len(a.DstPort)*12 - 12, Y: y + 20,
-			Width:      len(a.DstPort) * 12,
+			X: x - len(a.DstPort)*8 - 12, Y: y + 20,
+			Width:      len(a.DstPort) * 8,
 			Text:       a.DstPort,
 			UnderArrow: true,
 		})

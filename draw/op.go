@@ -48,7 +48,7 @@ func outerOpToSVG(d DataType, w int, h int, sf *svgFlow, x0, y0 int,
 	if d.Name != "" {
 		sf.Texts = append(sf.Texts, &svgText{
 			X: x + 6, Y: y + 24 - 6,
-			Width: len(d.Name) * 12,
+			Width: len(d.Name) * 8,
 			Text:  d.Name,
 		})
 		y += 24
@@ -58,7 +58,7 @@ func outerOpToSVG(d DataType, w int, h int, sf *svgFlow, x0, y0 int,
 	}
 	sf.Texts = append(sf.Texts, &svgText{
 		X: x + 6, Y: y + 24 - 6,
-		Width: len(d.Type) * 12,
+		Width: len(d.Type) * 8,
 		Text:  d.Type,
 	})
 
@@ -77,7 +77,7 @@ func pluginDataToSVG(
 	if p.Title != "" {
 		sf.Texts = append(sf.Texts, &svgText{
 			X: x + 6, Y: y + 24 - 6,
-			Width: (len(p.Title) + 1) * 12,
+			Width: (len(p.Title) + 1) * 8,
 			Text:  p.Title + ":",
 		})
 		y += 24
@@ -92,7 +92,7 @@ func pluginDataToSVG(
 		}
 		sf.Texts = append(sf.Texts, &svgText{
 			X: x + 6, Y: y + 24 - 6,
-			Width: len(d.Type) * 12,
+			Width: len(d.Type) * 8,
 			Text:  d.Type,
 		})
 		y += 24
@@ -111,7 +111,7 @@ func pluginDataToSVG(
 func maxPluginWidth(p Plugin) int {
 	width := 0
 	if p.Title != "" {
-		width = (len(p.Title)+1)*12 + 2*6 // title text and padding
+		width = (len(p.Title)+1)*8 + 2*6 // title text and padding
 	}
 	w := maxPluginTypeWidth(p.Types)
 	return max(width, w+2*6)
@@ -122,11 +122,11 @@ func maxPluginTypeWidth(pts []PluginType) int {
 	for _, pt := range pts {
 		m = max(m, len(pt.Type))
 	}
-	return m * 12
+	return m * 8
 }
 
 func maxTextWidth(ds ...DataType) int {
-	return maxLen(ds) * 12
+	return maxLen(ds) * 8
 }
 
 func maxLen(ds []DataType) int {
