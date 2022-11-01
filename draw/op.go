@@ -4,7 +4,7 @@ func opDataToSVG(op Op, sf *svgFlow, x0, y0, y1 int,
 ) (nsf *svgFlow, lsr *svgRect, ny0 int, xn, yn int) {
 	var y int
 
-	opW := maxTextWidth(op.Main) + 2*12 // text + padding
+	opW := maxTextWidth(op.Main) + 2*6 // text + padding
 	opH := y1 - y0
 	for _, p := range op.Plugins {
 		w := maxPluginWidth(p)
@@ -24,9 +24,8 @@ func opDataToSVG(op Op, sf *svgFlow, x0, y0, y1 int,
 		for _, p := range op.Plugins {
 			y = pluginDataToSVG(p, xn-x0, sf, x0, y)
 		}
-		y += 6
-		lsr.Height = max(lsr.Height+6, y-y0)
-		yn = max(yn, y0+lsr.Height+2*6)
+		lsr.Height = max(lsr.Height, y-y0-2)
+		yn = max(yn, y0+lsr.Height)
 	}
 
 	return sf, lsr, y0, xn, yn
@@ -35,21 +34,20 @@ func opDataToSVG(op Op, sf *svgFlow, x0, y0, y1 int,
 func outerOpToSVG(d DataType, w int, h int, sf *svgFlow, x0, y0 int,
 ) (svgMainRect *svgRect, y02 int, xn int, yn int) {
 	x := x0
-	y := y0 + 6
-	h0 := 24 + 6*2 // one line for type
+	y := y0
+	h0 := 24 // one line for type
 	h = max(h, h0)
 
 	svgMainRect = &svgRect{
-		X: x, Y: y,
-		Width: w, Height: h,
+		X: x, Y: y + 1,
+		Width: w, Height: h - 2,
 		IsPlugin: false,
 	}
 	sf.Rects = append(sf.Rects, svgMainRect)
 
-	y += 6
 	if d.Name != "" {
 		sf.Texts = append(sf.Texts, &svgText{
-			X: x + 12, Y: y + 24 - 6,
+			X: x + 6, Y: y + 24 - 6,
 			Width: len(d.Name) * 12,
 			Text:  d.Name,
 		})
@@ -59,12 +57,12 @@ func outerOpToSVG(d DataType, w int, h int, sf *svgFlow, x0, y0 int,
 		svgMainRect.Height = h
 	}
 	sf.Texts = append(sf.Texts, &svgText{
-		X: x + 12, Y: y + 24 - 6,
+		X: x + 6, Y: y + 24 - 6,
 		Width: len(d.Type) * 12,
 		Text:  d.Type,
 	})
 
-	return svgMainRect, y0 + 6 + h0, x + w, y0 + h + 2*6
+	return svgMainRect, y0 + h0, x + w, y0 + h
 }
 
 func pluginDataToSVG(
@@ -76,7 +74,6 @@ func pluginDataToSVG(
 	x := x0
 	y := y0
 
-	y += 3
 	if p.Title != "" {
 		sf.Texts = append(sf.Texts, &svgText{
 			X: x + 6, Y: y + 24 - 6,
@@ -92,7 +89,6 @@ func pluginDataToSVG(
 				X1: x0, Y1: y,
 				X2: x0 + width, Y2: y,
 			})
-			y += 3
 		}
 		sf.Texts = append(sf.Texts, &svgText{
 			X: x + 6, Y: y + 24 - 6,
@@ -102,7 +98,6 @@ func pluginDataToSVG(
 		y += 24
 	}
 
-	y += 3
 	sf.Rects = append(sf.Rects, &svgRect{
 		X: x0, Y: y0,
 		Width:    width,

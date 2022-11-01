@@ -16,7 +16,7 @@ var BigTestFlowData = draw.Flow{
 				HasDstOp: true, DstPort: "",
 			},
 			draw.Op{
-				Main: draw.DataType{Name: "ra", Type: "MiSo"},
+				Main: draw.DataType{Name: "Xa", Type: "MiSo"},
 			},
 			draw.Split{
 				Shapes: [][]interface{}{
@@ -27,7 +27,7 @@ var BigTestFlowData = draw.Flow{
 							HasDstOp: true, DstPort: "in",
 						},
 						draw.Op{
-							Main: draw.DataType{Type: "do"},
+							Main: draw.DataType{Type: "To"},
 							Plugins: []draw.Plugin{
 								{
 									Title: "semantics",
@@ -57,7 +57,7 @@ var BigTestFlowData = draw.Flow{
 							HasDstOp: true, DstPort: "in",
 						},
 						draw.Op{
-							Main: draw.DataType{Name: "bla", Type: "Blue"},
+							Main: draw.DataType{Name: "Mla", Type: "Blue"},
 						},
 						draw.Arrow{
 							DataTypes: []draw.DataType{{Name: "data2", Type: "Data2"}},
