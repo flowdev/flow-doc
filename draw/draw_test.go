@@ -32,4 +32,8 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	if err != nil {
 		ts.Fatalf("unable to write file %q: %v", funcFile, err)
 	}
+	err = os.WriteFile("./current.svg", gotBytes, 0666)
+	if err != nil {
+		ts.Fatalf("unable to write file %q: %v", "./current.svg", err)
+	}
 }

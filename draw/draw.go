@@ -28,7 +28,7 @@ const svgDiagram = `<?xml version="1.0" ?>
 	<line stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="1" x1="{{.X1}}" y1="{{.Y1}}" x2="{{.X2}}" y2="{{.Y2}}"/>
 {{- end}}
 {{range .Texts}}
-{{- if .UnderArrow}}
+{{- if .Small}}
 	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
 {{- else}}
 	<text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
@@ -37,72 +37,38 @@ const svgDiagram = `<?xml version="1.0" ?>
 </svg>
 `
 
-// DataType contains the optional name of the data and its type.
-// Plus an optional link to the definition of the type.
-type DataType struct {
-	Name string
-	Type string
-	Link string
-	Line int
-}
+const mdDiagram = `
+{{- if .FlowLines}}
+{{- $n := len(.FlowLines) -}}
+{{range $i, $flowLine := .FlowLines}}
+	{{- range $cell := $flowLine -}}
+		{{- if $cell.Link -}}
+			[![{{$cell.Name}}]({{$cell.SVG}})]({{$cell.Link}})
+		{{- else -}}
+			![{{$cell.Name}}]({{$cell.SVG}})
+		{{- end -}}
+	{{- end -}}
+	{{- if ne $i $n}}\{{end}}
+{{end}}
+{{else}}
+![{{.Flow.Name}}]({{.Flow.SVG}})
+{{end}}
+{{ - if .DataTypes}}
 
-// Arrow contains all information for displaying an Arrow including data type
-// and ports.
-type Arrow struct {
-	DataTypes []DataType
-	HasSrcOp  bool
-	SrcPort   string
-	HasDstOp  bool
-	DstPort   string
-	Line      int
-}
+#### Data Types
+{{range $name, $link := .DataTypes}}[{{$name}}]({{$link}}), {{end}}
+{{end}}
+{{ - if .Subflows}}
 
-// Text is the text to display as a flow output port.
-type Text struct {
-	Text string
-	Line int
-}
+#### Subflows
+{{range $name, $link := .Flows}}[{{$name}}]({{$link}}), {{end}}
+{{end}}
+{{ - if .GoFuncs}}
 
-// PluginType contains the type of the plugin.
-// And optionally a link to its definition.
-type PluginType struct {
-	Type string
-	Link string
-	Line int
-}
-
-// Plugin is a helper operation that is used inside a proper operation.
-type Plugin struct {
-	Title string
-	Line  int
-	Types []PluginType
-}
-
-// Op holds all data to describe a single operation including possible plugins.
-type Op struct {
-	MinLine int
-	Main    DataType
-	Plugins []Plugin
-	MaxLine int
-}
-
-// Split contains data for multiple paths/arrows originating from a single Op.
-type Split struct {
-	Shapes [][]interface{}
-}
-
-// Merge holds data for merging multiple paths/arrows into a single Op.
-type Merge struct {
-	ID   string
-	Size int
-}
-
-// Flow contains data for a whole flow.
-// The data is organized in rows and individual shapes per row.
-// Valid shapes are Arrow, Op, Split and Merge.
-type Flow struct {
-	Shapes [][]interface{}
-}
+#### Go Functions and Methods
+{{range $name, $link := .GoFuncs}}[{{$name}}]({{$link}}), {{end}}
+{{end}}
+`
 
 type svgArrow struct {
 	X1, Y1       int
@@ -124,10 +90,10 @@ type svgLine struct {
 }
 
 type svgText struct {
-	X, Y       int
-	Width      int
-	Text       string
-	UnderArrow bool
+	X, Y  int
+	Width int
+	Text  string
+	Small bool
 }
 
 type svgFlow struct {
@@ -155,140 +121,86 @@ type moveData struct {
 	yn          int
 }
 
-var tmpl = template.Must(template.New("diagram").Parse(svgDiagram))
+type svgLink struct {
+	Name string
+	SVG  string
+	Link string
+}
 
-// FromFlowData creates a SVG diagram from flow data.
-// If the flow data isn't valid or the SVG diagram can't be created with its
-// template, an error is returned.
-func FromFlowData(f Flow) ([]byte, error) {
-	err := validateFlowData(f)
+type mdFlow struct {
+	Flow      svgLink
+	FlowLines [][]svgLink
+	DataTypes map[string]string
+	Subflows  map[string]string
+	GoFuncs   map[string]string
+}
+
+var svgTmpl = template.Must(template.New("svgDiagram").Parse(svgDiagram))
+
+var mdTmpl = template.Must(template.New("mdDiagram").Parse(mdDiagram))
+
+// FromFlowData creates a set of SVG diagrams and a MarkDown file from flow
+// data. If the flow data isn't valid or the SVG diagrams or the MarkDown file
+// can't be created with their template, an error is returned.
+func FromFlowData(f Flow) (svgContents map[string][]byte, mdContent []byte, err error) {
+	err = validateFlowData(f)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	sf := flowDataToSVGFlow(f)
+	sf, mdf := flowDataToSVGFlows(f)
 
-	return svgFlowToBytes(sf)
-}
-
-func validateFlowData(f Flow) error {
-	return validateShapes(f.Shapes)
-}
-
-func validateShapes(shapes [][]interface{}) error {
-	if len(shapes) <= 0 {
-		return fmt.Errorf("No shapes found")
+	svgContents, err = svgFlowsToBytes(sf)
+	if err != nil {
+		return nil, nil, err
 	}
-	for i, row := range shapes {
-		for j, ishape := range row {
-			switch shape := ishape.(type) {
-			case Arrow, Op, Merge, Text:
-				break
-			case Split:
-				err := validateShapes(shape.Shapes)
-				if err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf(
-					"unsupported shape type %T at row index %d and column index %d",
-					ishape, i, j)
-			}
+	mdContent, err = mdFlowToBytes(mdf)
+	if err != nil {
+		return nil, nil,
+			fmt.Errorf("unable to create MarkDown content for %q flow: %w", f.Name, err)
+	}
+	return svgContents, mdContent, nil
+}
+
+func flowDataToSVGFlows(f Flow) (map[string]*svgFlow, *mdFlow) {
+	enrichFlow(f)
+
+	return nil, nil
+}
+
+func enrichFlow(f Flow) {
+	merges := make(map[string]*Merge)
+	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges, nil, nil, enrichMerge)
+}
+
+func svgFlowsToBytes(sfs map[string]*svgFlow) (map[string][]byte, error) {
+	sfbs := make(map[string][]byte)
+	for key, sf := range sfs {
+		bs, err := svgFlowToBytes(sf)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create SVG file %q: %w", key, err)
 		}
+		sfbs[key] = bs
 	}
-	return nil
+	return sfbs, nil
 }
 
 func svgFlowToBytes(sf *svgFlow) ([]byte, error) {
 	buf := bytes.Buffer{}
-	err := tmpl.Execute(&buf, sf)
+	err := svgTmpl.Execute(&buf, sf)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func flowDataToSVGFlow(f Flow) *svgFlow {
-	sf, x, y := initSVGData()
-	sf, x, y = shapesToSVG(
-		f.Shapes,
-		sf, x, y,
-		arrowDataToSVG,
-		opDataToSVG,
-		textDataToSVG,
-		splitDataToSVG,
-		mergeDataToSVG,
-	)
-	return adjustDimensions(sf, x, y)
-}
-
-func initSVGData() (sf *svgFlow, x0, y0 int) {
-	return &svgFlow{
-		Arrows: make([]*svgArrow, 0, 64),
-		Rects:  make([]*svgRect, 0, 64),
-		Lines:  make([]*svgLine, 0, 64),
-		Texts:  make([]*svgText, 0, 64),
-
-		allMerges: make(map[string]*myMergeData),
-	}, 0, 0
-}
-func adjustDimensions(sf *svgFlow, xn, yn int) *svgFlow {
-	sf.TotalWidth = xn + 2
-	sf.TotalHeight = yn + 2
-	return sf
-}
-
-func shapesToSVG(
-	shapes [][]interface{}, sf *svgFlow, x0 int, y0 int,
-	pluginArrowDataToSVG func(Arrow, *svgFlow, *svgRect, int, int) (*svgFlow, int, int, *moveData),
-	pluginOpDataToSVG func(Op, *svgFlow, int, int, int) (*svgFlow, *svgRect, int, int, int),
-	pluginTextDataToSVG func(Text, *svgFlow, int, int) (*svgFlow, int, int),
-	pluginSplitDataToSVG func(Split, *svgFlow, *svgRect, int, int) (*svgFlow, int, int),
-	pluginMergeDataToSVG func(Merge, *svgFlow, *moveData, int, int) *myMergeData,
-) (nsf *svgFlow, xn, yn int) {
-	var xmax, ymax int
-	var mod *moveData
-	var lsr *svgRect
-
-	for _, ss := range shapes {
-		x := x0
-		lsr = nil
-		if len(ss) < 1 {
-			y0 += 48
-			continue
-		}
-		ya := y0
-		for _, is := range ss {
-			y := y0
-			switch s := is.(type) {
-			case Arrow:
-				sf, x, y, mod = pluginArrowDataToSVG(s, sf, lsr, x, y)
-				ya = y - 48 // use the upper arrow Y not the lowest Y
-				lsr = nil
-			case Op:
-				sf, lsr, y0, x, y = pluginOpDataToSVG(s, sf, x, y0, ymax)
-				sf.completedMerge = nil
-				ya = y0
-			case Text:
-				sf, x, y = pluginTextDataToSVG(s, sf, x, ya)
-			case Split:
-				sf, x, y = pluginSplitDataToSVG(s, sf, lsr, x, y)
-				lsr = nil
-				ya = y0
-			case Merge:
-				sf.completedMerge = pluginMergeDataToSVG(s, sf, mod, x, y)
-				mod = nil
-				ya = y0
-			default:
-				panic(fmt.Sprintf("unsupported type: %T", is))
-			}
-
-			ymax = max(ymax, y)
-		}
-		xmax = max(xmax, x)
-		y0 = ymax + 5
+func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := mdTmpl.Execute(&buf, mdf)
+	if err != nil {
+		return nil, err
 	}
-	return sf, xmax, ymax
+	return buf.Bytes(), nil
 }
 
 func min(a, b int) int {

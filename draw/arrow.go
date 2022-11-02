@@ -100,9 +100,9 @@ func addSrcPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 		if a.SrcPort != "" {
 			sts = append(sts, &svgText{
 				X: x + 6, Y: y + 20,
-				Width:      len(a.SrcPort) * 8,
-				Text:       a.SrcPort,
-				UnderArrow: true,
+				Width: len(a.SrcPort) * 8,
+				Text:  a.SrcPort,
+				Small: true,
 			})
 		}
 	}
@@ -122,15 +122,15 @@ func addDstPort(a Arrow, sts []*svgText, x, y int) ([]*svgText, int) {
 	} else if a.DstPort != "" { // text under the arrow
 		sts = append(sts, &svgText{
 			X: x - len(a.DstPort)*8 - 12, Y: y + 20,
-			Width:      len(a.DstPort) * 8,
-			Text:       a.DstPort,
-			UnderArrow: true,
+			Width: len(a.DstPort) * 8,
+			Text:  a.DstPort,
+			Small: true,
 		})
 	}
 	return sts, x
 }
 
-func maxStretchedLen(dts []DataType) (maxNameLen, maxTypeLen int) {
+func maxStretchedLen(dts []*DataType) (maxNameLen, maxTypeLen int) {
 	mnl := 0
 	mtl := 0
 	n := len(dts) - 1

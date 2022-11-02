@@ -1,7 +1,7 @@
 package draw
 
 func textDataToSVG(t Text, sf *svgFlow, x int, y int) (nsf *svgFlow, nx, ny int) {
-	txt := "... back to: " + t.Text
+	txt := "back to: " + t.Text
 	width := len(txt) * 8
 
 	y += 12 + 24 - 6

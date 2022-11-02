@@ -1,5 +1,42 @@
 package draw
 
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
+	if m.drawData == nil {
+		m.drawData = &drawData{
+			x0:      arr.x0 + arr.width,
+			y0:      arr.y0,
+			height:  arr.height,
+			minLine: arr.minLine,
+			maxLine: arr.maxLine,
+		}
+		merges[m.ID] = m
+		m.arrows = make([]*drawData, 1, m.Size)
+		m.arrows[0] = arr
+		return
+	}
+	m.drawData.x0 = max(m.drawData.x0, arr.x0+arr.width)
+	m.drawData.y0 = min(m.drawData.y0, arr.y0)
+	m.drawData.height = max(m.drawData.height, arr.y0+arr.height-m.drawData.y0)
+	m.drawData.minLine = min(m.drawData.minLine, arr.minLine)
+	m.drawData.maxLine = max(m.drawData.maxLine, arr.maxLine)
+
+	m.arrows = append(m.arrows, arr)
+	if len(m.arrows) == m.Size {
+		growArrows(m.arrows, m.drawData)
+	}
+}
+func growArrows(arrs []*drawData, d *drawData) {
+	for _, arr := range arrs {
+		arr.width = max(arr.width, d.x0-arr.x0)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Convert To SVG and MD
+// --------------------------------------------------------------------------
 func mergeDataToSVG(m Merge, sf *svgFlow, mod *moveData, x0, y0 int,
 ) (completedMerge *myMergeData) {
 	md := sf.allMerges[m.ID]
