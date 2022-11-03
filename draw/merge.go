@@ -30,7 +30,7 @@ func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
 }
 func growArrows(arrs []*drawData, d *drawData) {
 	for _, arr := range arrs {
-		arr.width = max(arr.width, d.x0-arr.x0)
+		arr.width = d.x0 - arr.x0
 	}
 }
 

@@ -170,7 +170,7 @@ func flowDataToSVGFlows(f Flow) (map[string]*svgFlow, *mdFlow) {
 
 func enrichFlow(f Flow) {
 	merges := make(map[string]*Merge)
-	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges, nil, nil, enrichMerge)
+	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges, enrichArrow, nil, enrichMerge)
 }
 
 func svgFlowsToBytes(sfs map[string]*svgFlow) (map[string][]byte, error) {

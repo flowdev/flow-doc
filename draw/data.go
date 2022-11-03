@@ -1,6 +1,12 @@
 package draw
 
-const LineGap = 8
+const (
+	LineGap    = 8
+	LineHeight = 24
+	CharWidth  = 8
+	ParenWidth = 6
+	WordGap    = 6
+)
 
 type FlowMode int
 

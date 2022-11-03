@@ -1,5 +1,57 @@
 package draw
 
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func enrichArrow(arr *Arrow, x0, y0, minLine int) {
+	lineDiff := len(arr.DataTypes) + 1
+	height := lineDiff * LineHeight
+	width := computeArrowWidth(arr)
+
+	arr.drawData = &drawData{
+		x0:      x0,
+		y0:      y0,
+		width:   width,
+		height:  height,
+		minLine: minLine,
+		maxLine: minLine + lineDiff,
+	}
+}
+
+func computeArrowWidth(arr *Arrow) int {
+	portWidth := 0
+	if arr.HasSrcOp {
+		portWidth = len(arr.SrcPort) * CharWidth
+	}
+	if arr.HasDstOp {
+		portWidth += len(arr.DstPort) * CharWidth
+	}
+	if portWidth != 0 {
+		portWidth += WordGap // so the port text isn't glued to the op
+		if arr.HasSrcOp && arr.HasDstOp {
+			portWidth += 2 * CharWidth
+		}
+	}
+
+	dataNameLen, dataTypeLen := maxStretchedLen(arr.DataTypes)
+	dataWidth := (1+dataNameLen+1+dataTypeLen+1)*CharWidth + 2*ParenWidth
+
+	width := max(portWidth, dataWidth) +
+		12 // last 12 is for tip of arrow
+
+	if !arr.HasSrcOp {
+		width += len(arr.SrcPort)*CharWidth + WordGap
+	}
+	if !arr.HasDstOp {
+		width += len(arr.DstPort)*CharWidth + WordGap
+	}
+
+	return width
+}
+
+// --------------------------------------------------------------------------
+// Convert To SVG and MD
+// --------------------------------------------------------------------------
 func arrowDataToSVG(a Arrow, sf *svgFlow, lsr *svgRect, x int, y int,
 ) (nsf *svgFlow, nx, ny int, mod *moveData) {
 	var srcPortText, dstPortText *svgText

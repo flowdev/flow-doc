@@ -7,8 +7,8 @@ import "fmt"
 // --------------------------------------------------------------------------
 func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 	mode FlowMode, merges map[string]*Merge,
-	pluginEnrichArrow func(*Arrow, FlowMode, int, int, int),
-	pluginEnrichOp func(*Op, FlowMode, int, int, int),
+	pluginEnrichArrow func(*Arrow, int, int, int),
+	pluginEnrichOp func(*Op, int, int, int),
 	pluginEnrichMerge func(*Merge, *drawData, map[string]*Merge),
 ) {
 	var lastOp *drawData
@@ -30,7 +30,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 		for j, is := range ss {
 			switch s := is.(type) {
 			case *Arrow:
-				pluginEnrichArrow(s, mode, x, y, line)
+				pluginEnrichArrow(s, x, y, line)
 				lastArr = s.drawData
 				x = growX(lastArr)
 				ymax = growY(ymax, lastArr)
@@ -42,22 +42,28 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 					growOpToDrawData(lastOp, lastArr)
 				}
 			case *Op:
-				pluginEnrichOp(s, mode, x, y, line)
+				pluginEnrichOp(s, x, y, line)
 				lastOp = s.drawData
+				merge := merges[s.Main.Name]
+				if j == 0 && merge != nil {
+					d := merge.drawData
+					lastOp.x0 = d.x0
+					lastOp.y0 = d.y0
+					lineDiff := lastOp.maxLine - lastOp.minLine
+					lastOp.minLine = d.minLine
+					lastOp.maxLine = max(lastOp.minLine+lineDiff, d.maxLine)
+					lastOp.height = max(lastOp.height, d.height)
+					y = lastOp.y0
+					if mode != FlowModeSVGLinks {
+						ymax -= LineGap
+					}
+					line = lastOp.minLine
+				}
 				x = growX(lastOp)
 				ymax = growY(ymax, lastOp)
 				maxLine = growLine(maxLine, lastOp)
 				if lastArr != nil {
 					growOpToDrawData(lastOp, lastArr)
-				}
-				merge := merges[s.Main.Name]
-				if j == 0 && merge != nil {
-					lastOp.x0 = merge.drawData.x0
-					lastOp.y0 = merge.drawData.y0
-					lineDiff := lastOp.maxLine - lastOp.minLine
-					lastOp.minLine = merge.drawData.minLine
-					lastOp.maxLine = lastOp.minLine + lineDiff
-					growOpToDrawData(lastOp, merge.drawData)
 				}
 			case *Split:
 				enrichSplit(s, x, y, line, lastOp, mode, merges,
