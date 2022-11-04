@@ -2,7 +2,7 @@ package draw
 
 import "fmt"
 
-func validateFlowData(f Flow) error {
+func validateFlowData(f *Flow) error {
 	return validateShapes(f.Shapes.Shapes)
 }
 

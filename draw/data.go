@@ -6,6 +6,7 @@ const (
 	CharWidth  = 8
 	ParenWidth = 6
 	WordGap    = 6
+	TextOffset = 6
 )
 
 type FlowMode int
@@ -18,9 +19,9 @@ const (
 
 // drawData contains all data needed for positioning the element correctly.
 type drawData struct {
-	x0, y0           int
-	height, width    int
-	minLine, maxLine int
+	x0, y0         int
+	height, width  int
+	minLine, lines int
 }
 
 // DataType contains the optional name of the data and its type.
@@ -30,17 +31,19 @@ type DataType struct {
 	Type     string
 	Link     string
 	drawData *drawData
+	x1       int // for aligning the data types of arrows
 }
 
 // Arrow contains all information for displaying an Arrow including data type
 // and ports.
 type Arrow struct {
-	DataTypes []*DataType
-	HasSrcOp  bool
-	SrcPort   string
-	HasDstOp  bool
-	DstPort   string
-	drawData  *drawData
+	DataTypes      []*DataType
+	HasSrcOp       bool
+	SrcPort        string
+	HasDstOp       bool
+	DstPort        string
+	drawData       *drawData
+	dataTypesWidth int // // for centering the data types
 }
 
 // Text is the text to display as a flow output port.

@@ -10,18 +10,19 @@ func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
 			y0:      arr.y0,
 			height:  arr.height,
 			minLine: arr.minLine,
-			maxLine: arr.maxLine,
+			lines:   arr.lines,
 		}
 		merges[m.ID] = m
 		m.arrows = make([]*drawData, 1, m.Size)
 		m.arrows[0] = arr
 		return
 	}
-	m.drawData.x0 = max(m.drawData.x0, arr.x0+arr.width)
-	m.drawData.y0 = min(m.drawData.y0, arr.y0)
-	m.drawData.height = max(m.drawData.height, arr.y0+arr.height-m.drawData.y0)
-	m.drawData.minLine = min(m.drawData.minLine, arr.minLine)
-	m.drawData.maxLine = max(m.drawData.maxLine, arr.maxLine)
+	md := m.drawData
+	md.x0 = max(md.x0, arr.x0+arr.width)
+	md.y0 = min(md.y0, arr.y0)
+	md.height = max(md.height, arr.y0+arr.height-md.y0)
+	md.minLine = min(md.minLine, arr.minLine)
+	md.lines = max(md.lines, arr.lines)
 
 	m.arrows = append(m.arrows, arr)
 	if len(m.arrows) == m.Size {

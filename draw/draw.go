@@ -3,6 +3,7 @@ package draw
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"text/template"
 )
 
@@ -18,10 +19,14 @@ const svgDiagram = `<?xml version="1.0" ?>
 	<line stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" x1="{{.XTip2}}" y1="{{.YTip2}}" x2="{{.X2}}" y2="{{.Y2}}"/>
 {{end}}
 {{- range .Rects}}
-{{- if .IsPlugin}}
-	<rect fill="rgb(32,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="8"/>
-{{- else}}
-	<rect fill="rgb(96,196,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="8"/>
+{{- if .IsSubRect}}
+	<rect fill="rgb(32,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="1" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+{{- else -}}
+	{{- if .IsPlugin}}
+	<rect fill="rgb(32,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+	{{- else}}
+	<rect fill="rgb(96,196,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+	{{- end}}
 {{- end}}
 {{- end}}
 {{range .Lines}}
@@ -39,7 +44,7 @@ const svgDiagram = `<?xml version="1.0" ?>
 
 const mdDiagram = `
 {{- if .FlowLines}}
-{{- $n := len(.FlowLines) -}}
+{{- $n := len .FlowLines -}}
 {{range $i, $flowLine := .FlowLines}}
 	{{- range $cell := $flowLine -}}
 		{{- if $cell.Link -}}
@@ -53,22 +58,30 @@ const mdDiagram = `
 {{else}}
 ![{{.Flow.Name}}]({{.Flow.SVG}})
 {{end}}
-{{ - if .DataTypes}}
+{{- if .DataTypes}}
 
 #### Data Types
 {{range $name, $link := .DataTypes}}[{{$name}}]({{$link}}), {{end}}
 {{end}}
-{{ - if .Subflows}}
+{{- if .Subflows}}
 
 #### Subflows
 {{range $name, $link := .Flows}}[{{$name}}]({{$link}}), {{end}}
 {{end}}
-{{ - if .GoFuncs}}
+{{- if .GoFuncs}}
 
 #### Go Functions and Methods
 {{range $name, $link := .GoFuncs}}[{{$name}}]({{$link}}), {{end}}
 {{end}}
 `
+
+type TextType int
+
+const (
+	TextTypeText TextType = iota
+	TextTypeLink
+	TextTypeGoLink
+)
 
 type svgArrow struct {
 	X1, Y1       int
@@ -78,12 +91,14 @@ type svgArrow struct {
 }
 
 type svgRect struct {
-	X, Y     int
-	Width    int
-	Height   int
-	IsPlugin bool
+	X, Y      int
+	Width     int
+	Height    int
+	IsPlugin  bool
+	IsSubRect bool
 }
 
+// TODO: REMOVE!!!
 type svgLine struct {
 	X1, Y1 int
 	X2, Y2 int
@@ -94,26 +109,31 @@ type svgText struct {
 	Width int
 	Text  string
 	Small bool
+	Type  TextType
 }
 
 type svgFlow struct {
+	X0, Y0      int
 	TotalWidth  int
 	TotalHeight int
 	Arrows      []*svgArrow
 	Rects       []*svgRect
-	Lines       []*svgLine
+	Lines       []*svgLine // TODO: REMOVE!!!
 	Texts       []*svgText
 
-	completedMerge *myMergeData
-	allMerges      map[string]*myMergeData
+	completedMerge *myMergeData            // TODO: REMOVE!!!
+	allMerges      map[string]*myMergeData // TODO: REMOVE!!!
 }
 
+// TODO: REMOVE!!!
 type myMergeData struct {
 	moveData []*moveData
 	curSize  int
 	x0, y0   int
 	yn       int
 }
+
+// TODO: REMOVE!!!
 type moveData struct {
 	arrow       *svgArrow
 	dataTexts   []*svgText
@@ -142,15 +162,20 @@ var mdTmpl = template.Must(template.New("mdDiagram").Parse(mdDiagram))
 // FromFlowData creates a set of SVG diagrams and a MarkDown file from flow
 // data. If the flow data isn't valid or the SVG diagrams or the MarkDown file
 // can't be created with their template, an error is returned.
-func FromFlowData(f Flow) (svgContents map[string][]byte, mdContent []byte, err error) {
+func FromFlowData(f *Flow) (svgContents map[string][]byte, mdContent []byte, err error) {
 	err = validateFlowData(f)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	sf, mdf := flowDataToSVGFlows(f)
+	enrichFlow(f)
+	sfs, mdf := flowToSVG(f)
+	if f.Mode != FlowModeSVGLinks {
+		sfs[f.Name+".svg"] = sfs[""]
+		delete(sfs, "")
+	}
 
-	svgContents, err = svgFlowsToBytes(sf)
+	svgContents, err = svgFlowsToBytes(sfs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,15 +187,36 @@ func FromFlowData(f Flow) (svgContents map[string][]byte, mdContent []byte, err 
 	return svgContents, mdContent, nil
 }
 
-func flowDataToSVGFlows(f Flow) (map[string]*svgFlow, *mdFlow) {
-	enrichFlow(f)
-
-	return nil, nil
+func enrichFlow(f *Flow) {
+	merges := make(map[string]*Merge)
+	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges,
+		enrichArrow, enrichOp, enrichMerge)
 }
 
-func enrichFlow(f Flow) {
-	merges := make(map[string]*Merge)
-	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges, enrichArrow, nil, enrichMerge)
+func flowToSVG(f *Flow) (map[string]*svgFlow, *mdFlow) {
+	sfs := make(map[string]*svgFlow)
+	mdf := &mdFlow{
+		FlowLines: make([][]svgLink, 0, 128),
+		DataTypes: make(map[string]string),
+		Subflows:  make(map[string]string),
+		GoFuncs:   make(map[string]string),
+	}
+	if f.Mode != FlowModeSVGLinks {
+		mdf.Flow = svgLink{
+			Name: f.Name,
+			SVG:  filepath.Join(".", "flowdev", "flow-"+f.Name+".svg"),
+		}
+		d := f.Shapes.drawData
+		svg := &svgFlow{
+			X0:          0,
+			Y0:          0,
+			TotalHeight: d.height,
+			TotalWidth:  d.width,
+		}
+		sfs[""] = svg
+	}
+	splitToSVG(sfs, mdf, f.Mode, f.Shapes)
+	return sfs, mdf
 }
 
 func svgFlowsToBytes(sfs map[string]*svgFlow) (map[string][]byte, error) {

@@ -20,20 +20,32 @@ func TestFromFlowData(t *testing.T) {
 }
 
 func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
+	const mdFile = "markdown.actual"
 	workDir := ts.Getenv("WORK")
-	funcFile := filepath.Join(workDir, "flow.actual")
 
-	gotBytes, err := draw.FromFlowData(BigTestFlowData)
+	svgContents, mdContent, err := draw.FromFlowData(BigTestFlowData)
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)
 	}
 
-	err = os.WriteFile(funcFile, gotBytes, 0666)
-	if err != nil {
-		ts.Fatalf("unable to write file %q: %v", funcFile, err)
+	for fnam, fcontent := range svgContents {
+		workFNam := filepath.Join(workDir, fnam)
+		err = os.WriteFile(workFNam, fcontent, 0666)
+		if err != nil {
+			ts.Fatalf("unable to write file %q: %v", workFNam, err)
+		}
+		err = os.WriteFile(fnam, fcontent, 0666)
+		if err != nil {
+			ts.Fatalf("unable to write file %q: %v", fnam, err)
+		}
 	}
-	err = os.WriteFile("./current.svg", gotBytes, 0666)
+	workMDFile := filepath.Join(workDir, mdFile)
+	err = os.WriteFile(workMDFile, mdContent, 0666)
 	if err != nil {
-		ts.Fatalf("unable to write file %q: %v", "./current.svg", err)
+		ts.Fatalf("unable to write file %q: %v", workMDFile, err)
+	}
+	err = os.WriteFile(mdFile, mdContent, 0666)
+	if err != nil {
+		ts.Fatalf("unable to write file %q: %v", mdFile, err)
 	}
 }

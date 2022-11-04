@@ -34,7 +34,9 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastArr = s.drawData
 				x = growX(lastArr)
 				ymax = growY(ymax, lastArr)
-				maxLine = growLine(maxLine, lastOp)
+				if lastOp != nil {
+					maxLine = growLine(maxLine, lastOp)
+				}
 				if j == 0 && outerOp != nil {
 					growOpToDrawData(outerOp, lastArr)
 				}
@@ -44,15 +46,11 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 			case *Op:
 				pluginEnrichOp(s, x, y, line)
 				lastOp = s.drawData
-				merge := merges[s.Main.Name]
+				merge := mergeForOp(s, merges)
 				if j == 0 && merge != nil {
-					d := merge.drawData
-					lastOp.x0 = d.x0
-					lastOp.y0 = d.y0
-					lineDiff := lastOp.maxLine - lastOp.minLine
-					lastOp.minLine = d.minLine
-					lastOp.maxLine = max(lastOp.minLine+lineDiff, d.maxLine)
-					lastOp.height = max(lastOp.height, d.height)
+					moveOp(s, merge.drawData)
+					growOpToDrawData(lastOp, merge.drawData)
+
 					y = lastOp.y0
 					if mode != FlowModeSVGLinks {
 						ymax -= LineGap
@@ -92,26 +90,57 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 		height:  ymax - y0,
 		width:   xmax - x0,
 		minLine: minLine,
-		maxLine: maxLine,
+		lines:   maxLine - minLine + 1,
 	}
 }
+
 func growX(d *drawData) int {
 	return d.x0 + d.width
 }
+
 func growY(ymax int, d *drawData) int {
 	return max(ymax, d.y0+d.height)
 }
+
 func growLine(maxLine int, d *drawData) int {
-	return max(maxLine, d.maxLine)
+	return max(maxLine, d.minLine+d.lines-1)
 }
+
 func growOpToDrawData(op *drawData, d *drawData) {
-	op.maxLine = max(op.maxLine, d.maxLine)
 	op.height = max(op.height, d.y0+d.height-op.y0)
+	op.lines = max(op.lines, d.minLine+d.lines-op.minLine)
+}
+
+func mergeForOp(op *Op, merges map[string]*Merge) *Merge {
+	if op.Main.Name != "" {
+		return merges[op.Main.Name]
+	} else {
+		return merges[op.Main.Type]
+	}
 }
 
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
+func splitToSVG(sfs map[string]*svgFlow, mdf *mdFlow, mode FlowMode, split *Split) {
+	for _, ss := range split.Shapes {
+		for _, is := range ss {
+			switch s := is.(type) {
+			case *Arrow:
+				arrowToSVG(sfs, mdf, mode, s)
+			case *Op:
+				opToSVG(sfs, mdf, mode, s)
+			case *Split:
+				splitToSVG(sfs, mdf, mode, s)
+			case *Merge:
+				// no SVG to create
+			default:
+				panic(fmt.Sprintf("unsupported type: %T", is))
+			}
+		}
+	}
+}
+
 func splitDataToSVG(s Split, sf *svgFlow, lsr *svgRect, x0, y0 int,
 ) (nsf *svgFlow, xn, yn int) {
 	nsf, xn, yn = shapesToSVG(
