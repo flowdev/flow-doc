@@ -90,7 +90,17 @@ type Merge struct {
 
 // Flow contains data for a whole flow.
 // The data is organized in rows and individual shapes per row.
-// Valid shapes are Arrow, Op, Split, Merge and rarely Text.
+// Valid shapes are Arrow, Op, Split, and Merge.
+//
+// The following rules apply:
+// - Arrows and Ops alternate.
+// - Instead of a single Arrow a Split can be used for multiple Arrows.
+//   So the first element of such a split is always an Arrow.
+// - The last Op in a row can instead be a Merge.
+//   The real Op for the merge has to be the first element of a future row.
+//   Of course multiple merges can "point" to the same Op (using the same ID).
+//   The same Merge instance has to be used for this (only 1 instance per ID).
+// - The real Op of a merge can be followed by an Arrow or Split as usual.
 type Flow struct {
 	Mode   FlowMode
 	Name   string

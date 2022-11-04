@@ -140,9 +140,9 @@ func FromFlowData(f *Flow) (svgContents map[string][]byte, mdContent []byte, err
 	}
 
 	enrichFlow(f)
-	sfs, mdf := flowToSVG(f)
+	sfs, mdf := flowToSVGs(f)
 	if f.Mode != FlowModeSVGLinks {
-		sfs[f.Name+".svg"] = sfs[""]
+		sfs["flow-"+f.Name+".svg"] = sfs[""]
 		delete(sfs, "")
 	}
 
@@ -164,8 +164,8 @@ func enrichFlow(f *Flow) {
 		enrichArrow, enrichOp, enrichMerge)
 }
 
-func flowToSVG(f *Flow) (map[string]*svgFlow, *mdFlow) {
-	sfs := make(map[string]*svgFlow)
+func flowToSVGs(f *Flow) (map[string]*svgFlow, *mdFlow) {
+	sfs := make(map[string]*svgFlow, 256)
 	mdf := &mdFlow{
 		FlowLines: make([][]svgLink, 0, 128),
 		DataTypes: make(map[string]string),
@@ -186,7 +186,12 @@ func flowToSVG(f *Flow) (map[string]*svgFlow, *mdFlow) {
 		}
 		sfs[""] = svg
 	}
-	splitToSVG(sfs, mdf, f.Mode, f.Shapes)
+
+	minLine := f.Shapes.drawData.minLine
+	maxLine := minLine + f.Shapes.drawData.lines - 1
+	for line := minLine; line <= maxLine; line++ {
+		splitToSVG(sfs, mdf, line, f.Mode, f.Shapes)
+	}
 	return sfs, mdf
 }
 

@@ -122,16 +122,25 @@ func mergeForOp(op *Op, merges map[string]*Merge) *Merge {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func splitToSVG(sfs map[string]*svgFlow, mdf *mdFlow, mode FlowMode, split *Split) {
+func splitToSVG(sfs map[string]*svgFlow, mdf *mdFlow, line int, mode FlowMode, split *Split) {
 	for _, ss := range split.Shapes {
 		for _, is := range ss {
 			switch s := is.(type) {
 			case *Arrow:
-				arrowToSVG(sfs, mdf, mode, s)
+				minLine := s.drawData.minLine
+				if minLine <= line && line < minLine+s.drawData.lines {
+					arrowToSVG(sfs, mdf, mode, s)
+				}
 			case *Op:
-				opToSVG(sfs, mdf, mode, s)
+				minLine := s.drawData.minLine
+				if minLine <= line && line < minLine+s.drawData.lines {
+					opToSVG(sfs, mdf, mode, s)
+				}
 			case *Split:
-				splitToSVG(sfs, mdf, mode, s)
+				minLine := s.drawData.minLine
+				if minLine <= line && line < minLine+s.drawData.lines {
+					splitToSVG(sfs, mdf, line, mode, s)
+				}
 			case *Merge:
 				// no SVG to create
 			default:
