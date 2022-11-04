@@ -23,14 +23,11 @@ const svgDiagram = `<?xml version="1.0" ?>
 	<rect fill="rgb(32,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="1" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
 {{- else -}}
 	{{- if .IsPlugin}}
-	<rect fill="rgb(32,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+	<rect fill="rgb(224,224,32)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
 	{{- else}}
-	<rect fill="rgb(96,196,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+	<rect fill="rgb(96,192,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
 	{{- end}}
 {{- end}}
-{{- end}}
-{{range .Lines}}
-	<line stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="1" x1="{{.X1}}" y1="{{.Y1}}" x2="{{.X2}}" y2="{{.Y2}}"/>
 {{- end}}
 {{range .Texts}}
 {{- if .Small}}
@@ -98,12 +95,6 @@ type svgRect struct {
 	IsSubRect bool
 }
 
-// TODO: REMOVE!!!
-type svgLine struct {
-	X1, Y1 int
-	X2, Y2 int
-}
-
 type svgText struct {
 	X, Y  int
 	Width int
@@ -118,27 +109,7 @@ type svgFlow struct {
 	TotalHeight int
 	Arrows      []*svgArrow
 	Rects       []*svgRect
-	Lines       []*svgLine // TODO: REMOVE!!!
 	Texts       []*svgText
-
-	completedMerge *myMergeData            // TODO: REMOVE!!!
-	allMerges      map[string]*myMergeData // TODO: REMOVE!!!
-}
-
-// TODO: REMOVE!!!
-type myMergeData struct {
-	moveData []*moveData
-	curSize  int
-	x0, y0   int
-	yn       int
-}
-
-// TODO: REMOVE!!!
-type moveData struct {
-	arrow       *svgArrow
-	dataTexts   []*svgText
-	dstPortText *svgText
-	yn          int
 }
 
 type svgLink struct {
