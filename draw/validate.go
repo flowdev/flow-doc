@@ -3,10 +3,12 @@ package draw
 import "fmt"
 
 func validateFlowData(f *Flow) error {
-	return validateShapes(f.Shapes.Shapes)
+	return validateSplit(f.AllShapes)
 }
 
-func validateShapes(shapes [][]any) error {
+func validateSplit(split *Split) error {
+	shapes := split.Shapes
+
 	if len(shapes) <= 0 {
 		return fmt.Errorf("No shapes found")
 	}
@@ -16,7 +18,7 @@ func validateShapes(shapes [][]any) error {
 			case *Arrow, *Op, *Merge, *Text:
 				break
 			case *Split:
-				err := validateShapes(shape.Shapes)
+				err := validateSplit(shape)
 				if err != nil {
 					return err
 				}

@@ -122,13 +122,28 @@ func moveOp(op *Op, merge *drawData) {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func opToSVG(sfs map[string]*svgFlow, mdf *mdFlow, mode FlowMode, op *Op) {
-	if mode != FlowModeSVGLinks {
-		svg := sfs[""]
-		rectToSVG(svg, op.drawData, false, false, false)
-		opMainToSVG(svg, op.Main)
-		for _, p := range op.Plugins {
-			pluginToSVG(svg, p)
+func opToSVG(smf *svgMDFlow, line int, mode FlowMode, op *Op) {
+	var svg *svgFlow
+	od := op.drawData
+	idx := line - od.minLine
+
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		svg = newSVGFlow(od.x0, od.y0+idx*LineHeight, LineHeight, od.width, tinyDiagramSize)
+		smf.svgs[svgFileName(smf, opID(op), 0, line)] = svg
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	if mode == FlowModeSVGLinks || idx == 0 { // outer rect
+		rectToSVG(svg, od, false, false, false)
+	}
+	if opMainToSVG(svg, line, op.Main) { // main data type
+		return
+	}
+	for _, p := range op.Plugins {
+		if pluginToSVG(svg, line, mode, p) {
+			return
 		}
 	}
 }
@@ -160,16 +175,23 @@ func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
 	svg.Rects = append(svg.Rects, rect)
 }
 
-func opMainToSVG(svg *svgFlow, main *DataType) {
+func opMainToSVG(svg *svgFlow, line int, main *DataType) bool {
 	md := main.drawData
+	if !withinShape(line, md) {
+		return false
+	}
 	y0 := md.y0
+	idx := line - md.minLine
 	if main.Name != "" {
-		svg.Texts = append(svg.Texts, &svgText{
-			X:     md.x0 + WordGap,
-			Y:     y0 + LineHeight - TextOffset,
-			Width: len(main.Name) * CharWidth,
-			Text:  main.Name,
-		})
+		if idx == 0 {
+			svg.Texts = append(svg.Texts, &svgText{
+				X:     md.x0 + WordGap,
+				Y:     y0 + LineHeight - TextOffset,
+				Width: len(main.Name) * CharWidth,
+				Text:  main.Name,
+			})
+			return true
+		}
 		y0 += LineHeight
 	}
 	svg.Texts = append(svg.Texts, &svgText{
@@ -178,12 +200,19 @@ func opMainToSVG(svg *svgFlow, main *DataType) {
 		Width: len(main.Type) * CharWidth,
 		Text:  main.Type,
 	})
+	return true
 }
 
-func pluginToSVG(svg *svgFlow, p *Plugin) {
+func pluginToSVG(svg *svgFlow, line int, mode FlowMode, p *Plugin) bool {
 	pd := p.drawData
-	rectToSVG(svg, pd, true, false, false)
-	if p.Title != "" {
+	if !withinShape(line, pd) {
+		return false
+	}
+
+	if mode == FlowModeSVGLinks || line == pd.minLine { // plugin rect
+		rectToSVG(svg, pd, true, false, false)
+	}
+	if p.Title != "" && line == pd.minLine {
 		txt := p.Title + ":"
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     pd.x0 + WordGap,
@@ -191,15 +220,22 @@ func pluginToSVG(svg *svgFlow, p *Plugin) {
 			Width: len(txt) * CharWidth,
 			Text:  txt,
 		})
+		return true
 	}
 	lastI := len(p.Types) - 1
 	for i, pt := range p.Types {
-		pluginTypeToSVG(svg, pt, i == lastI)
+		if pluginTypeToSVG(svg, line, pt, i == lastI) {
+			return true
+		}
 	}
+	return true // should never happen
 }
 
-func pluginTypeToSVG(svg *svgFlow, pt *PluginType, last bool) {
+func pluginTypeToSVG(svg *svgFlow, line int, pt *PluginType, last bool) bool {
 	ptd := pt.drawData
+	if !withinShape(line, ptd) {
+		return false
+	}
 	rectToSVG(svg, ptd, true, true, true)
 	svg.Texts = append(svg.Texts, &svgText{
 		X:     ptd.x0 + WordGap,
@@ -207,4 +243,12 @@ func pluginTypeToSVG(svg *svgFlow, pt *PluginType, last bool) {
 		Width: len(pt.Type) * CharWidth,
 		Text:  pt.Type,
 	})
+	return true
+}
+
+func opID(op *Op) string {
+	if op.Main.Name != "" {
+		return op.Main.Name
+	}
+	return op.Main.Type
 }

@@ -39,6 +39,8 @@ const svgDiagram = `<?xml version="1.0" ?>
 </svg>
 `
 
+var svgTmpl = template.Must(template.New("svgDiagram").Parse(svgDiagram))
+
 const mdDiagram = `
 {{- if .FlowLines}}
 {{- $n := len .FlowLines -}}
@@ -72,12 +74,19 @@ const mdDiagram = `
 {{end}}
 `
 
+var mdTmpl = template.Must(template.New("mdDiagram").Parse(mdDiagram))
+
 type TextType int
 
 const (
 	TextTypeText TextType = iota
 	TextTypeLink
 	TextTypeGoLink
+)
+
+const (
+	bigDiagramSize  = 256
+	tinyDiagramSize = 8
 )
 
 type svgArrow struct {
@@ -89,8 +98,8 @@ type svgArrow struct {
 
 type svgRect struct {
 	X, Y      int
-	Width     int
 	Height    int
+	Width     int
 	IsPlugin  bool
 	IsSubRect bool
 }
@@ -105,11 +114,23 @@ type svgText struct {
 
 type svgFlow struct {
 	X0, Y0      int
-	TotalWidth  int
 	TotalHeight int
+	TotalWidth  int
 	Arrows      []*svgArrow
 	Rects       []*svgRect
 	Texts       []*svgText
+}
+
+func newSVGFlow(x0, y0, height, width, size int) *svgFlow {
+	return &svgFlow{
+		X0:          x0,
+		Y0:          y0,
+		TotalHeight: height,
+		TotalWidth:  width,
+		Arrows:      make([]*svgArrow, 0, size),
+		Rects:       make([]*svgRect, 0, size),
+		Texts:       make([]*svgText, 0, size),
+	}
 }
 
 type svgLink struct {
@@ -126,9 +147,20 @@ type mdFlow struct {
 	GoFuncs   map[string]string
 }
 
-var svgTmpl = template.Must(template.New("svgDiagram").Parse(svgDiagram))
+func newMDFlow() *mdFlow {
+	return &mdFlow{
+		FlowLines: make([][]svgLink, 0, 128),
+		DataTypes: make(map[string]string, 256),
+		Subflows:  make(map[string]string, 256),
+		GoFuncs:   make(map[string]string, 256),
+	}
+}
 
-var mdTmpl = template.Must(template.New("mdDiagram").Parse(mdDiagram))
+type svgMDFlow struct {
+	svgs          map[string]*svgFlow
+	md            *mdFlow
+	svgFilePrefix string
+}
 
 // FromFlowData creates a set of SVG diagrams and a MarkDown file from flow
 // data. If the flow data isn't valid or the SVG diagrams or the MarkDown file
@@ -140,17 +172,17 @@ func FromFlowData(f *Flow) (svgContents map[string][]byte, mdContent []byte, err
 	}
 
 	enrichFlow(f)
-	sfs, mdf := flowToSVGs(f)
+	smf := flowToSVGs(f)
 	if f.Mode != FlowModeSVGLinks {
-		sfs["flow-"+f.Name+".svg"] = sfs[""]
-		delete(sfs, "")
+		smf.svgs[smf.svgFilePrefix+".svg"] = smf.svgs[""]
+		delete(smf.svgs, "")
 	}
 
-	svgContents, err = svgFlowsToBytes(sfs)
+	svgContents, err = svgFlowsToBytes(smf.svgs)
 	if err != nil {
 		return nil, nil, err
 	}
-	mdContent, err = mdFlowToBytes(mdf)
+	mdContent, err = mdFlowToBytes(smf.md)
 	if err != nil {
 		return nil, nil,
 			fmt.Errorf("unable to create MarkDown content for %q flow: %w", f.Name, err)
@@ -160,39 +192,33 @@ func FromFlowData(f *Flow) (svgContents map[string][]byte, mdContent []byte, err
 
 func enrichFlow(f *Flow) {
 	merges := make(map[string]*Merge)
-	enrichSplit(f.Shapes, 0, 0, 0, nil, FlowModeNoLinks, merges,
+	enrichSplit(f.AllShapes, 0, 0, 0, nil, FlowModeNoLinks, merges,
 		enrichArrow, enrichOp, enrichMerge)
 }
 
-func flowToSVGs(f *Flow) (map[string]*svgFlow, *mdFlow) {
-	sfs := make(map[string]*svgFlow, 256)
-	mdf := &mdFlow{
-		FlowLines: make([][]svgLink, 0, 128),
-		DataTypes: make(map[string]string),
-		Subflows:  make(map[string]string),
-		GoFuncs:   make(map[string]string),
+func flowToSVGs(f *Flow) *svgMDFlow {
+	smf := &svgMDFlow{
+		svgs:          make(map[string]*svgFlow, 256),
+		md:            newMDFlow(),
+		svgFilePrefix: filepath.Join(".", "flow-"+f.Name),
 	}
+	fd := f.AllShapes.drawData
+
 	if f.Mode != FlowModeSVGLinks {
-		mdf.Flow = svgLink{
+		smf.md.Flow = svgLink{
 			Name: f.Name,
-			SVG:  filepath.Join(".", "flowdev", "flow-"+f.Name+".svg"),
+			SVG:  smf.svgFilePrefix + ".svg",
 		}
-		d := f.Shapes.drawData
-		svg := &svgFlow{
-			X0:          0,
-			Y0:          0,
-			TotalHeight: d.height,
-			TotalWidth:  d.width,
-		}
-		sfs[""] = svg
+		svg := newSVGFlow(0, 0, fd.height, fd.width, bigDiagramSize)
+		smf.svgs[""] = svg
 	}
 
-	minLine := f.Shapes.drawData.minLine
-	maxLine := minLine + f.Shapes.drawData.lines - 1
+	minLine := fd.minLine
+	maxLine := minLine + fd.lines - 1
 	for line := minLine; line <= maxLine; line++ {
-		splitToSVG(sfs, mdf, line, f.Mode, f.Shapes)
+		splitToSVG(smf, line, f.Mode, f.AllShapes)
 	}
-	return sfs, mdf
+	return smf
 }
 
 func svgFlowsToBytes(sfs map[string]*svgFlow) (map[string][]byte, error) {
@@ -223,6 +249,21 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func svgFileName(smf *svgMDFlow, compName string, x, line int) string {
+	if compName == "" {
+		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, x, line)
+	}
+	return fmt.Sprintf("%s-%s-%d.svg", smf.svgFilePrefix, compName, line)
+}
+
+func maximumLine(d *drawData) int {
+	return d.minLine + d.lines - 1
+}
+
+func withinShape(line int, d *drawData) bool {
+	return d.minLine <= line && line < d.minLine+d.lines
 }
 
 func min(a, b int) int {

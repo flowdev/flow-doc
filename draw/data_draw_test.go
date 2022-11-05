@@ -9,7 +9,7 @@ var bigMerge = &draw.Merge{
 
 var BigTestFlowData = &draw.Flow{
 	Name: "bigTestFlow",
-	Shapes: &draw.Split{
+	AllShapes: &draw.Split{
 		Shapes: [][]any{
 			{
 				&draw.Arrow{

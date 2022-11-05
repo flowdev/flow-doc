@@ -85,26 +85,56 @@ func enrichDataType(dt *DataType, x0, y0, minLine int) {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func arrowToSVG(sfs map[string]*svgFlow, mdf *mdFlow, mode FlowMode, arrow *Arrow) {
-	if mode == FlowModeSVGLinks {
-		return
-	}
-	svg := sfs[""]
+func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
+	var svg *svgFlow
 	ad := arrow.drawData
+	maxLine := maximumLine(ad)
 
-	preArr := preArrowToSVG(svg, arrow, ad)
-	postArr := postArrowToSVG(svg, arrow, ad)
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		x0, y0, height, width := svgDimensionsForLine(line, arrow, ad, maxLine)
+		svg = newSVGFlow(x0, y0, height, width, tinyDiagramSize)
+		smf.svgs[svgFileName(smf, "", ad.x0, line)] = svg
+	} else {
+		svg = smf.svgs[""]
+	}
 
-	srcPortToSVG(svg, arrow, ad, preArr)
-	dstPortToSVG(svg, arrow, ad, postArr)
+	// draw arrow line or compute x and width:
+	var arrX, arrWidth int
+	if line == maxLine {
+		preArr := preArrowToSVG(svg, arrow, ad)
+		postArr := postArrowToSVG(svg, arrow, ad)
 
-	arrX, arrWidth := arrToSVG(svg, ad, preArr, postArr)
+		srcPortToSVG(svg, arrow, ad, preArr)
+		dstPortToSVG(svg, arrow, ad, postArr)
+
+		arrToSVG(svg, ad, preArr, postArr)
+		return
+	} else {
+		tmpSVG := newSVGFlow(0, 0, 0, 0, tinyDiagramSize) // we just want the side effects
+		preArr := preArrowToSVG(tmpSVG, arrow, ad)
+		postArr := postArrowToSVG(tmpSVG, arrow, ad)
+		arrX, arrWidth = arrToSVG(tmpSVG, ad, preArr, postArr)
+	}
 
 	dataWidth := arrWidth - arrTipWidth
-	lastI := len(arrow.DataTypes) - 1
-	for i, dt := range arrow.DataTypes {
-		arrowDataTypeToSVG(svg, dt, arrX, dataWidth, arrow.dataTypesWidth, i == 0, i == lastI)
+	lastIdx := len(arrow.DataTypes) - 1
+	idx := line - ad.minLine
+	dt := arrow.DataTypes[idx]
+	arrowDataTypeToSVG(svg, dt, arrX, dataWidth, arrow.dataTypesWidth, idx == 0, idx == lastIdx)
+}
+
+func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,
+) (x0, y0, height, width int) {
+
+	if line == maxLine {
+		return ad.x0, ad.y0 + ad.height - LineHeight, LineHeight, ad.width
 	}
+
+	idx := line - ad.minLine
+	dt := arrow.DataTypes[idx]
+	dtd := dt.drawData
+	return ad.x0, dtd.y0, dtd.height, ad.width
 }
 
 func preArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
