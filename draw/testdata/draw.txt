@@ -1,4 +1,5 @@
 # draw the BigTestFlowData and compare the resulting SVG with the expected one:
+mkdir flowdev
 drawBigTestFlowData
 cmp flow.actual flow.expected
 

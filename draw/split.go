@@ -122,21 +122,29 @@ func mergeForOp(op *Op, merges map[string]*Merge) *Merge {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
+func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split, x0 int) {
+	x := x0
 	for _, ss := range split.Shapes {
 		for _, is := range ss {
 			switch s := is.(type) {
 			case *Arrow:
 				if withinShape(line, s.drawData) {
 					arrowToSVG(smf, line, mode, s)
+					x += s.drawData.width
 				}
 			case *Op:
 				if withinShape(line, s.drawData) {
+					xDiff := s.drawData.x0 - x
+					if mode == FlowModeSVGLinks && xDiff > 0 {
+						addFillerSVG(smf, line, x, LineHeight, xDiff)
+					}
 					opToSVG(smf, line, mode, s)
+					x += s.drawData.width
 				}
 			case *Split:
 				if withinShape(line, s.drawData) {
-					splitToSVG(smf, line, mode, s)
+					splitToSVG(smf, line, mode, s, x)
+					x += s.drawData.width
 				}
 			case *Merge:
 				// no SVG to create
@@ -145,4 +153,12 @@ func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
 			}
 		}
 	}
+}
+
+func addFillerSVG(smf *svgMDFlow, line, x, height, width int) {
+	svg := newSVGFlow(0, 0, height, width, tinyDiagramSize)
+	name := svgFileName(smf, "filler", x, line)
+
+	smf.svgs[name] = svg
+	addSVGLinkToMDFlowLines(smf, line, name, "filler")
 }

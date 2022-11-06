@@ -87,6 +87,7 @@ func enrichDataType(dt *DataType, x0, y0, minLine int) {
 // --------------------------------------------------------------------------
 func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 	var svg *svgFlow
+	var link *svgLink
 	ad := arrow.drawData
 	maxLine := maximumLine(ad)
 
@@ -94,7 +95,9 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 	if mode == FlowModeSVGLinks {
 		x0, y0, height, width := svgDimensionsForLine(line, arrow, ad, maxLine)
 		svg = newSVGFlow(x0, y0, height, width, tinyDiagramSize)
-		smf.svgs[svgFileName(smf, "", ad.x0, line)] = svg
+		name := svgFileName(smf, "arrow", ad.x0, line)
+		smf.svgs[name] = svg
+		link = addSVGLinkToMDFlowLines(smf, line, name, "arrow")
 	} else {
 		svg = smf.svgs[""]
 	}
@@ -121,7 +124,9 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 	lastIdx := len(arrow.DataTypes) - 1
 	idx := line - ad.minLine
 	dt := arrow.DataTypes[idx]
-	arrowDataTypeToSVG(svg, dt, arrX, dataWidth, arrow.dataTypesWidth, idx == 0, idx == lastIdx)
+
+	arrowDataTypeToSVG(svg, link, dt, arrX, dataWidth, arrow.dataTypesWidth,
+		idx == 0, idx == lastIdx)
 }
 
 func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,
@@ -209,7 +214,7 @@ func arrToSVG(svg *svgFlow, ad *drawData, preArr, postArr int) (arrX, arrWidth i
 }
 
 func arrowDataTypeToSVG(
-	svg *svgFlow, dt *DataType,
+	svg *svgFlow, link *svgLink, dt *DataType,
 	x0, width, dataTypesWidth int,
 	first, last bool,
 ) {
@@ -246,4 +251,8 @@ func arrowDataTypeToSVG(
 		Width: typWidth,
 		Text:  typText,
 	})
+
+	if link != nil {
+		link.Link = dt.Link
+	}
 }

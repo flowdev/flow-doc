@@ -124,13 +124,16 @@ func moveOp(op *Op, merge *drawData) {
 // --------------------------------------------------------------------------
 func opToSVG(smf *svgMDFlow, line int, mode FlowMode, op *Op) {
 	var svg *svgFlow
+	var link *svgLink
 	od := op.drawData
 	idx := line - od.minLine
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
 		svg = newSVGFlow(od.x0, od.y0+idx*LineHeight, LineHeight, od.width, tinyDiagramSize)
-		smf.svgs[svgFileName(smf, opID(op), 0, line)] = svg
+		name := svgFileName(smf, opID(op), -1, line)
+		smf.svgs[name] = svg
+		link = addSVGLinkToMDFlowLines(smf, line, name, "arrow")
 	} else {
 		svg = smf.svgs[""]
 	}
@@ -138,13 +141,16 @@ func opToSVG(smf *svgMDFlow, line int, mode FlowMode, op *Op) {
 	if mode == FlowModeSVGLinks || idx == 0 { // outer rect
 		rectToSVG(svg, od, false, false, false)
 	}
-	if opMainToSVG(svg, line, op.Main) { // main data type
+	if opMainToSVG(svg, link, line, op.Main) { // main data type
 		return
 	}
 	for _, p := range op.Plugins {
-		if pluginToSVG(svg, line, mode, p) {
+		if pluginToSVG(svg, link, line, mode, p) {
 			return
 		}
+	}
+	if link != nil {
+		link.Link = op.Main.Link
 	}
 }
 
@@ -175,10 +181,13 @@ func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
 	svg.Rects = append(svg.Rects, rect)
 }
 
-func opMainToSVG(svg *svgFlow, line int, main *DataType) bool {
+func opMainToSVG(svg *svgFlow, link *svgLink, line int, main *DataType) bool {
 	md := main.drawData
 	if !withinShape(line, md) {
 		return false
+	}
+	if link != nil {
+		link.Link = main.Link
 	}
 	y0 := md.y0
 	idx := line - md.minLine
@@ -203,7 +212,7 @@ func opMainToSVG(svg *svgFlow, line int, main *DataType) bool {
 	return true
 }
 
-func pluginToSVG(svg *svgFlow, line int, mode FlowMode, p *Plugin) bool {
+func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *Plugin) bool {
 	pd := p.drawData
 	if !withinShape(line, pd) {
 		return false
@@ -224,17 +233,20 @@ func pluginToSVG(svg *svgFlow, line int, mode FlowMode, p *Plugin) bool {
 	}
 	lastI := len(p.Types) - 1
 	for i, pt := range p.Types {
-		if pluginTypeToSVG(svg, line, pt, i == lastI) {
+		if pluginTypeToSVG(svg, link, line, pt, i == lastI) {
 			return true
 		}
 	}
 	return true // should never happen
 }
 
-func pluginTypeToSVG(svg *svgFlow, line int, pt *PluginType, last bool) bool {
+func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *PluginType, last bool) bool {
 	ptd := pt.drawData
 	if !withinShape(line, ptd) {
 		return false
+	}
+	if link != nil {
+		link.Link = pt.Link
 	}
 	rectToSVG(svg, ptd, true, true, true)
 	svg.Texts = append(svg.Texts, &svgText{

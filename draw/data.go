@@ -102,7 +102,9 @@ type Merge struct {
 //   The same Merge instance has to be used for this (only 1 instance per ID).
 // - The real Op of a merge can be followed by an Arrow or Split as usual.
 type Flow struct {
-	Mode      FlowMode
 	Name      string
 	AllShapes *Split
+	mode      FlowMode
+	width     int
+	dark      bool
 }

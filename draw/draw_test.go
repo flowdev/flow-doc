@@ -23,7 +23,12 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	const mdFile = "markdown.actual"
 	workDir := ts.Getenv("WORK")
 
-	svgContents, mdContent, err := draw.FromFlowData(BigTestFlowData)
+	svgContents, mdContent, err := draw.FromFlowData(
+		BigTestFlowData,
+		draw.FlowModeSVGLinks,
+		800,
+		true,
+	)
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)
 	}
