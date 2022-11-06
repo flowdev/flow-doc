@@ -114,7 +114,7 @@ var BigTestFlowData = &draw.Flow{
 				},
 				&draw.Op{
 					Main: &draw.DataType{
-						Name: "megaParser", Type: "MegaParser", Link: "https://google.com?q=Blue",
+						Name: "megaParser", Type: "MegaParser", Link: "https://google.com?q=MegaParser",
 					},
 					Plugins: []*draw.Plugin{
 						{
