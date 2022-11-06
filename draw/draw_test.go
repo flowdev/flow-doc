@@ -49,7 +49,7 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	if err != nil {
 		ts.Fatalf("unable to write file %q: %v", workMDFile, err)
 	}
-	err = os.WriteFile(mdFile, mdContent, 0666)
+	err = os.WriteFile("testFlow.md", mdContent, 0666)
 	if err != nil {
 		ts.Fatalf("unable to write file %q: %v", mdFile, err)
 	}
