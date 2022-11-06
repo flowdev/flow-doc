@@ -145,7 +145,7 @@ var BigTestFlowData = &draw.Flow{
 			}, {
 				&draw.Op{
 					Main: &draw.DataType{
-						Type: "bigMerge", Link: "https://google.com?q=Blue",
+						Type: "bigMerge", Link: "https://google.com?q=bigMerge",
 					},
 				},
 			}, { // empty to force more space
