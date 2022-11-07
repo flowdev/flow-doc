@@ -296,9 +296,9 @@ func svgFileName(smf *svgMDFlow, compName string, line int) string {
 		idx = len(smf.md.FlowLines[line])
 	}
 	if compName == "" {
-		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, idx, line)
+		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, line, idx)
 	}
-	return fmt.Sprintf("%s-%s-%d-%d.svg", smf.svgFilePrefix, compName, idx, line)
+	return fmt.Sprintf("%s-%d-%d-%s.svg", smf.svgFilePrefix, line, idx, compName)
 }
 
 func maximumLine(d *drawData) int {
