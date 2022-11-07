@@ -78,7 +78,11 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastArr = nil
 			case *Sequel:
 				if lastArr != nil {
-					enrichSequel(s, x, lastArr.y0+lastArr.height-LineHeight, line)
+					enrichSequel(
+						s, x,
+						lastArr.y0+lastArr.height-LineHeight,
+						lastArr.minLine+lastArr.lines-1,
+					)
 				} else {
 					enrichSequel(s, x, y, line)
 				}
@@ -86,7 +90,11 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastOp = nil
 				lastArr = nil
 			case *Loop:
-				enrichLoop(s, x, lastArr.y0+lastArr.height-LineHeight, line)
+				enrichLoop(
+					s, x,
+					lastArr.y0+lastArr.height-LineHeight,
+					lastArr.minLine+lastArr.lines-1,
+				)
 				x = growX(s.drawData)
 				lastOp = nil
 				lastArr = nil
