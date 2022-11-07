@@ -7,9 +7,6 @@ import "fmt"
 // --------------------------------------------------------------------------
 func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 	mode FlowMode, merges map[string]*Merge,
-	pluginEnrichArrow func(*Arrow, int, int, int),
-	pluginEnrichOp func(*Op, int, int, int),
-	pluginEnrichMerge func(*Merge, *drawData, map[string]*Merge),
 ) {
 	var lastOp *drawData
 	var lastArr *drawData
@@ -27,10 +24,13 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 		y = ymax
 		lastOp = nil
 		lastArr = nil
+		if y != line*LineHeight {
+			fmt.Printf("y should be %d lines * 24 = %d, got: %d\n", line, line*LineHeight, y)
+		}
 		for j, is := range ss {
 			switch s := is.(type) {
 			case *Arrow:
-				pluginEnrichArrow(s, x, y, line)
+				enrichArrow(s, x, y, line)
 				lastArr = s.drawData
 				x = growX(lastArr)
 				ymax = growY(ymax, lastArr)
@@ -44,7 +44,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 					growOpToDrawData(lastOp, lastArr)
 				}
 			case *Op:
-				pluginEnrichOp(s, x, y, line)
+				enrichOp(s, x, y, line)
 				lastOp = s.drawData
 				merge := mergeForOp(s, merges)
 				if j == 0 && merge != nil {
@@ -64,8 +64,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 					growOpToDrawData(lastOp, lastArr)
 				}
 			case *Split:
-				enrichSplit(s, x, y, line, lastOp, mode, merges,
-					pluginEnrichArrow, pluginEnrichOp, pluginEnrichMerge)
+				enrichSplit(s, x, y, line, lastOp, mode, merges)
 				d := s.drawData
 				x = growX(d)
 				ymax = growY(ymax, d)
@@ -74,7 +73,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastOp = nil
 				lastArr = nil
 			case *Merge:
-				pluginEnrichMerge(s, lastArr, merges)
+				enrichMerge(s, lastArr, merges)
 				lastOp = nil
 				lastArr = nil
 			default:

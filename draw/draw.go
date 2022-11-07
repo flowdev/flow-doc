@@ -199,8 +199,7 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 
 func enrichFlow(f *Flow) {
 	merges := make(map[string]*Merge)
-	enrichSplit(f.AllShapes, 0, 0, 0, nil, FlowModeNoLinks, merges,
-		enrichArrow, enrichOp, enrichMerge)
+	enrichSplit(f.AllShapes, 0, 0, 0, nil, f.mode, merges)
 }
 
 func flowToSVGs(f *Flow) *svgMDFlow {
@@ -269,7 +268,7 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 // --------------------------------------------------------------------------
 func addFillerSVG(smf *svgMDFlow, line, x, height, width int) {
 	svg := newSVGFlow(0, 0, height, width, tinyDiagramSize)
-	name := svgFileName(smf, "filler", x, line)
+	name := svgFileName(smf, "filler", line)
 
 	smf.svgs[name] = svg
 	addSVGLinkToMDFlowLines(smf, line, name, "filler")
@@ -291,14 +290,15 @@ func addSVGLinkToMDFlowLines(smf *svgMDFlow, line int, svgName, desc string) *sv
 	return sl
 }
 
-func svgFileName(smf *svgMDFlow, compName string, x, line int) string {
+func svgFileName(smf *svgMDFlow, compName string, line int) string {
+	idx := 0
+	if len(smf.md.FlowLines) > line {
+		idx = len(smf.md.FlowLines[line])
+	}
 	if compName == "" {
-		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, x, line)
+		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, idx, line)
 	}
-	if x < 0 {
-		return fmt.Sprintf("%s-%s-%d.svg", smf.svgFilePrefix, compName, line)
-	}
-	return fmt.Sprintf("%s-%s-%d-%d.svg", smf.svgFilePrefix, compName, x, line)
+	return fmt.Sprintf("%s-%s-%d-%d.svg", smf.svgFilePrefix, compName, idx, line)
 }
 
 func maximumLine(d *drawData) int {

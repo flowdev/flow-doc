@@ -17,6 +17,7 @@ func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
 		merges[m.ID] = m
 		m.arrows = make([]*drawData, 1, m.Size)
 		m.arrows[0] = arr
+		fmt.Printf("Merged op height: %d; arr height: %d; op y0: %d; arr y0: %d\n", m.drawData.height, arr.height, m.drawData.y0, arr.y0)
 		return
 	}
 	md := m.drawData
@@ -24,8 +25,8 @@ func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
 	md.y0 = min(md.y0, arr.y0)
 	md.minLine = min(md.minLine, arr.minLine)
 	md.lines = max(md.lines, arr.minLine+arr.lines-md.minLine)
-	md.height = md.lines * LineHeight // max(md.height, arr.y0+arr.height-md.y0)
-	fmt.Printf("Merged op height: %d; arr height: %d\n", md.height, arr.height)
+	md.height = max(md.height, arr.y0+arr.height-md.y0) // md.lines * LineHeight
+	fmt.Printf("Merged op height: %d; arr height: %d; op y0: %d; arr y0: %d\n", md.height, arr.height, md.y0, arr.y0)
 	if md.height != md.lines*LineHeight {
 		fmt.Printf("Merged op height should be %d lines * 24 = %d\n", md.lines, md.lines*LineHeight)
 	}

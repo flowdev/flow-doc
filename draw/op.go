@@ -131,7 +131,7 @@ func opToSVG(smf *svgMDFlow, line int, mode FlowMode, op *Op) {
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
 		svg = newSVGFlow(od.x0, od.y0+idx*LineHeight, LineHeight, od.width, tinyDiagramSize)
-		name := svgFileName(smf, opID(op), -1, line)
+		name := svgFileName(smf, opID(op), line)
 		smf.svgs[name] = svg
 		link = addSVGLinkToMDFlowLines(smf, line, name, "arrow")
 	} else {

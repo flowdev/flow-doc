@@ -95,7 +95,7 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 	if mode == FlowModeSVGLinks {
 		x0, y0, height, width := svgDimensionsForLine(line, arrow, ad, maxLine)
 		svg = newSVGFlow(x0, y0, height, width, tinyDiagramSize)
-		name := svgFileName(smf, "arrow", ad.x0, line)
+		name := svgFileName(smf, "arrow", line)
 		smf.svgs[name] = svg
 		link = addSVGLinkToMDFlowLines(smf, line, name, "arrow")
 	} else {
