@@ -20,8 +20,8 @@ type svgColors struct {
 var lightColors = svgColors{
 	Background: "rgb(255,255,255)",
 	Text:       "rgb(0,0,0)",
-	Link:       "rgb(0,0,0)",
-	GoLink:     "rgb(0,0,0)",
+	Link:       "rgb(32,48,128)",
+	GoLink:     "rgb(0,96,0)",
 	Op:         "rgb(96,192,255)",
 	Plugin:     "rgb(224,224,32)",
 	PluginType: "rgb(32,224,32)",
@@ -30,8 +30,8 @@ var lightColors = svgColors{
 var darkColors = svgColors{
 	Background: "rgb(13,17,23)",
 	Text:       "rgb(201,209,217)",
-	Link:       "rgb(201,209,217)",
-	GoLink:     "rgb(201,209,217)",
+	Link:       "rgb(96,192,255)",
+	GoLink:     "rgb(32,224,32)",
 	Op:         "rgb(32,48,128)",
 	Plugin:     "rgb(96,96,0)",
 	PluginType: "rgb(0,96,0)",
