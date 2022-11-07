@@ -160,6 +160,7 @@ type svgMDFlow struct {
 	svgs          map[string]*svgFlow
 	md            *mdFlow
 	svgFilePrefix string
+	lastX         int
 }
 
 // FromFlowData creates a set of SVG diagrams and a MarkDown file from flow
@@ -222,7 +223,13 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 	minLine := fd.minLine
 	maxLine := minLine + fd.lines - 1
 	for line := minLine; line <= maxLine; line++ {
-		splitToSVG(smf, line, f.mode, f.AllShapes, 0)
+		smf.lastX = 0
+		splitToSVG(smf, line, f.mode, f.AllShapes)
+
+		if smf.lastX < f.AllShapes.drawData.width {
+			addFillerSVG(smf, line, smf.lastX, LineHeight,
+				f.AllShapes.drawData.width-smf.lastX)
+		}
 	}
 	return smf
 }
@@ -260,6 +267,14 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 // --------------------------------------------------------------------------
 //    U T I L s :
 // --------------------------------------------------------------------------
+func addFillerSVG(smf *svgMDFlow, line, x, height, width int) {
+	svg := newSVGFlow(0, 0, height, width, tinyDiagramSize)
+	name := svgFileName(smf, "filler", x, line)
+
+	smf.svgs[name] = svg
+	addSVGLinkToMDFlowLines(smf, line, name, "filler")
+}
+
 func addSVGLinkToMDFlowLines(smf *svgMDFlow, line int, svgName, desc string) *svgLink {
 	l := len(smf.md.FlowLines)
 	if l <= line {
