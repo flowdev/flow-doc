@@ -136,6 +136,7 @@ func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
 					xDiff := s.drawData.x0 - smf.lastX
 					if mode == FlowModeSVGLinks && xDiff > 0 {
 						addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
+						smf.lastX += xDiff
 					}
 					opToSVG(smf, line, mode, s)
 					smf.lastX += s.drawData.width
