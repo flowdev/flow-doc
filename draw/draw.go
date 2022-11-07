@@ -28,10 +28,10 @@ var lightColors = svgColors{
 }
 
 var darkColors = svgColors{
-	Background: "rgb(255,255,255)",
-	Text:       "rgb(0,0,0)",
-	Link:       "rgb(0,0,0)",
-	GoLink:     "rgb(0,0,0)",
+	Background: "rgb(13,17,23)",
+	Text:       "rgb(201,209,217)",
+	Link:       "rgb(201,209,217)",
+	GoLink:     "rgb(201,209,217)",
 	Op:         "rgb(96,192,255)",
 	Plugin:     "rgb(224,224,32)",
 	PluginType: "rgb(32,224,32)",
