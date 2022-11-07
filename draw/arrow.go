@@ -4,7 +4,7 @@ const (
 	arrTipWidth        = 12
 	arrTipHeight       = 8
 	arrSmallTextOffset = 4  // for small, low text
-	arrTextOffst       = 11 // for elevated text
+	arrTextOffset      = 11 // for elevated text
 )
 
 // --------------------------------------------------------------------------
@@ -146,7 +146,7 @@ func preArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
 	if !arrow.HasSrcOp && arrow.SrcPort != "" {
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0,
-			Y:     ad.y0 + ad.height - arrTextOffst,
+			Y:     ad.y0 + ad.height - arrTextOffset,
 			Width: len(arrow.SrcPort) * CharWidth,
 			Text:  arrow.SrcPort,
 		})
@@ -160,7 +160,7 @@ func postArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
 		postArr := len(arrow.DstPort)*CharWidth + WordGap
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + ad.width - postArr + WordGap,
-			Y:     ad.y0 + ad.height - arrTextOffst,
+			Y:     ad.y0 + ad.height - arrTextOffset,
 			Width: len(arrow.DstPort) * CharWidth,
 			Text:  arrow.DstPort,
 		})

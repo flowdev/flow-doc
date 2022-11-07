@@ -77,12 +77,16 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastOp = nil
 				lastArr = nil
 			case *Sequel:
-				enrichSequel(s, x, y, line)
+				if lastArr != nil {
+					enrichSequel(s, x, lastArr.y0+lastArr.height-LineHeight, line)
+				} else {
+					enrichSequel(s, x, y, line)
+				}
 				x = growX(s.drawData)
 				lastOp = nil
 				lastArr = nil
 			case *Loop:
-				enrichLoop(s, x, y, line)
+				enrichLoop(s, x, lastArr.y0+lastArr.height-LineHeight, line)
 				x = growX(s.drawData)
 				lastOp = nil
 				lastArr = nil
@@ -219,7 +223,7 @@ func sequelToSVG(smf *svgMDFlow, line int, mode FlowMode, seq *Sequel) {
 
 	svg.Texts = append(svg.Texts, &svgText{
 		X:     sd.x0,
-		Y:     sd.y0 + sd.height - TextOffset,
+		Y:     sd.y0 + sd.height - arrTextOffset,
 		Width: sd.width,
 		Text:  "..." + strconv.Itoa(seq.Number),
 	})
@@ -245,7 +249,7 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 	}
 	svg.Texts = append(svg.Texts, &svgText{
 		X:     ld.x0,
-		Y:     ld.y0 + ld.height - TextOffset,
+		Y:     ld.y0 + ld.height - arrTextOffset,
 		Width: ld.width,
 		Text:  txt,
 	})
