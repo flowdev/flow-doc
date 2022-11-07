@@ -88,9 +88,20 @@ type Merge struct {
 	arrows   []*drawData
 }
 
+type Sequel struct {
+	Number   int
+	drawData *drawData
+}
+
+type Loop struct {
+	Name     string
+	Port     string
+	drawData *drawData
+}
+
 // Flow contains data for a whole flow.
 // The data is organized in rows and individual shapes per row.
-// Valid shapes are Arrow, Op, Split, and Merge.
+// Valid shapes are Arrow, Op, Split, Merge, Sequel and Loop.
 //
 // The following rules apply:
 // - Arrows and Ops alternate.
@@ -101,6 +112,12 @@ type Merge struct {
 //   Of course multiple merges can "point" to the same Op (using the same ID).
 //   The same Merge instance has to be used for this (only 1 instance per ID).
 // - The real Op of a merge can be followed by an Arrow or Split as usual.
+// - The last Op in a row can be replaced by a Loop, too.
+//   The loop points back to a component we can't draw an arrow to.
+//   In the diagram you will see: ...back to: <component>:<port>
+// - The last Op in a row can also be replaced by a Sequel.
+//   The other part of the Sequel should be at the start of one of the next rows.
+//   Sequels are in general inserted by the layout algorithm itself.
 type Flow struct {
 	Name      string
 	AllShapes *Split

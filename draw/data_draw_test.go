@@ -80,15 +80,21 @@ var BigTestFlowData = &draw.Flow{
 									{Name: "data2", Type: "Data2", Link: "https://google.com?q=Data2"},
 								},
 								HasSrcOp: true, SrcPort: "",
-								HasDstOp: false, DstPort: "...1",
+								HasDstOp: false, DstPort: "",
+							},
+							&draw.Sequel{
+								Number: 1,
 							},
 						},
 					},
 				},
 			}, {
+				&draw.Sequel{
+					Number: 1,
+				},
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{},
-					HasSrcOp:  false, SrcPort: "...1",
+					HasSrcOp:  false, SrcPort: "",
 					HasDstOp: true, DstPort: "in",
 				},
 				&draw.Op{
@@ -177,9 +183,16 @@ var BigTestFlowData = &draw.Flow{
 					},
 				},
 				&draw.Arrow{
-					DataTypes: []*draw.DataType{{Name: "data", Type: "Data"}, {Name: "data2", Type: "data2"}, {Name: "data3", Type: "Data3"}},
-					HasSrcOp:  true, SrcPort: "out",
-					HasDstOp: false, DstPort: "...back to: recursive",
+					DataTypes: []*draw.DataType{
+						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
+						{Name: "data2", Type: "data2", Link: "https://google.com?q=data2"},
+						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
+					},
+					HasSrcOp: true, SrcPort: "out",
+					HasDstOp: false, DstPort: "",
+				},
+				&draw.Loop{
+					Name: "recursive", Port: "in3",
 				},
 			},
 		},
