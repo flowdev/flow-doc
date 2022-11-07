@@ -78,10 +78,12 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastArr = nil
 			case *Sequel:
 				enrichSequel(s, x, y, line)
+				x = growX(s.drawData)
 				lastOp = nil
 				lastArr = nil
 			case *Loop:
 				enrichLoop(s, x, y, line)
+				x = growX(s.drawData)
 				lastOp = nil
 				lastArr = nil
 			default:
