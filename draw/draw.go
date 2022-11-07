@@ -32,9 +32,9 @@ var darkColors = svgColors{
 	Text:       "rgb(201,209,217)",
 	Link:       "rgb(201,209,217)",
 	GoLink:     "rgb(201,209,217)",
-	Op:         "rgb(96,192,255)",
-	Plugin:     "rgb(224,224,32)",
-	PluginType: "rgb(32,224,32)",
+	Op:         "rgb(32,48,128)",
+	Plugin:     "rgb(128,128,0)",
+	PluginType: "rgb(32,128,32)",
 }
 
 const svgDiagram = `<?xml version="1.0" ?>
