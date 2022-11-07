@@ -80,7 +80,7 @@ var BigTestFlowData = &draw.Flow{
 									{Name: "data2", Type: "Data2", Link: "https://google.com?q=Data2"},
 								},
 								HasSrcOp: true, SrcPort: "",
-								HasDstOp: false, DstPort: "...",
+								HasDstOp: false, DstPort: "...1",
 							},
 						},
 					},
@@ -88,7 +88,7 @@ var BigTestFlowData = &draw.Flow{
 			}, {
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{},
-					HasSrcOp:  false, SrcPort: "...",
+					HasSrcOp:  false, SrcPort: "...1",
 					HasDstOp: true, DstPort: "in",
 				},
 				&draw.Op{
