@@ -36,7 +36,7 @@ var BigTestFlowData = &draw.Flow{
 							},
 							&draw.Op{
 								Main: &draw.DataType{
-									Type: "To", Link: "https://google.com?q=MiSo",
+									Type: "To", Link: "https://google.com?q=To",
 								},
 								Plugins: []*draw.Plugin{
 									{
@@ -56,7 +56,7 @@ var BigTestFlowData = &draw.Flow{
 							},
 							&draw.Arrow{
 								DataTypes: []*draw.DataType{
-									{Name: "bigData", Type: "BigDataType", Link: "https://google.com?q=MiSo"},
+									{Name: "bigData", Type: "BigDataType", Link: "https://google.com?q=BigDataType"},
 								},
 								HasSrcOp: true, SrcPort: "out",
 								HasDstOp: true, DstPort: "in1",
@@ -173,7 +173,7 @@ var BigTestFlowData = &draw.Flow{
 				},
 				&draw.Op{
 					Main: &draw.DataType{
-						Type: "secondOp", Link: "https://google.com?q=recursive",
+						Type: "secondOp", Link: "https://google.com?q=secondOp",
 					},
 				},
 				&draw.Arrow{

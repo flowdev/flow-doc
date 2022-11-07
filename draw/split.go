@@ -24,9 +24,6 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 		y = ymax
 		lastOp = nil
 		lastArr = nil
-		if y != line*LineHeight {
-			fmt.Printf("y should be %d lines * 24 = %d, got: %d\n", line, line*LineHeight, y)
-		}
 		for j, is := range ss {
 			switch s := is.(type) {
 			case *Arrow:
