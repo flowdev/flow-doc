@@ -22,7 +22,7 @@ func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
 	md.y0 = min(md.y0, arr.y0)
 	md.height = max(md.height, arr.y0+arr.height-md.y0)
 	md.minLine = min(md.minLine, arr.minLine)
-	md.lines = max(md.lines, arr.lines)
+	md.lines = max(md.lines, arr.minLine+arr.lines-md.minLine)
 
 	m.arrows = append(m.arrows, arr)
 	if len(m.arrows) == m.Size {
