@@ -48,7 +48,7 @@ var BigTestFlowData = &draw.Flow{
 									{
 										Title: "subParser",
 										Types: []*draw.PluginType{
-											{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser"},
+											{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser", GoLink: true},
 											{Type: "NaturalParser", Link: "https://google.com?q=NaturalParser"},
 										},
 									},
@@ -132,7 +132,7 @@ var BigTestFlowData = &draw.Flow{
 						{
 							Title: "subParser",
 							Types: []*draw.PluginType{
-								{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser"},
+								{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser", GoLink: true},
 								{Type: "NaturalParser", Link: "https://google.com?q=NaturalParser"},
 							},
 						},
