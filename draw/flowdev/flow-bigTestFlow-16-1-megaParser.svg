@@ -8,5 +8,5 @@
     <rect fill="rgb(96,96,0)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" width="116" height="70" x="158" y="337" rx="10"/>
     <rect fill="rgb(0,96,0)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="1" width="116" height="23" x="158" y="384" rx="10"/>
 
-    <text fill="rgb(201,209,217)" fill-opacity="1.0" font-size="16" x="164" y="402" textLength="104" lengthAdjust="spacingAndGlyphs">NaturalParser</text>
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="164" y="402" textLength="104" lengthAdjust="spacingAndGlyphs">NaturalParser</text>
 </svg>

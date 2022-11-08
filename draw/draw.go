@@ -61,9 +61,21 @@ const svgDiagram = `<?xml version="1.0" ?>
 {{- end}}
 {{range .Texts}}
 {{- if .Small}}
+    {{- if .GoLink}}
+    <text fill="{{$colors.GoLink}}" fill-opacity="1.0" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- else if .Link}}
+    <text fill="{{$colors.Link}}" fill-opacity="1.0" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- else}}
     <text fill="{{$colors.Text}}" fill-opacity="1.0" font-size="14" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- end}}
 {{- else}}
+    {{- if .GoLink}}
+    <text fill="{{$colors.GoLink}}" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- else if .Link}}
+    <text fill="{{$colors.Link}}" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- else}}
     <text fill="{{$colors.Text}}" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
+    {{- end}}
 {{- end}}
 {{- end}}
 </svg>

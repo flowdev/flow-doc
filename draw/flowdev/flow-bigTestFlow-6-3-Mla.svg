@@ -6,5 +6,5 @@
 
     <rect fill="rgb(32,48,128)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" width="44" height="46" x="290" y="145" rx="10"/>
 
-    <text fill="rgb(201,209,217)" fill-opacity="1.0" font-size="16" x="296" y="162" textLength="24" lengthAdjust="spacingAndGlyphs">Mla</text>
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="296" y="162" textLength="24" lengthAdjust="spacingAndGlyphs">Mla</text>
 </svg>

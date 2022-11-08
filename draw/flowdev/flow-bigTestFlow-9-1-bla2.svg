@@ -6,5 +6,5 @@
 
     <rect fill="rgb(32,48,128)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" width="44" height="46" x="76" y="193" rx="10"/>
 
-    <text fill="rgb(201,209,217)" fill-opacity="1.0" font-size="16" x="82" y="234" textLength="32" lengthAdjust="spacingAndGlyphs">Blue</text>
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="82" y="234" textLength="32" lengthAdjust="spacingAndGlyphs">Blue</text>
 </svg>
