@@ -3,6 +3,7 @@ package draw_test
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/flowdev/ea-flow-doc/draw"
@@ -23,11 +24,27 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	const mdFile = "markdown.actual"
 	workDir := ts.Getenv("WORK")
 
+	if len(args) != 2 {
+		ts.Fatalf("expected 2 args (splitMode and darkMode), got: %q", args)
+	}
+	splitMode, err := strconv.ParseBool(args[0])
+	if err != nil {
+		ts.Fatalf("expected boolean for splitMode, got: %q; err: %v", args[0], err)
+	}
+	darkMode, err := strconv.ParseBool(args[1])
+	if err != nil {
+		ts.Fatalf("expected boolean for darkMode, got: %q; err: %v", args[1], err)
+	}
+
+	flowMode := draw.FlowModeNoLinks
+	if splitMode {
+		flowMode = draw.FlowModeSVGLinks
+	}
 	svgContents, mdContent, err := draw.FromFlowData(
 		BigTestFlowData,
-		draw.FlowModeSVGLinks,
+		flowMode,
 		800,
-		true,
+		darkMode,
 	)
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)

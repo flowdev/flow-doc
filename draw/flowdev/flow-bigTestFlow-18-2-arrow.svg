@@ -4,9 +4,8 @@
     <rect fill="rgb(13,17,23)" fill-opacity="1" width="112" height="24" x="242" y="432"/>
 
 
-    <line stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" x1="242" y1="440" x2="354" y2="440"/>
-    <line stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" x1="346" y1="432" x2="354" y2="440"/>
-    <line stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" x1="346" y1="448" x2="354" y2="440"/>
 
-
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="250" y="450" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="256" y="450" textLength="32" lengthAdjust="spacingAndGlyphs">data</text>
+    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="296" y="450" textLength="38" lengthAdjust="spacingAndGlyphs">Data)</text>
 </svg>
