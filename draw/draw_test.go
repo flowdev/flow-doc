@@ -21,7 +21,6 @@ func TestFromFlowData(t *testing.T) {
 }
 
 func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
-	const mdFile = "markdown.actual"
 	workDir := ts.Getenv("WORK")
 
 	if len(args) != 2 {
@@ -35,6 +34,7 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	if err != nil {
 		ts.Fatalf("expected boolean for darkMode, got: %q; err: %v", args[1], err)
 	}
+	mdFile := "markdown-" + args[0] + "-" + args[1] + ".actual"
 
 	flowMode := draw.FlowModeNoLinks
 	if splitMode {
@@ -66,8 +66,8 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	if err != nil {
 		ts.Fatalf("unable to write file %q: %v", workMDFile, err)
 	}
-	err = os.WriteFile("testFlow.md", mdContent, 0666)
+	err = os.WriteFile(mdFile+".md", mdContent, 0666)
 	if err != nil {
-		ts.Fatalf("unable to write file %q: %v", mdFile, err)
+		ts.Fatalf("unable to write file %q: %v", mdFile+".md", err)
 	}
 }

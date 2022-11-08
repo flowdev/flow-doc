@@ -96,9 +96,9 @@ const mdDiagram = `
     {{- end -}}
     {{- if ne $i $maxLine}}\{{end}}
 {{end}}
-{{else}}
+{{- else}}
 ![{{.Flow.Name}}]({{.Flow.SVG}})
-{{end}}
+{{- end}}
 {{- if .DataTypes}}
 
 #### Data Types
@@ -218,8 +218,14 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 	enrichFlow(f)
 	smf := flowToSVGs(f)
 	if f.mode != FlowModeSVGLinks {
-		smf.svgs[smf.svgFilePrefix+".svg"] = smf.svgs[""]
+		svgName := smf.svgFilePrefix + ".svg"
+		smf.svgs[svgName] = smf.svgs[""]
 		delete(smf.svgs, "")
+		smf.md.FlowLines = append(smf.md.FlowLines, make([]*svgLink, 1))
+		smf.md.FlowLines[0][0] = &svgLink{
+			Name: f.Name,
+			SVG:  svgName,
+		}
 	}
 
 	svgContents, err = svgFlowsToBytes(smf.svgs, dark)
@@ -262,7 +268,9 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 		smf.lastX = 0
 		splitToSVG(smf, line, f.mode, f.AllShapes)
 
-		if smf.lastX < f.AllShapes.drawData.width {
+		if f.mode == FlowModeSVGLinks &&
+			smf.lastX < f.AllShapes.drawData.width {
+
 			addFillerSVG(smf, line, smf.lastX, LineHeight,
 				f.AllShapes.drawData.width-smf.lastX)
 		}
