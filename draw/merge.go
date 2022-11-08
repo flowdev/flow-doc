@@ -4,7 +4,7 @@ package draw
 // Add drawData
 // --------------------------------------------------------------------------
 func enrichMerge(m *Merge, arr *drawData, merges map[string]*Merge) {
-	if m.drawData == nil {
+	if _, ok := merges[m.ID]; !ok {
 		m.drawData = &drawData{
 			x0:      arr.x0 + arr.width,
 			y0:      arr.y0,

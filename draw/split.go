@@ -47,6 +47,9 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				enrichOp(s, x, y, line)
 				lastOp = s.drawData
 				merge := mergeForOp(s, merges)
+				if s.Main.Type == "bigMerge" {
+					fmt.Printf("bigMerge: line: %d, i=%d, j=%d, merge=%#v\n", line, i, j, merge)
+				}
 				if j == 0 && merge != nil {
 					moveOp(s, merge.drawData)
 					growOpToDrawData(lastOp, merge.drawData)
@@ -56,13 +59,14 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 						ymax -= LineGap
 					}
 					line = lastOp.minLine
+					fmt.Printf("bigMerge: moved to line=%d, x=%d, lines=%d, height=%d\n", line, lastOp.x0, lastOp.lines, lastOp.height)
+				}
+				if lastArr != nil {
+					growOpToDrawData(lastOp, lastArr)
 				}
 				x = growX(lastOp)
 				ymax = growY(ymax, lastOp)
 				maxLine = growLine(maxLine, lastOp)
-				if lastArr != nil {
-					growOpToDrawData(lastOp, lastArr)
-				}
 			case *Split:
 				enrichSplit(s, x, y, line, lastOp, mode, merges)
 				d := s.drawData

@@ -4,7 +4,6 @@
     <rect fill="rgb(13,17,23)" fill-opacity="1" width="84" height="24" x="158" y="432"/>
 
 
-    <rect fill="rgb(32,48,128)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" width="84" height="94" x="158" y="433" rx="10"/>
+    <rect fill="rgb(32,48,128)" fill-opacity="1.0" stroke="rgb(201,209,217)" stroke-opacity="1.0" stroke-width="2" width="84" height="94" x="158" y="409" rx="10"/>
 
-    <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="164" y="450" textLength="72" lengthAdjust="spacingAndGlyphs">recursive</text>
 </svg>
