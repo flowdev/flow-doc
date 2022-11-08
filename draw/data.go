@@ -30,6 +30,7 @@ type DataType struct {
 	Name     string
 	Type     string
 	Link     string
+	GoLink   bool
 	drawData *drawData
 	x1       int // for aligning the data types of arrows
 }
@@ -57,6 +58,7 @@ type Text struct {
 type PluginType struct {
 	Type     string
 	Link     string
+	GoLink   bool
 	drawData *drawData
 }
 
@@ -96,6 +98,8 @@ type Sequel struct {
 type Loop struct {
 	Name     string
 	Port     string
+	Link     string
+	GoLink   bool
 	drawData *drawData
 }
 

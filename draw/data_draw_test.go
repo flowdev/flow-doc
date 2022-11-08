@@ -192,7 +192,7 @@ var BigTestFlowData = &draw.Flow{
 					HasDstOp: false, DstPort: "",
 				},
 				&draw.Loop{
-					Name: "recursive", Port: "in3",
+					Name: "recursive", Port: "in3", Link: "https://google.com?q=recursive:in3",
 				},
 			},
 		},

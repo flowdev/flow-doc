@@ -246,7 +246,8 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 		svg = newSVGFlow(ld.x0, ld.y0, ld.height, ld.width, tinyDiagramSize)
 		name := svgFileName(smf, "loop", line)
 		smf.svgs[name] = svg
-		addSVGLinkToMDFlowLines(smf, line, name, "loop")
+		svgLink := addSVGLinkToMDFlowLines(smf, line, name, "loop")
+		svgLink.Link = loop.Link
 	} else {
 		svg = smf.svgs[""]
 	}
@@ -256,9 +257,11 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 		txt += ":" + loop.Port
 	}
 	svg.Texts = append(svg.Texts, &svgText{
-		X:     ld.x0,
-		Y:     ld.y0 + ld.height - arrTextOffset,
-		Width: ld.width,
-		Text:  txt,
+		X:      ld.x0,
+		Y:      ld.y0 + ld.height - arrTextOffset,
+		Width:  ld.width,
+		Text:   txt,
+		Link:   !loop.GoLink && loop.Link != "",
+		GoLink: loop.GoLink,
 	})
 }

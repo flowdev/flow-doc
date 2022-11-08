@@ -49,10 +49,10 @@ const svgDiagram = `<?xml version="1.0" ?>
     <line stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" x1="{{.XTip2}}" y1="{{.YTip2}}" x2="{{.X2}}" y2="{{.Y2}}"/>
 {{end}}
 {{- range .Rects}}
-{{- if .IsSubRect}}
+{{- if .SubRect}}
     <rect fill="{{$colors.PluginType}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="1" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
 {{- else -}}
-    {{- if .IsPlugin}}
+    {{- if .Plugin}}
     <rect fill="{{$colors.Plugin}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
     {{- else}}
     <rect fill="{{$colors.Op}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
@@ -73,8 +73,7 @@ var svgTmpl = template.Must(template.New("svgDiagram").Parse(svgDiagram))
 
 const mdDiagram = `
 {{- if .FlowLines}}
-{{- $n := len .FlowLines -}}
-{{- $n = len .FlowLines -}}
+{{- $maxLine := .MaxLine -}}
 {{range $i, $flowLine := .FlowLines}}
     {{- range $cell := $flowLine -}}
         {{- if $cell.Link -}}
@@ -83,7 +82,7 @@ const mdDiagram = `
             ![{{$cell.Name}}]({{$cell.SVG}})
         {{- end -}}
     {{- end -}}
-    {{- if ne $i $n}}\{{end}}
+    {{- if ne $i $maxLine}}\{{end}}
 {{end}}
 {{else}}
 ![{{.Flow.Name}}]({{.Flow.SVG}})
@@ -107,14 +106,6 @@ const mdDiagram = `
 
 var mdTmpl = template.Must(template.New("mdDiagram").Parse(mdDiagram))
 
-type TextType int
-
-const (
-	TextTypeText TextType = iota
-	TextTypeLink
-	TextTypeGoLink
-)
-
 const (
 	bigDiagramSize  = 256
 	tinyDiagramSize = 8
@@ -128,19 +119,20 @@ type svgArrow struct {
 }
 
 type svgRect struct {
-	X, Y      int
-	Height    int
-	Width     int
-	IsPlugin  bool
-	IsSubRect bool
+	X, Y    int
+	Height  int
+	Width   int
+	Plugin  bool
+	SubRect bool
 }
 
 type svgText struct {
-	X, Y  int
-	Width int
-	Text  string
-	Small bool
-	Type  TextType
+	X, Y   int
+	Width  int
+	Text   string
+	Small  bool
+	Link   bool
+	GoLink bool
 }
 
 type svgFlow struct {
@@ -174,6 +166,7 @@ type svgLink struct {
 type mdFlow struct {
 	Flow      svgLink
 	FlowLines [][]*svgLink
+	MaxLine   int
 	DataTypes map[string]string
 	Subflows  map[string]string
 	GoFuncs   map[string]string
@@ -293,6 +286,7 @@ func svgFlowToBytes(sf *svgFlow, dark bool) ([]byte, error) {
 
 func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 	buf := bytes.Buffer{}
+	mdf.MaxLine = len(mdf.FlowLines) - 1
 	err := mdTmpl.Execute(&buf, mdf)
 	if err != nil {
 		return nil, err

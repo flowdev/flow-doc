@@ -226,17 +226,21 @@ func arrowDataTypeToSVG(
 
 	if first { // opening parenthesis
 		svg.Texts = append(svg.Texts, &svgText{
-			X:     x0 + padding - ParenWidth,
-			Y:     y,
-			Width: ParenWidth,
-			Text:  "(",
+			X:      x0 + padding - ParenWidth,
+			Y:      y,
+			Width:  ParenWidth,
+			Text:   "(",
+			Link:   !dt.GoLink && dt.Link != "",
+			GoLink: dt.GoLink,
 		})
 	}
 	svg.Texts = append(svg.Texts, &svgText{
-		X:     x0 + padding,
-		Y:     y,
-		Width: len(dt.Name) * CharWidth,
-		Text:  dt.Name,
+		X:      x0 + padding,
+		Y:      y,
+		Width:  len(dt.Name) * CharWidth,
+		Text:   dt.Name,
+		Link:   !dt.GoLink && dt.Link != "",
+		GoLink: dt.GoLink,
 	})
 
 	typText := dt.Type
@@ -246,10 +250,12 @@ func arrowDataTypeToSVG(
 		typWidth += ParenWidth
 	}
 	svg.Texts = append(svg.Texts, &svgText{
-		X:     x1,
-		Y:     y,
-		Width: typWidth,
-		Text:  typText,
+		X:      x1,
+		Y:      y,
+		Width:  typWidth,
+		Text:   typText,
+		Link:   !dt.GoLink && dt.Link != "",
+		GoLink: dt.GoLink,
 	})
 
 	if link != nil {

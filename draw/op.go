@@ -158,24 +158,24 @@ func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
 	var rect *svgRect
 	if subRect {
 		rect = &svgRect{
-			X:         d.x0,
-			Y:         d.y0,
-			Width:     d.width,
-			Height:    d.height,
-			IsPlugin:  plugin,
-			IsSubRect: true,
+			X:       d.x0,
+			Y:       d.y0,
+			Width:   d.width,
+			Height:  d.height,
+			Plugin:  plugin,
+			SubRect: true,
 		}
 		if last {
 			rect.Height--
 		}
 	} else {
 		rect = &svgRect{
-			X:         d.x0,
-			Y:         d.y0 + 1,
-			Width:     d.width,
-			Height:    d.height - 2,
-			IsPlugin:  plugin,
-			IsSubRect: false,
+			X:       d.x0,
+			Y:       d.y0 + 1,
+			Width:   d.width,
+			Height:  d.height - 2,
+			Plugin:  plugin,
+			SubRect: false,
 		}
 	}
 	svg.Rects = append(svg.Rects, rect)
@@ -194,20 +194,24 @@ func opMainToSVG(svg *svgFlow, link *svgLink, line int, main *DataType) bool {
 	if main.Name != "" {
 		if idx == 0 {
 			svg.Texts = append(svg.Texts, &svgText{
-				X:     md.x0 + WordGap,
-				Y:     y0 + LineHeight - TextOffset,
-				Width: len(main.Name) * CharWidth,
-				Text:  main.Name,
+				X:      md.x0 + WordGap,
+				Y:      y0 + LineHeight - TextOffset,
+				Width:  len(main.Name) * CharWidth,
+				Text:   main.Name,
+				Link:   !main.GoLink && main.Link != "",
+				GoLink: main.GoLink,
 			})
 			return true
 		}
 		y0 += LineHeight
 	}
 	svg.Texts = append(svg.Texts, &svgText{
-		X:     md.x0 + WordGap,
-		Y:     y0 + LineHeight - TextOffset,
-		Width: len(main.Type) * CharWidth,
-		Text:  main.Type,
+		X:      md.x0 + WordGap,
+		Y:      y0 + LineHeight - TextOffset,
+		Width:  len(main.Type) * CharWidth,
+		Text:   main.Type,
+		Link:   !main.GoLink && main.Link != "",
+		GoLink: main.GoLink,
 	})
 	return true
 }
@@ -250,10 +254,12 @@ func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *PluginType, last
 	}
 	rectToSVG(svg, ptd, true, true, true)
 	svg.Texts = append(svg.Texts, &svgText{
-		X:     ptd.x0 + WordGap,
-		Y:     ptd.y0 + LineHeight - TextOffset,
-		Width: len(pt.Type) * CharWidth,
-		Text:  pt.Type,
+		X:      ptd.x0 + WordGap,
+		Y:      ptd.y0 + LineHeight - TextOffset,
+		Width:  len(pt.Type) * CharWidth,
+		Text:   pt.Type,
+		Link:   !pt.GoLink && pt.Link != "",
+		GoLink: pt.GoLink,
 	})
 	return true
 }
