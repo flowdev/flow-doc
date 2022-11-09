@@ -319,7 +319,7 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 // --------------------------------------------------------------------------
 func addFillerSVG(smf *svgMDFlow, line, x, height, width int) {
 	svg := newSVGFlow(0, 0, height, width, tinyDiagramSize)
-	name := svgFileName(smf, "filler", line)
+	name := fmt.Sprintf("%s-filler-%d-%d.svg", smf.svgFilePrefix, width, height)
 
 	smf.svgs[name] = svg
 	addSVGLinkToMDFlowLines(smf, line, name, "filler")
@@ -347,9 +347,9 @@ func svgFileName(smf *svgMDFlow, compName string, line int) string {
 		idx = len(smf.md.FlowLines[line])
 	}
 	if compName == "" {
-		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, line, idx)
+		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, idx, line)
 	}
-	return fmt.Sprintf("%s-%d-%d-%s.svg", smf.svgFilePrefix, line, idx, compName)
+	return fmt.Sprintf("%s-%d-%d-%s.svg", smf.svgFilePrefix, idx, line, compName)
 }
 
 func maximumLine(d *drawData) int {
