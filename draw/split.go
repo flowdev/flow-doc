@@ -8,10 +8,10 @@ import (
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
+func enrichSplit(split *Split, x0, y0, minLine int, outerComp *drawData,
 	mode FlowMode, merges map[string]*Merge,
 ) {
-	var lastOp *drawData
+	var lastComp *drawData
 	var lastArr *drawData
 	x, y, line, xmax, ymax, maxLine := x0, y0, minLine, x0, y0, minLine
 
@@ -25,7 +25,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 			}
 		}
 		y = ymax
-		lastOp = nil
+		lastComp = nil
 		lastArr = nil
 		for j, is := range ss {
 			switch s := is.(type) {
@@ -34,47 +34,47 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 				lastArr = s.drawData
 				x = growX(lastArr)
 				ymax = growY(ymax, lastArr)
-				if lastOp != nil {
-					maxLine = growLine(maxLine, lastOp)
+				if lastComp != nil {
+					maxLine = growLine(maxLine, lastComp)
 				}
-				if j == 0 && outerOp != nil {
-					growOpToDrawData(outerOp, lastArr)
+				if j == 0 && outerComp != nil {
+					growCompToDrawData(outerComp, lastArr)
 				}
-				if lastOp != nil {
-					growOpToDrawData(lastOp, lastArr)
+				if lastComp != nil {
+					growCompToDrawData(lastComp, lastArr)
 				}
-			case *Op:
-				enrichOp(s, x, y, line)
-				lastOp = s.drawData
-				merge := mergeForOp(s, merges)
+			case *Comp:
+				enrichComp(s, x, y, line)
+				lastComp = s.drawData
+				merge := mergeForComp(s, merges)
 				if j == 0 && merge != nil {
-					moveOp(s, merge.drawData)
-					growOpToDrawData(lastOp, merge.drawData)
+					moveComp(s, merge.drawData)
+					growCompToDrawData(lastComp, merge.drawData)
 
-					y = lastOp.y0
+					y = lastComp.y0
 					if mode != FlowModeSVGLinks {
 						ymax -= LineGap
 					}
-					line = lastOp.minLine
+					line = lastComp.minLine
 				}
 				if lastArr != nil {
-					growOpToDrawData(lastOp, lastArr)
+					growCompToDrawData(lastComp, lastArr)
 				}
-				x = growX(lastOp)
-				ymax = growY(ymax, lastOp)
-				maxLine = growLine(maxLine, lastOp)
+				x = growX(lastComp)
+				ymax = growY(ymax, lastComp)
+				maxLine = growLine(maxLine, lastComp)
 			case *Split:
-				enrichSplit(s, x, y, line, lastOp, mode, merges)
+				enrichSplit(s, x, y, line, lastComp, mode, merges)
 				d := s.drawData
 				x = growX(d)
 				ymax = growY(ymax, d)
 				maxLine = growLine(maxLine, d)
-				growOpToDrawData(lastOp, d)
-				lastOp = nil
+				growCompToDrawData(lastComp, d)
+				lastComp = nil
 				lastArr = nil
 			case *Merge:
 				enrichMerge(s, lastArr, merges)
-				lastOp = nil
+				lastComp = nil
 				lastArr = nil
 			case *Sequel:
 				if lastArr != nil {
@@ -87,7 +87,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 					enrichSequel(s, x, y, line)
 				}
 				x = growX(s.drawData)
-				lastOp = nil
+				lastComp = nil
 				lastArr = nil
 			case *Loop:
 				enrichLoop(
@@ -96,7 +96,7 @@ func enrichSplit(split *Split, x0, y0, minLine int, outerOp *drawData,
 					lastArr.minLine+lastArr.lines-1,
 				)
 				x = growX(s.drawData)
-				lastOp = nil
+				lastComp = nil
 				lastArr = nil
 			default:
 				panic(fmt.Sprintf("unsupported type: %T", is))
@@ -127,16 +127,16 @@ func growLine(maxLine int, d *drawData) int {
 	return max(maxLine, d.minLine+d.lines-1)
 }
 
-func growOpToDrawData(op *drawData, d *drawData) {
-	op.height = max(op.height, d.y0+d.height-op.y0)
-	op.lines = max(op.lines, d.minLine+d.lines-op.minLine)
+func growCompToDrawData(comp *drawData, d *drawData) {
+	comp.height = max(comp.height, d.y0+d.height-comp.y0)
+	comp.lines = max(comp.lines, d.minLine+d.lines-comp.minLine)
 }
 
-func mergeForOp(op *Op, merges map[string]*Merge) *Merge {
-	if op.Main.Name != "" {
-		return merges[op.Main.Name]
+func mergeForComp(comp *Comp, merges map[string]*Merge) *Merge {
+	if comp.Main.Name != "" {
+		return merges[comp.Main.Name]
 	} else {
-		return merges[op.Main.Type]
+		return merges[comp.Main.Type]
 	}
 }
 
@@ -182,14 +182,14 @@ func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
 					arrowToSVG(smf, line, mode, s)
 					smf.lastX += s.drawData.width
 				}
-			case *Op:
+			case *Comp:
 				if withinShape(line, s.drawData) {
 					xDiff := s.drawData.x0 - smf.lastX
 					if mode == FlowModeSVGLinks && xDiff > 0 {
 						addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
 						smf.lastX += xDiff
 					}
-					opToSVG(smf, line, mode, s)
+					compToSVG(smf, line, mode, s)
 					smf.lastX += s.drawData.width
 				}
 			case *Split:

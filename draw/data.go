@@ -39,9 +39,9 @@ type DataType struct {
 // and ports.
 type Arrow struct {
 	DataTypes      []*DataType
-	HasSrcOp       bool
+	HasSrcComp     bool
 	SrcPort        string
-	HasDstOp       bool
+	HasDstComp     bool
 	DstPort        string
 	drawData       *drawData
 	dataTypesWidth int // // for centering the data types
@@ -62,27 +62,27 @@ type PluginType struct {
 	drawData *drawData
 }
 
-// Plugin is a helper operation that is used inside a proper operation.
+// Plugin is a helper component that is used inside a proper component.
 type Plugin struct {
 	Title    string
 	Types    []*PluginType
 	drawData *drawData
 }
 
-// Op holds all data to describe a single operation including possible plugins.
-type Op struct {
+// Comp holds all data to describe a single component including possible plugins.
+type Comp struct {
 	Main     *DataType
 	Plugins  []*Plugin
 	drawData *drawData
 }
 
-// Split contains data for multiple paths/arrows originating from a single Op.
+// Split contains data for multiple paths/arrows originating from a single Comp.
 type Split struct {
 	Shapes   [][]any
 	drawData *drawData
 }
 
-// Merge holds data for merging multiple paths/arrows into a single Op.
+// Merge holds data for merging multiple paths/arrows into a single Comp.
 type Merge struct {
 	ID       string
 	Size     int
@@ -105,21 +105,21 @@ type Loop struct {
 
 // Flow contains data for a whole flow.
 // The data is organized in rows and individual shapes per row.
-// Valid shapes are Arrow, Op, Split, Merge, Sequel and Loop.
+// Valid shapes are Arrow, Comp, Split, Merge, Sequel and Loop.
 //
 // The following rules apply:
-// - Arrows and Ops alternate.
+// - Arrows and Comps alternate.
 // - Instead of a single Arrow a Split can be used for multiple Arrows.
 //   So the first element of such a split is always an Arrow.
-// - The last Op in a row can instead be a Merge.
-//   The real Op for the merge has to be the first element of a future row.
-//   Of course multiple merges can "point" to the same Op (using the same ID).
+// - The last Comp (and element) in a row can instead be a Merge.
+//   The real Comp for the merge has to be the first element of a future row.
+//   Of course multiple merges can "point" to the same Comp (using the same ID).
 //   The same Merge instance has to be used for this (only 1 instance per ID).
-// - The real Op of a merge can be followed by an Arrow or Split as usual.
-// - The last Op in a row can be replaced by a Loop, too.
+// - The real Comp of a merge can be followed by an Arrow or Split as usual.
+// - The last Comp (and element) in a row can be replaced by a Loop, too.
 //   The loop points back to a component we can't draw an arrow to.
 //   In the diagram you will see: ...back to: <component>:<port>
-// - The last Op in a row can also be replaced by a Sequel.
+// - The last Comp (and element) in a row can also be replaced by a Sequel.
 //   The other part of the Sequel should be at the start of one of the next rows.
 //   Sequels are in general inserted by the layout algorithm itself.
 type Flow struct {

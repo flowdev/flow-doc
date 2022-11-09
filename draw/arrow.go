@@ -45,24 +45,24 @@ func enrichArrow(arr *Arrow, x0, y0, minLine int) {
 
 func arrowWidth(arr *Arrow, dataWidth int) int {
 	portWidth := 0
-	if arr.HasSrcOp {
+	if arr.HasSrcComp {
 		portWidth = len(arr.SrcPort) * CharWidth
 	}
-	if arr.HasDstOp {
+	if arr.HasDstComp {
 		portWidth += len(arr.DstPort) * CharWidth
 	}
 	if portWidth != 0 {
-		portWidth += WordGap + // so the port text isn't glued to the op
+		portWidth += WordGap + // so the port text isn't glued to the comp
 			2*CharWidth // so the ports aren't glued together and it is ...
 		// ... clear which type a single port is
 	}
 
 	width := max(portWidth, dataWidth) + arrTipWidth
 
-	if !arr.HasSrcOp && arr.SrcPort != "" {
+	if !arr.HasSrcComp && arr.SrcPort != "" {
 		width += len(arr.SrcPort)*CharWidth + WordGap
 	}
-	if !arr.HasDstOp && arr.DstPort != "" {
+	if !arr.HasDstComp && arr.DstPort != "" {
 		width += len(arr.DstPort)*CharWidth + WordGap
 	}
 
@@ -143,7 +143,7 @@ func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,
 }
 
 func preArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
-	if !arrow.HasSrcOp && arrow.SrcPort != "" {
+	if !arrow.HasSrcComp && arrow.SrcPort != "" {
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0,
 			Y:     ad.y0 + ad.height - arrTextOffset,
@@ -156,7 +156,7 @@ func preArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
 }
 
 func postArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
-	if !arrow.HasDstOp && arrow.DstPort != "" {
+	if !arrow.HasDstComp && arrow.DstPort != "" {
 		postArr := len(arrow.DstPort)*CharWidth + WordGap
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + ad.width - postArr + WordGap,
@@ -170,7 +170,7 @@ func postArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
 }
 
 func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, preArr int) {
-	if arrow.HasSrcOp && arrow.SrcPort != "" {
+	if arrow.HasSrcComp && arrow.SrcPort != "" {
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + preArr + WordGap,
 			Y:     ad.y0 + ad.height - arrSmallTextOffset,
@@ -182,7 +182,7 @@ func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, preArr int) {
 }
 
 func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, postArr int) {
-	if arrow.HasDstOp && arrow.DstPort != "" {
+	if arrow.HasDstComp && arrow.DstPort != "" {
 		w := len(arrow.DstPort) * CharWidth
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + ad.width - w - arrTipWidth - postArr,

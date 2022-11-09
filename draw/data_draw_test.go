@@ -16,10 +16,10 @@ var BigTestFlowData = &draw.Flow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 					},
-					HasSrcOp: false, SrcPort: "in",
-					HasDstOp: true, DstPort: "",
+					HasSrcComp: false, SrcPort: "in",
+					HasDstComp: true, DstPort: "",
 				},
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Name: "Xa", Type: "MiSo", Link: "https://google.com?q=MiSo",
 					},
@@ -31,10 +31,10 @@ var BigTestFlowData = &draw.Flow{
 								DataTypes: []*draw.DataType{
 									{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 								},
-								HasSrcOp: true, SrcPort: "special",
-								HasDstOp: true, DstPort: "in",
+								HasSrcComp: true, SrcPort: "special",
+								HasDstComp: true, DstPort: "in",
 							},
-							&draw.Op{
+							&draw.Comp{
 								Main: &draw.DataType{
 									Type: "To", Link: "https://google.com?q=To",
 								},
@@ -58,8 +58,8 @@ var BigTestFlowData = &draw.Flow{
 								DataTypes: []*draw.DataType{
 									{Name: "bigData", Type: "BigDataType", Link: "https://google.com?q=BigDataType"},
 								},
-								HasSrcOp: true, SrcPort: "out",
-								HasDstOp: true, DstPort: "in1",
+								HasSrcComp: true, SrcPort: "out",
+								HasDstComp: true, DstPort: "in1",
 							},
 							bigMerge,
 						}, {
@@ -67,10 +67,10 @@ var BigTestFlowData = &draw.Flow{
 								DataTypes: []*draw.DataType{
 									{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 								},
-								HasSrcOp: true, SrcPort: "out",
-								HasDstOp: true, DstPort: "in",
+								HasSrcComp: true, SrcPort: "out",
+								HasDstComp: true, DstPort: "in",
 							},
-							&draw.Op{
+							&draw.Comp{
 								Main: &draw.DataType{
 									Name: "Mla", Type: "Blue", Link: "https://google.com?q=Blue",
 								},
@@ -79,8 +79,8 @@ var BigTestFlowData = &draw.Flow{
 								DataTypes: []*draw.DataType{
 									{Name: "data2", Type: "Data2", Link: "https://google.com?q=Data2"},
 								},
-								HasSrcOp: true, SrcPort: "",
-								HasDstOp: false, DstPort: "",
+								HasSrcComp: true, SrcPort: "",
+								HasDstComp: false, DstPort: "",
 							},
 							&draw.Sequel{
 								Number: 1,
@@ -94,10 +94,10 @@ var BigTestFlowData = &draw.Flow{
 				},
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{},
-					HasSrcOp:  false, SrcPort: "",
-					HasDstOp: true, DstPort: "in",
+					HasSrcComp:  false, SrcPort: "",
+					HasDstComp: true, DstPort: "in",
 				},
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Name: "bla2", Type: "Blue", Link: "https://google.com?q=Blue",
 					},
@@ -106,8 +106,8 @@ var BigTestFlowData = &draw.Flow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 					},
-					HasSrcOp: true, SrcPort: "out",
-					HasDstOp: true, DstPort: "in2",
+					HasSrcComp: true, SrcPort: "out",
+					HasDstComp: true, DstPort: "in2",
 				},
 				bigMerge,
 			}, {
@@ -115,10 +115,10 @@ var BigTestFlowData = &draw.Flow{
 					DataTypes: []*draw.DataType{
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcOp: false, SrcPort: "in2",
-					HasDstOp: true, DstPort: "in",
+					HasSrcComp: false, SrcPort: "in2",
+					HasDstComp: true, DstPort: "in",
 				},
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Name: "megaParser", Type: "MegaParser", Link: "https://google.com?q=MegaParser",
 					},
@@ -144,12 +144,12 @@ var BigTestFlowData = &draw.Flow{
 						{Name: "data2", Type: "data2", Link: "https://google.com?q=data2"},
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcOp: true, SrcPort: "out",
-					HasDstOp: true, DstPort: "in3",
+					HasSrcComp: true, SrcPort: "out",
+					HasDstComp: true, DstPort: "in3",
 				},
 				bigMerge,
 			}, {
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Type: "bigMerge", Link: "https://google.com?q=bigMerge",
 					},
@@ -162,10 +162,10 @@ var BigTestFlowData = &draw.Flow{
 						{Name: "data2", Type: "data2", Link: "https://google.com?q=data2"},
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcOp: false, SrcPort: "in3",
-					HasDstOp: true, DstPort: "",
+					HasSrcComp: false, SrcPort: "in3",
+					HasDstComp: true, DstPort: "",
 				},
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Type: "recursive", Link: "https://google.com?q=recursive",
 					},
@@ -174,10 +174,10 @@ var BigTestFlowData = &draw.Flow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 					},
-					HasSrcOp: true, SrcPort: "",
-					HasDstOp: true, DstPort: "",
+					HasSrcComp: true, SrcPort: "",
+					HasDstComp: true, DstPort: "",
 				},
-				&draw.Op{
+				&draw.Comp{
 					Main: &draw.DataType{
 						Type: "secondOp", Link: "https://google.com?q=secondOp",
 					},
@@ -188,8 +188,8 @@ var BigTestFlowData = &draw.Flow{
 						{Name: "data2", Type: "data2", Link: "https://google.com?q=data2"},
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcOp: true, SrcPort: "out",
-					HasDstOp: false, DstPort: "",
+					HasSrcComp: true, SrcPort: "out",
+					HasDstComp: false, DstPort: "",
 				},
 				&draw.Loop{
 					Name: "recursive", Port: "in3", Link: "https://google.com?q=recursive",

@@ -15,7 +15,7 @@ func validateSplit(split *Split) error {
 	for i, row := range shapes {
 		for j, ishape := range row {
 			switch shape := ishape.(type) {
-			case *Arrow, *Op, *Merge, *Text, *Sequel, *Loop:
+			case *Arrow, *Comp, *Merge, *Text, *Sequel, *Loop:
 				break
 			case *Split:
 				err := validateSplit(shape)

@@ -12,7 +12,7 @@ type svgColors struct {
 	Text       string
 	Link       string
 	GoLink     string
-	Op         string
+	Comp       string
 	Plugin     string
 	PluginType string
 }
@@ -22,7 +22,7 @@ var lightColors = svgColors{
 	Text:       "rgb(0,0,0)",
 	Link:       "rgb(32,48,128)",
 	GoLink:     "rgb(0,96,0)",
-	Op:         "rgb(96,192,255)",
+	Comp:       "rgb(96,192,255)",
 	Plugin:     "rgb(224,224,32)",
 	PluginType: "rgb(32,224,32)",
 }
@@ -32,7 +32,7 @@ var darkColors = svgColors{
 	Text:       "rgb(201,209,217)",
 	Link:       "rgb(96,192,255)",
 	GoLink:     "rgb(32,224,32)",
-	Op:         "rgb(32,48,128)",
+	Comp:       "rgb(32,48,128)",
 	Plugin:     "rgb(96,96,0)",
 	PluginType: "rgb(0,96,0)",
 }
@@ -55,7 +55,7 @@ const svgDiagram = `<?xml version="1.0" ?>
     {{- if .Plugin}}
     <rect fill="{{$colors.Plugin}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
     {{- else}}
-    <rect fill="{{$colors.Op}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
+    <rect fill="{{$colors.Comp}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
     {{- end}}
 {{- end}}
 {{- end}}
