@@ -26,8 +26,7 @@ type DataTyp struct {
 	TypPos  token.Pos
 }
 
-// CallStep is a step in a flow that performs a call to a sub-flow or
-// component.
+// CallStep is a step in a flow that performs a call to a component.
 type CallStep struct {
 	Inputs        []string
 	InPort        Port
@@ -232,8 +231,9 @@ func IsBoring(typ string) bool {
 
 // TypeInfo returns the Go type definition for the given type expression.
 func TypeInfo(typ ast.Expr, typesInfo *types.Info) string {
-	if typesInfo.Types[typ].Type == nil {
+	ti := typesInfo.Types[typ].Type
+	if ti == nil {
 		return "<types.Info not filled properly>"
 	}
-	return typesInfo.Types[typ].Type.String()
+	return ti.String()
 }
