@@ -317,6 +317,19 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 // --------------------------------------------------------------------------
 //    U T I L s :
 // --------------------------------------------------------------------------
+func addNewSVGFlow(
+	smf *svgMDFlow,
+	x0, y0, height, width int,
+	compName string, line int,
+) (*svgFlow, *svgLink) {
+
+	svg := newSVGFlow(x0, y0, height, width, tinyDiagramSize)
+	name := svgFileName(smf, compName, line)
+	smf.svgs[name] = svg
+	sl := addSVGLinkToMDFlowLines(smf, line, name, compName)
+	return svg, sl
+}
+
 func addFillerSVG(smf *svgMDFlow, line, x, height, width int) {
 	svg := newSVGFlow(0, 0, height, width, tinyDiagramSize)
 	name := fmt.Sprintf("%s-filler-%d-%d.svg", smf.svgFilePrefix, width, height)

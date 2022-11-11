@@ -130,10 +130,10 @@ func compToSVG(smf *svgMDFlow, line int, mode FlowMode, comp *Comp) {
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
-		svg = newSVGFlow(od.x0, od.y0+idx*LineHeight, LineHeight, od.width, tinyDiagramSize)
-		name := svgFileName(smf, compID(comp), line)
-		smf.svgs[name] = svg
-		link = addSVGLinkToMDFlowLines(smf, line, name, "arrow")
+		svg, link = addNewSVGFlow(smf,
+			od.x0, od.y0+idx*LineHeight, LineHeight, od.width,
+			compID(comp), line,
+		)
 	} else {
 		svg = smf.svgs[""]
 	}

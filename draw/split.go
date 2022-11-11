@@ -221,10 +221,10 @@ func sequelToSVG(smf *svgMDFlow, line int, mode FlowMode, seq *Sequel) {
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
-		svg = newSVGFlow(sd.x0, sd.y0, sd.height, sd.width, tinyDiagramSize)
-		name := svgFileName(smf, "sequel", line)
-		smf.svgs[name] = svg
-		addSVGLinkToMDFlowLines(smf, line, name, "sequel")
+		svg, _ = addNewSVGFlow(smf,
+			sd.x0, sd.y0, sd.height, sd.width,
+			"sequel", line,
+		)
 	} else {
 		svg = smf.svgs[""]
 	}
@@ -243,10 +243,11 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
-		svg = newSVGFlow(ld.x0, ld.y0, ld.height, ld.width, tinyDiagramSize)
-		name := svgFileName(smf, "loop", line)
-		smf.svgs[name] = svg
-		svgLink := addSVGLinkToMDFlowLines(smf, line, name, "loop")
+		var svgLink *svgLink
+		svg, svgLink = addNewSVGFlow(smf,
+			ld.x0, ld.y0, ld.height, ld.width,
+			"loop", line,
+		)
 		svgLink.Link = loop.Link
 	} else {
 		svg = smf.svgs[""]
