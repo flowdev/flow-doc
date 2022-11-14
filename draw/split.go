@@ -8,111 +8,131 @@ import (
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichSplit(split *Split, x0, y0, minLine int, outerComp *drawData,
-	mode FlowMode, merges map[string]*Merge,
-) {
-	var lastComp *drawData
-	var lastArr *drawData
-	x, y, line, xmax, ymax, maxLine := x0, y0, minLine, x0, y0, minLine
+type splitState struct {
+	lastComp, lastArr               *drawData
+	x, y, line, xmax, ymax, maxLine int
+	i, j                            int
+	ss                              []any
+}
 
-	for i, ss := range split.Shapes {
-		x = x0
-		line = maxLine
-		if i > 0 {
-			line++
+func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
+	mode FlowMode, merges map[string]*Merge,
+) (newShapeLines [][]any) {
+	s := &splitState{
+		x:       x0,
+		y:       y0,
+		line:    minLine,
+		xmax:    x0,
+		ymax:    y0,
+		maxLine: minLine,
+	}
+
+	for s.i = 0; s.i < len(split.Shapes); s.i++ {
+		s.ss = split.Shapes[s.i]
+		s.x = x0
+		s.line = s.maxLine
+		if s.i > 0 {
+			s.line++
 			if mode != FlowModeSVGLinks {
-				ymax += LineGap
+				s.ymax += LineGap
 			}
 		}
-		y = ymax
-		lastComp = nil
-		lastArr = nil
-		for j, is := range ss {
-			switch s := is.(type) {
+		s.y = s.ymax
+		s.lastComp = nil
+		s.lastArr = nil
+		for s.j = 0; s.j < len(s.ss); s.j++ {
+			is := s.ss[s.j]
+			switch sh := is.(type) {
 			case *Arrow:
-				enrichArrow(s, x, y, line)
-				lastArr = s.drawData
-				x = growX(lastArr)
-				ymax = growY(ymax, lastArr)
-				if lastComp != nil {
-					maxLine = growLine(maxLine, lastComp)
+				enrichArrow(sh, s.x, s.y, s.line)
+				s.lastArr = sh.drawData
+				s.x = growX(s.lastArr)
+				s.ymax = growY(s.ymax, s.lastArr)
+				if s.lastComp != nil {
+					s.maxLine = growLine(s.maxLine, s.lastComp)
 				}
-				if j == 0 && outerComp != nil {
-					growCompToDrawData(outerComp, lastArr)
+				if s.j == 0 && outerComp != nil {
+					growCompToDrawData(outerComp, s.lastArr)
 				}
-				if lastComp != nil {
-					growCompToDrawData(lastComp, lastArr)
+				if s.lastComp != nil {
+					growCompToDrawData(s.lastComp, s.lastArr)
 				}
 			case *Comp:
-				enrichComp(s, x, y, line)
-				lastComp = s.drawData
-				merge := mergeForComp(s, merges)
-				if j == 0 && merge != nil {
-					moveComp(s, merge.drawData)
-					growCompToDrawData(lastComp, merge.drawData)
+				enrichComp(sh, s.x, s.y, s.line)
+				s.lastComp = sh.drawData
+				merge := mergeForComp(sh, merges)
+				if s.j == 0 && merge != nil {
+					moveComp(sh, merge.drawData)
+					growCompToDrawData(s.lastComp, merge.drawData)
 
-					y = lastComp.y0
+					s.y = s.lastComp.y0
 					if mode != FlowModeSVGLinks {
-						ymax -= LineGap
+						s.ymax -= LineGap
 					}
-					line = lastComp.minLine
+					s.line = s.lastComp.minLine
 				}
-				if lastArr != nil {
-					growCompToDrawData(lastComp, lastArr)
+				if s.lastArr != nil {
+					growCompToDrawData(s.lastComp, s.lastArr)
 				}
-				x = growX(lastComp)
-				ymax = growY(ymax, lastComp)
-				maxLine = growLine(maxLine, lastComp)
+				s.x = growX(s.lastComp)
+				s.ymax = growY(s.ymax, s.lastComp)
+				s.maxLine = growLine(s.maxLine, s.lastComp)
 			case *Split:
-				enrichSplit(s, x, y, line, lastComp, mode, merges)
-				d := s.drawData
-				x = growX(d)
-				ymax = growY(ymax, d)
-				maxLine = growLine(maxLine, d)
-				growCompToDrawData(lastComp, d)
-				lastComp = nil
-				lastArr = nil
+				nsl := enrichSplit(
+					sh, s.x, s.y, s.line, width,
+					s.lastComp, mode, merges,
+				)
+				newShapeLines = append(newShapeLines, nsl...)
+				d := sh.drawData
+				s.x = growX(d)
+				s.ymax = growY(s.ymax, d)
+				s.maxLine = growLine(s.maxLine, d)
+				growCompToDrawData(s.lastComp, d)
+				s.lastComp = nil
+				s.lastArr = nil
 			case *Merge:
-				enrichMerge(s, lastArr, merges)
-				lastComp = nil
-				lastArr = nil
+				enrichMerge(sh, s.lastArr, merges)
+				s.lastComp = nil
+				s.lastArr = nil
 			case *Sequel:
-				if lastArr != nil {
+				if s.lastArr != nil {
 					enrichSequel(
-						s, x,
-						lastArr.y0+lastArr.height-LineHeight,
-						lastArr.minLine+lastArr.lines-1,
+						sh, s.x,
+						s.lastArr.y0+s.lastArr.height-LineHeight,
+						s.lastArr.minLine+s.lastArr.lines-1,
 					)
 				} else {
-					enrichSequel(s, x, y, line)
+					enrichSequel(sh, s.x, s.y, s.line)
 				}
-				x = growX(s.drawData)
-				lastComp = nil
-				lastArr = nil
+				s.x = growX(sh.drawData)
+				s.lastComp = nil
+				s.lastArr = nil
 			case *Loop:
 				enrichLoop(
-					s, x,
-					lastArr.y0+lastArr.height-LineHeight,
-					lastArr.minLine+lastArr.lines-1,
+					sh, s.x,
+					s.lastArr.y0+s.lastArr.height-LineHeight,
+					s.lastArr.minLine+s.lastArr.lines-1,
 				)
-				x = growX(s.drawData)
-				lastComp = nil
-				lastArr = nil
+				s.x = growX(sh.drawData)
+				s.lastComp = nil
+				s.lastArr = nil
 			default:
 				panic(fmt.Sprintf("unsupported type: %T", is))
 			}
 		}
-		xmax = max(xmax, x)
+		s.xmax = max(s.xmax, s.x)
 	}
 
 	split.drawData = &drawData{
 		x0:      x0,
 		y0:      y0,
-		height:  ymax - y0,
-		width:   xmax - x0,
+		height:  s.ymax - y0,
+		width:   s.xmax - x0,
 		minLine: minLine,
-		lines:   maxLine - minLine + 1,
+		lines:   s.maxLine - minLine + 1,
 	}
+
+	return newShapeLines
 }
 
 func growX(d *drawData) int {

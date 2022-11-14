@@ -47,12 +47,6 @@ type Arrow struct {
 	dataTypesWidth int // // for centering the data types
 }
 
-// Text is the text to display as a flow output port.
-type Text struct {
-	Text     string
-	drawData *drawData
-}
-
 // PluginType contains the type of the plugin.
 // And optionally a link to its definition.
 type PluginType struct {
@@ -111,8 +105,12 @@ type Loop struct {
 // - Arrows and Comps alternate.
 // - Instead of a single Arrow a Split can be used for multiple Arrows.
 //   So the first element of such a split is always an Arrow.
+//   (exception: a component that completes a merge).
+//   Such a split has to be the last element of a row.
+//   A split can never be the first element of a row.
 // - The last Comp (and element) in a row can instead be a Merge.
-//   The real Comp for the merge has to be the first element of a future row.
+//   The real Comp for the merge has to be the first element of a future row
+//   (possibly of the outer Split).
 //   Of course multiple merges can "point" to the same Comp (using the same ID).
 //   The same Merge instance has to be used for this (only 1 instance per ID).
 // - The real Comp of a merge can be followed by an Arrow or Split as usual.
@@ -120,7 +118,8 @@ type Loop struct {
 //   The loop points back to a component we can't draw an arrow to.
 //   In the diagram you will see: ...back to: <component>:<port>
 // - The last Comp (and element) in a row can also be replaced by a Sequel.
-//   The other part of the Sequel should be at the start of one of the next rows.
+//   The other part of the Sequel should be at the start of one of the next rows
+//   of the outer Split.
 //   Sequels are in general inserted by the layout algorithm itself.
 type Flow struct {
 	Name      string
