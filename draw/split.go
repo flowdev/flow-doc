@@ -19,6 +19,14 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 		ymax:    y0,
 		maxLine: minLine,
 	}
+	/*
+		IDEAS:
+		- cutData: struct that contains everything for cutting an arrow in two parts
+		- check minimum width of the first arrows before looping
+		- return early if no space for minimum width
+		- possibly collect data for cut and no-cut scenarios
+		- Nightmare scenario: merge with last arrow being too long: verylonginput -> merge
+	*/
 
 	for s.i = 0; s.i < len(split.Shapes); s.i++ {
 		s.row = split.Shapes[s.i]
@@ -185,42 +193,42 @@ func enrichLoop(loop *Loop, x0, y0, minLine int) {
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
 func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
-	for _, ss := range split.Shapes {
-		for _, is := range ss {
-			switch s := is.(type) {
+	for _, row := range split.Shapes {
+		for _, ishape := range row {
+			switch shape := ishape.(type) {
 			case *Arrow:
-				if withinShape(line, s.drawData) {
-					arrowToSVG(smf, line, mode, s)
-					smf.lastX += s.drawData.width
+				if withinShape(line, shape.drawData) {
+					arrowToSVG(smf, line, mode, shape)
+					smf.lastX += shape.drawData.width
 				}
 			case *Comp:
-				if withinShape(line, s.drawData) {
-					xDiff := s.drawData.x0 - smf.lastX
+				if withinShape(line, shape.drawData) {
+					xDiff := shape.drawData.x0 - smf.lastX
 					if mode == FlowModeSVGLinks && xDiff > 0 {
 						addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
 						smf.lastX += xDiff
 					}
-					compToSVG(smf, line, mode, s)
-					smf.lastX += s.drawData.width
+					compToSVG(smf, line, mode, shape)
+					smf.lastX += shape.drawData.width
 				}
 			case *Split:
-				if withinShape(line, s.drawData) {
-					splitToSVG(smf, line, mode, s)
+				if withinShape(line, shape.drawData) {
+					splitToSVG(smf, line, mode, shape)
 				}
 			case *Merge:
 				// no SVG to create
 			case *Sequel:
-				if withinShape(line, s.drawData) {
-					sequelToSVG(smf, line, mode, s)
-					smf.lastX += s.drawData.width
+				if withinShape(line, shape.drawData) {
+					sequelToSVG(smf, line, mode, shape)
+					smf.lastX += shape.drawData.width
 				}
 			case *Loop:
-				if withinShape(line, s.drawData) {
-					loopToSVG(smf, line, mode, s)
-					smf.lastX += s.drawData.width
+				if withinShape(line, shape.drawData) {
+					loopToSVG(smf, line, mode, shape)
+					smf.lastX += shape.drawData.width
 				}
 			default:
-				panic(fmt.Sprintf("unsupported type: %T", is))
+				panic(fmt.Sprintf("unsupported type: %T", ishape))
 			}
 		}
 	}

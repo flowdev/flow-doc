@@ -8,7 +8,7 @@ const (
 	WordGap     = 6
 	TextOffset  = 6
 	SequelText  = "…"
-	SequelWidth = CharWidth
+	SequelWidth = 2 * ParenWidth
 	LoopText    = "back to: "
 	LoopWidth   = 6*CharWidth + 3*CharWidth/2
 )
