@@ -55,7 +55,7 @@ func enrichCompMain(main *DataType, x0, y0, minLine int) {
 	}
 }
 
-func enrichPlugin(p *Plugin, x0, y0, minLine int) {
+func enrichPlugin(p *PluginGroup, x0, y0, minLine int) {
 	height := 0
 	width := 0
 	lines := 0
@@ -81,7 +81,7 @@ func enrichPlugin(p *Plugin, x0, y0, minLine int) {
 	}
 }
 
-func enrichPluginType(pt *PluginType, x0, y0, minLine int) {
+func enrichPluginType(pt *Plugin, x0, y0, minLine int) {
 	width := WordGap + len(pt.Type)*CharWidth + WordGap
 	pt.drawData = &drawData{
 		x0:      x0,
@@ -216,7 +216,7 @@ func compMainToSVG(svg *svgFlow, link *svgLink, line int, main *DataType) bool {
 	return true
 }
 
-func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *Plugin) bool {
+func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *PluginGroup) bool {
 	pd := p.drawData
 	if !withinShape(line, pd) {
 		return false
@@ -244,7 +244,7 @@ func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *Plugin
 	return true // should never happen
 }
 
-func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *PluginType, last bool) bool {
+func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *Plugin, last bool) bool {
 	ptd := pt.drawData
 	if !withinShape(line, ptd) {
 		return false

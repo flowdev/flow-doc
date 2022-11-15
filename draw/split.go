@@ -8,13 +8,6 @@ import (
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-type splitState struct {
-	lastComp, lastArr               *drawData
-	x, y, line, xmax, ymax, maxLine int
-	i, j                            int
-	ss                              []any
-}
-
 func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 	mode FlowMode, merges map[string]*Merge,
 ) (newShapeLines [][]any) {
@@ -28,7 +21,7 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 	}
 
 	for s.i = 0; s.i < len(split.Shapes); s.i++ {
-		s.ss = split.Shapes[s.i]
+		s.row = split.Shapes[s.i]
 		s.x = x0
 		s.line = s.maxLine
 		if s.i > 0 {
@@ -40,29 +33,29 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 		s.y = s.ymax
 		s.lastComp = nil
 		s.lastArr = nil
-		for s.j = 0; s.j < len(s.ss); s.j++ {
-			is := s.ss[s.j]
-			switch sh := is.(type) {
+		for s.j = 0; s.j < len(s.row); s.j++ {
+			ishape := s.row[s.j]
+			switch shape := ishape.(type) {
 			case *Arrow:
-				enrichArrow(sh, s.x, s.y, s.line)
-				s.lastArr = sh.drawData
-				s.x = growX(s.lastArr)
-				s.ymax = growY(s.ymax, s.lastArr)
+				enrichArrow(shape, s.x, s.y, s.line)
+				s.lastArr = shape
+				s.x = growX(s.lastArr.drawData)
+				s.ymax = growY(s.ymax, s.lastArr.drawData)
 				if s.lastComp != nil {
 					s.maxLine = growLine(s.maxLine, s.lastComp)
 				}
 				if s.j == 0 && outerComp != nil {
-					growCompToDrawData(outerComp, s.lastArr)
+					growCompToDrawData(outerComp, s.lastArr.drawData)
 				}
 				if s.lastComp != nil {
-					growCompToDrawData(s.lastComp, s.lastArr)
+					growCompToDrawData(s.lastComp, s.lastArr.drawData)
 				}
 			case *Comp:
-				enrichComp(sh, s.x, s.y, s.line)
-				s.lastComp = sh.drawData
-				merge := mergeForComp(sh, merges)
+				enrichComp(shape, s.x, s.y, s.line)
+				s.lastComp = shape.drawData
+				merge := merges[compID(shape)]
 				if s.j == 0 && merge != nil {
-					moveComp(sh, merge.drawData)
+					moveComp(shape, merge.drawData)
 					growCompToDrawData(s.lastComp, merge.drawData)
 
 					s.y = s.lastComp.y0
@@ -72,18 +65,22 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 					s.line = s.lastComp.minLine
 				}
 				if s.lastArr != nil {
-					growCompToDrawData(s.lastComp, s.lastArr)
+					growCompToDrawData(s.lastComp, s.lastArr.drawData)
 				}
 				s.x = growX(s.lastComp)
 				s.ymax = growY(s.ymax, s.lastComp)
 				s.maxLine = growLine(s.maxLine, s.lastComp)
 			case *Split:
 				nsl := enrichSplit(
-					sh, s.x, s.y, s.line, width,
+					shape, s.x, s.y, s.line, width,
 					s.lastComp, mode, merges,
 				)
-				newShapeLines = append(newShapeLines, nsl...)
-				d := sh.drawData
+				if outerComp != nil {
+					newShapeLines = append(newShapeLines, nsl...)
+				} else {
+					split.Shapes = addRowsAfter(split.Shapes, s.i, nsl)
+				}
+				d := shape.drawData
 				s.x = growX(d)
 				s.ymax = growY(s.ymax, d)
 				s.maxLine = growLine(s.maxLine, d)
@@ -91,33 +88,35 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Merge:
-				enrichMerge(sh, s.lastArr, merges)
+				enrichMerge(shape, s.lastArr, merges)
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Sequel:
 				if s.lastArr != nil {
+					lad := s.lastArr.drawData
 					enrichSequel(
-						sh, s.x,
-						s.lastArr.y0+s.lastArr.height-LineHeight,
-						s.lastArr.minLine+s.lastArr.lines-1,
+						shape, s.x,
+						lad.y0+lad.height-LineHeight,
+						lad.minLine+lad.lines-1,
 					)
 				} else {
-					enrichSequel(sh, s.x, s.y, s.line)
+					enrichSequel(shape, s.x, s.y, s.line)
 				}
-				s.x = growX(sh.drawData)
+				s.x = growX(shape.drawData)
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Loop:
+				lad := s.lastArr.drawData
 				enrichLoop(
-					sh, s.x,
-					s.lastArr.y0+s.lastArr.height-LineHeight,
-					s.lastArr.minLine+s.lastArr.lines-1,
+					shape, s.x,
+					lad.y0+lad.height-LineHeight,
+					lad.minLine+lad.lines-1,
 				)
-				s.x = growX(sh.drawData)
+				s.x = growX(shape.drawData)
 				s.lastComp = nil
 				s.lastArr = nil
 			default:
-				panic(fmt.Sprintf("unsupported type: %T", is))
+				panic(fmt.Sprintf("unsupported type: %T", ishape))
 			}
 		}
 		s.xmax = max(s.xmax, s.x)
@@ -152,16 +151,8 @@ func growCompToDrawData(comp *drawData, d *drawData) {
 	comp.lines = max(comp.lines, d.minLine+d.lines-comp.minLine)
 }
 
-func mergeForComp(comp *Comp, merges map[string]*Merge) *Merge {
-	if comp.Main.Name != "" {
-		return merges[comp.Main.Name]
-	} else {
-		return merges[comp.Main.Type]
-	}
-}
-
 func enrichSequel(seq *Sequel, x0, y0, minLine int) {
-	width := ParenWidth*3 + len(strconv.Itoa(seq.Number))*CharWidth
+	width := SequelWidth + len(strconv.Itoa(seq.Number))*CharWidth
 
 	seq.drawData = &drawData{
 		x0:      x0,
@@ -174,10 +165,10 @@ func enrichSequel(seq *Sequel, x0, y0, minLine int) {
 }
 
 func enrichLoop(loop *Loop, x0, y0, minLine int) {
-	txt := "back to: " + loop.Name + loop.Port
-	width := ParenWidth*3 + len(txt)*CharWidth
+	txt := loop.Name + loop.Port
+	width := SequelWidth + LoopWidth + len(txt)*CharWidth
 	if loop.Port != "" {
-		width += ParenWidth
+		width += CharWidth / 2
 	}
 
 	loop.drawData = &drawData{
@@ -253,7 +244,7 @@ func sequelToSVG(smf *svgMDFlow, line int, mode FlowMode, seq *Sequel) {
 		X:     sd.x0,
 		Y:     sd.y0 + sd.height - arrTextOffset,
 		Width: sd.width,
-		Text:  "..." + strconv.Itoa(seq.Number),
+		Text:  SequelText + strconv.Itoa(seq.Number),
 	})
 }
 
@@ -273,7 +264,7 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 		svg = smf.svgs[""]
 	}
 
-	txt := "...back to: " + loop.Name
+	txt := SequelText + LoopText + loop.Name
 	if loop.Port != "" {
 		txt += ":" + loop.Port
 	}
@@ -285,4 +276,12 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 		Link:   !loop.GoLink && loop.Link != "",
 		GoLink: loop.GoLink,
 	})
+}
+
+func addRowsAfter(shapes [][]any, i int, newShapes [][]any) [][]any {
+	i++
+	shapes = append(shapes, newShapes...)       // grow bigShapes
+	copy(shapes[i+len(newShapes):], shapes[i:]) // move everything after i
+	copy(shapes[i:], newShapes)                 // add new content
+	return shapes
 }

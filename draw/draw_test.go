@@ -56,18 +56,18 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 		if err != nil {
 			ts.Fatalf("unable to write file %q: %v", workFNam, err)
 		}
-		//err = os.WriteFile(fnam, fcontent, 0666)
-		//if err != nil {
-		//	ts.Fatalf("unable to write file %q: %v", fnam, err)
-		//}
+		err = os.WriteFile(fnam, fcontent, 0666)
+		if err != nil {
+			ts.Fatalf("unable to write file %q: %v", fnam, err)
+		}
 	}
 	workMDFile := filepath.Join(workDir, mdFile)
 	err = os.WriteFile(workMDFile, mdContent, 0666)
 	if err != nil {
 		ts.Fatalf("unable to write file %q: %v", workMDFile, err)
 	}
-	//err = os.WriteFile(mdFile+".md", mdContent, 0666)
-	//if err != nil {
-	//	ts.Fatalf("unable to write file %q: %v", mdFile+".md", err)
-	//}
+	err = os.WriteFile(mdFile+".md", mdContent, 0666)
+	if err != nil {
+		ts.Fatalf("unable to write file %q: %v", mdFile+".md", err)
+	}
 }

@@ -38,16 +38,16 @@ var BigTestFlowData = &draw.Flow{
 								Main: &draw.DataType{
 									Type: "To", Link: "https://google.com?q=To",
 								},
-								Plugins: []*draw.Plugin{
+								Plugins: []*draw.PluginGroup{
 									{
 										Title: "semantics",
-										Types: []*draw.PluginType{
+										Types: []*draw.Plugin{
 											{Type: "TextSemantics", Link: "https://google.com?q=TextSemantics"},
 										},
 									},
 									{
 										Title: "subParser",
-										Types: []*draw.PluginType{
+										Types: []*draw.Plugin{
 											{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser", GoLink: true},
 											{Type: "NaturalParser", Link: "https://google.com?q=NaturalParser"},
 										},
@@ -122,16 +122,16 @@ var BigTestFlowData = &draw.Flow{
 					Main: &draw.DataType{
 						Name: "megaParser", Type: "MegaParser", Link: "https://google.com?q=MegaParser",
 					},
-					Plugins: []*draw.Plugin{
+					Plugins: []*draw.PluginGroup{
 						{
 							Title: "semantics",
-							Types: []*draw.PluginType{
+							Types: []*draw.Plugin{
 								{Type: "TextSemantics", Link: "https://google.com?q=TextSemantics"},
 							},
 						},
 						{
 							Title: "subParser",
-							Types: []*draw.PluginType{
+							Types: []*draw.Plugin{
 								{Type: "LiteralParser", Link: "https://google.com?q=LiteralParser", GoLink: true},
 								{Type: "NaturalParser", Link: "https://google.com?q=NaturalParser"},
 							},

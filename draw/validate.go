@@ -217,5 +217,5 @@ func validMergeComp(comp *Comp, merges map[string]*Merge) bool {
 
 func registerMerge(merge *Merge, merges map[string]*Merge) {
 	merges[merge.ID] = merge // might be done already but we insist on the same object
-	merge.arrows = append(merge.arrows, &drawData{})
+	merge.arrows = append(merge.arrows, &Arrow{})
 }
