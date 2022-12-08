@@ -71,7 +71,6 @@
     <rect fill="rgb(96,192,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="84" height="94" x="152" y="449" rx="10"/>
     <rect fill="rgb(96,192,255)" fill-opacity="1.0" stroke="rgb(0,0,0)" stroke-opacity="1.0" stroke-width="2" width="76" height="94" x="348" y="449" rx="10"/>
 
-    <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="0" y="37" textLength="16" lengthAdjust="spacingAndGlyphs">in</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="24" y="18" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="30" y="18" textLength="32" lengthAdjust="spacingAndGlyphs">data</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="70" y="18" textLength="38" lengthAdjust="spacingAndGlyphs">Data)</text>
@@ -115,7 +114,6 @@
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="76" y="250" textLength="32" lengthAdjust="spacingAndGlyphs">Blue</text>
     <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="14" x="120" y="252" textLength="24" lengthAdjust="spacingAndGlyphs">out</text>
     <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="14" x="556" y="252" textLength="24" lengthAdjust="spacingAndGlyphs">in2</text>
-    <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="0" y="301" textLength="24" lengthAdjust="spacingAndGlyphs">in2</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="32" y="282" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="38" y="282" textLength="40" lengthAdjust="spacingAndGlyphs">data3</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="86" y="282" textLength="46" lengthAdjust="spacingAndGlyphs">Data3)</text>
@@ -137,7 +135,6 @@
     <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="158" y="378" textLength="80" lengthAdjust="spacingAndGlyphs">subParser:</text>
     <text fill="rgb(0,96,0)" fill-opacity="1.0" font-size="16" x="158" y="402" textLength="104" lengthAdjust="spacingAndGlyphs">LiteralParser</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="158" y="426" textLength="104" lengthAdjust="spacingAndGlyphs">NaturalParser</text>
-    <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="0" y="533" textLength="24" lengthAdjust="spacingAndGlyphs">in3</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="32" y="466" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="38" y="466" textLength="32" lengthAdjust="spacingAndGlyphs">data</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="86" y="466" textLength="32" lengthAdjust="spacingAndGlyphs">Data</text>
@@ -149,12 +146,10 @@
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="432" y="466" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="438" y="466" textLength="32" lengthAdjust="spacingAndGlyphs">data</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="486" y="466" textLength="32" lengthAdjust="spacingAndGlyphs">Data</text>
-    <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="0" y="533" textLength="24" lengthAdjust="spacingAndGlyphs">in3</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="38" y="490" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="86" y="490" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="438" y="490" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="486" y="490" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
-    <text fill="rgb(0,0,0)" fill-opacity="1.0" font-size="16" x="0" y="533" textLength="24" lengthAdjust="spacingAndGlyphs">in3</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="38" y="514" textLength="40" lengthAdjust="spacingAndGlyphs">data3</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="86" y="514" textLength="46" lengthAdjust="spacingAndGlyphs">Data3)</text>
     <text fill="rgb(32,48,128)" fill-opacity="1.0" font-size="16" x="438" y="514" textLength="40" lengthAdjust="spacingAndGlyphs">data3</text>

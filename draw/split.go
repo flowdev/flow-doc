@@ -325,23 +325,26 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 func portToSVG(smf *svgMDFlow, line int, mode FlowMode, prt *ExtPort) {
 	var svg *svgFlow
 	pd := prt.drawData
+	idx := line - pd.minLine
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
 		svg, _ = addNewSVGFlow(smf,
-			pd.x0, pd.y0, pd.height, pd.width,
+			pd.x0, pd.y0+idx*LineHeight, LineHeight, pd.width,
 			"port-"+prt.Name, line,
 		)
 	} else {
 		svg = smf.svgs[""]
 	}
 
-	svg.Texts = append(svg.Texts, &svgText{
-		X:     pd.x0,
-		Y:     pd.y0 + pd.height - arrTextOffset,
-		Width: pd.width,
-		Text:  prt.Name,
-	})
+	if idx == pd.lines-1 { // only the last line has text
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     pd.x0,
+			Y:     pd.y0 + pd.height - arrTextOffset,
+			Width: pd.width,
+			Text:  prt.Name,
+		})
+	}
 }
 
 func addRowsAfter(shapes [][]any, i int, newShapes [][]any) [][]any {
