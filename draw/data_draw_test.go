@@ -12,12 +12,13 @@ var BigTestFlowData = &draw.Flow{
 	AllShapes: &draw.Split{
 		Shapes: [][]any{
 			{
+				&draw.ExtPort{
+					Name: "in",
+				},
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 					},
-					HasSrcComp: false, SrcPort: "in",
-					HasDstComp: true, DstPort: "",
 				},
 				&draw.Comp{
 					Main: &draw.DataType{
@@ -93,8 +94,8 @@ var BigTestFlowData = &draw.Flow{
 					Number: 1,
 				},
 				&draw.Arrow{
-					DataTypes: []*draw.DataType{},
-					HasSrcComp:  false, SrcPort: "",
+					DataTypes:  []*draw.DataType{},
+					HasSrcComp: false, SrcPort: "",
 					HasDstComp: true, DstPort: "in",
 				},
 				&draw.Comp{
@@ -111,11 +112,13 @@ var BigTestFlowData = &draw.Flow{
 				},
 				bigMerge,
 			}, {
+				&draw.ExtPort{
+					Name: "in2",
+				},
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcComp: false, SrcPort: "in2",
 					HasDstComp: true, DstPort: "in",
 				},
 				&draw.Comp{
@@ -156,14 +159,15 @@ var BigTestFlowData = &draw.Flow{
 				},
 			}, { // empty to force more space
 			}, {
+				&draw.ExtPort{
+					Name: "in3",
+				},
 				&draw.Arrow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 						{Name: "data2", Type: "data2", Link: "https://google.com?q=data2"},
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
-					HasSrcComp: false, SrcPort: "in3",
-					HasDstComp: true, DstPort: "",
 				},
 				&draw.Comp{
 					Main: &draw.DataType{
@@ -174,8 +178,6 @@ var BigTestFlowData = &draw.Flow{
 					DataTypes: []*draw.DataType{
 						{Name: "data", Type: "Data", Link: "https://google.com?q=Data"},
 					},
-					HasSrcComp: true, SrcPort: "",
-					HasDstComp: true, DstPort: "",
 				},
 				&draw.Comp{
 					Main: &draw.DataType{
@@ -189,7 +191,6 @@ var BigTestFlowData = &draw.Flow{
 						{Name: "data3", Type: "Data3", Link: "https://google.com?q=Data3"},
 					},
 					HasSrcComp: true, SrcPort: "out",
-					HasDstComp: false, DstPort: "",
 				},
 				&draw.Loop{
 					Name: "recursive", Port: "in3", Link: "https://google.com?q=recursive",

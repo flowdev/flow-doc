@@ -163,6 +163,22 @@ func validateSplit(split *Split, inner bool, seqs *sequels, merges map[string]*M
 					)
 				}
 				lastShape = comp
+			case *ExtPort:
+				if j != lastIdx && j != 0 {
+					return fmt.Errorf(
+						"an external port has to either be the last or first shape of a row "+
+							"(row index %d, column index %d, inner split: %t)",
+						i, j, inner,
+					)
+				}
+				if j == lastIdx && lastShape != arrow {
+					return fmt.Errorf(
+						"an external port has to follow an arrow "+
+							"(row index %d, column index %d, inner split: %t)",
+						i, j, inner,
+					)
+				}
+				lastShape = comp
 			case *Split:
 				if lastShape != comp {
 					return fmt.Errorf(

@@ -242,7 +242,11 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 
 func enrichFlow(f *Flow) {
 	merges := make(map[string]*Merge)
-	enrichSplit(f.AllShapes, 0, 0, 0, f.width, nil, f.mode, merges)
+	enrichSplit(f.AllShapes, 0, 0, 0, 0, nil, &enrichData{
+		width:  f.width,
+		mode:   f.mode,
+		merges: merges,
+	})
 }
 
 func flowToSVGs(f *Flow) *svgMDFlow {

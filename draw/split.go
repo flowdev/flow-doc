@@ -8,8 +8,8 @@ import (
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
-	mode FlowMode, merges map[string]*Merge,
+func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
+	global *enrichData,
 ) (newShapeLines [][]any) {
 	s := &splitState{
 		x:       x0,
@@ -21,10 +21,9 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 	}
 	/*
 		IDEAS:
-		- cutData: struct that contains everything for cutting an arrow in two parts
 		- check minimum width of the first arrows before looping
 		- return early if no space for minimum width
-		- possibly collect data for cut and no-cut scenarios
+		- merges can be mended if only a minority needs a split
 		- Nightmare scenario: merge with last arrow being too long: verylonginput -> merge
 	*/
 
@@ -34,7 +33,7 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 		s.line = s.maxLine
 		if s.i > 0 {
 			s.line++
-			if mode != FlowModeSVGLinks {
+			if global.mode != FlowModeSVGLinks {
 				s.ymax += LineGap
 			}
 		}
@@ -45,6 +44,7 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 			ishape := s.row[s.j]
 			switch shape := ishape.(type) {
 			case *Arrow:
+				//splitFit := enrichArrow(shape, s.x, s.y, s.line)
 				enrichArrow(shape, s.x, s.y, s.line)
 				s.lastArr = shape
 				s.x = growX(s.lastArr.drawData)
@@ -61,13 +61,13 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 			case *Comp:
 				enrichComp(shape, s.x, s.y, s.line)
 				s.lastComp = shape.drawData
-				merge := merges[compID(shape)]
+				merge := global.merges[compID(shape)]
 				if s.j == 0 && merge != nil {
 					moveComp(shape, merge.drawData)
 					growCompToDrawData(s.lastComp, merge.drawData)
 
 					s.y = s.lastComp.y0
-					if mode != FlowModeSVGLinks {
+					if global.mode != FlowModeSVGLinks {
 						s.ymax -= LineGap
 					}
 					s.line = s.lastComp.minLine
@@ -80,8 +80,8 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 				s.maxLine = growLine(s.maxLine, s.lastComp)
 			case *Split:
 				nsl := enrichSplit(
-					shape, s.x, s.y, s.line, width,
-					s.lastComp, mode, merges,
+					shape, s.x, s.y, s.line, level,
+					s.lastComp, global,
 				)
 				if outerComp != nil {
 					newShapeLines = append(newShapeLines, nsl...)
@@ -96,7 +96,7 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Merge:
-				enrichMerge(shape, s.lastArr, merges)
+				enrichMerge(shape, s.lastArr, global.merges)
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Sequel:
@@ -111,7 +111,7 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 					enrichSequel(shape, s.x, s.y, s.line)
 				}
 				s.x = growX(shape.drawData)
-				s.lastComp = nil
+				s.lastComp = shape.drawData
 				s.lastArr = nil
 			case *Loop:
 				lad := s.lastArr.drawData
@@ -122,6 +122,20 @@ func enrichSplit(split *Split, x0, y0, minLine, width int, outerComp *drawData,
 				)
 				s.x = growX(shape.drawData)
 				s.lastComp = nil
+				s.lastArr = nil
+			case *ExtPort:
+				if s.lastArr != nil {
+					lad := s.lastArr.drawData
+					enrichExtPort(
+						shape, s.x,
+						lad.y0+lad.height-LineHeight,
+						lad.minLine+lad.lines-1,
+					)
+				} else {
+					enrichExtPort(shape, s.x, s.y, s.line)
+				}
+				s.x = growX(shape.drawData)
+				s.lastComp = shape.drawData
 				s.lastArr = nil
 			default:
 				panic(fmt.Sprintf("unsupported type: %T", ishape))
@@ -189,6 +203,23 @@ func enrichLoop(loop *Loop, x0, y0, minLine int) {
 	}
 }
 
+func enrichExtPort(prt *ExtPort, x0, y0, minLine int) {
+	prt.drawData = &drawData{
+		x0:      x0,
+		y0:      y0,
+		width:   len(prt.Name) * CharWidth,
+		height:  LineHeight,
+		minLine: minLine,
+		lines:   1,
+	}
+}
+
+// copyState returns a SHALLOW copy of the given state.
+func copyState(stat *splitState) *splitState {
+	newStat := *stat
+	return &newStat
+}
+
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
@@ -225,6 +256,11 @@ func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
 			case *Loop:
 				if withinShape(line, shape.drawData) {
 					loopToSVG(smf, line, mode, shape)
+					smf.lastX += shape.drawData.width
+				}
+			case *ExtPort:
+				if withinShape(line, shape.drawData) {
+					portToSVG(smf, line, mode, shape)
 					smf.lastX += shape.drawData.width
 				}
 			default:
@@ -283,6 +319,28 @@ func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
 		Text:   txt,
 		Link:   !loop.GoLink && loop.Link != "",
 		GoLink: loop.GoLink,
+	})
+}
+
+func portToSVG(smf *svgMDFlow, line int, mode FlowMode, prt *ExtPort) {
+	var svg *svgFlow
+	pd := prt.drawData
+
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		svg, _ = addNewSVGFlow(smf,
+			pd.x0, pd.y0, pd.height, pd.width,
+			"port-"+prt.Name, line,
+		)
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	svg.Texts = append(svg.Texts, &svgText{
+		X:     pd.x0,
+		Y:     pd.y0 + pd.height - arrTextOffset,
+		Width: pd.width,
+		Text:  prt.Name,
 	})
 }
 

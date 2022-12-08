@@ -41,6 +41,7 @@ const (
 // - The last Comp (and element) in a row can be replaced by a Loop, too.
 //   The loop points back to a component we can't draw an arrow to.
 //   In the diagram you will see: ...back to: <component>:<port>
+// - The first and last Comp and element of a row can instead be an OuterPort.
 // - The last Comp (and element) in a row can also be replaced by a Sequel.
 //   The other part of the Sequel should be at the start of one of the next rows
 //   of the outer Split.
@@ -126,6 +127,11 @@ type Loop struct {
 	drawData *drawData
 }
 
+type ExtPort struct {
+	Name     string
+	drawData *drawData
+}
+
 // drawData contains all data needed for positioning the element correctly.
 type drawData struct {
 	x0, y0         int
@@ -133,10 +139,26 @@ type drawData struct {
 	minLine, lines int
 }
 
+type enrichData struct {
+	width                   int
+	mode                    FlowMode
+	merges                  map[string]*Merge
+	saveState, currentState *splitState
+}
+
 type splitState struct {
+	level                           int
 	lastComp                        *drawData
 	lastArr                         *Arrow
 	x, y, line, xmax, ymax, maxLine int
 	i, j                            int
 	row                             []any
+	cutData                         []*cutData
+}
+
+type cutData struct {
+	arr   *Arrow
+	i, j  int
+	split *Split
+	level int
 }
