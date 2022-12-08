@@ -44,29 +44,15 @@ func enrichArrow(arr *Arrow, x0, y0, minLine int) {
 }
 
 func arrowWidth(arr *Arrow, dataWidth int) int {
-	portWidth := 0
-	if arr.HasSrcComp {
-		portWidth = len(arr.SrcPort) * CharWidth
-	}
-	if arr.HasDstComp {
-		portWidth += len(arr.DstPort) * CharWidth
-	}
+	portWidth := len(arr.SrcPort)*CharWidth + len(arr.DstPort)*CharWidth
+
 	if portWidth != 0 {
 		portWidth += WordGap + // so the port text isn't glued to the comp
 			2*CharWidth // so the ports aren't glued together and it is ...
 		// ... clear which type a single port is
 	}
 
-	width := max(portWidth, dataWidth) + arrTipWidth
-
-	if !arr.HasSrcComp && arr.SrcPort != "" {
-		width += len(arr.SrcPort)*CharWidth + WordGap
-	}
-	if !arr.HasDstComp && arr.DstPort != "" {
-		width += len(arr.DstPort)*CharWidth + WordGap
-	}
-
-	return width
+	return max(portWidth, dataWidth) + arrTipWidth
 }
 
 func enrichDataType(dt *DataType, x0, y0, minLine int) {
@@ -102,30 +88,20 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 		svg = smf.svgs[""]
 	}
 
-	// draw arrow line or compute x and width:
-	var arrX, arrWidth int
-	if line == maxLine {
-		preArr := preArrowToSVG(svg, arrow, ad)
-		postArr := postArrowToSVG(svg, arrow, ad)
+	if line == maxLine { // draw arrow line
+		srcPortToSVG(svg, arrow, ad)
+		dstPortToSVG(svg, arrow, ad)
 
-		srcPortToSVG(svg, arrow, ad, preArr)
-		dstPortToSVG(svg, arrow, ad, postArr)
-
-		arrToSVG(svg, ad, preArr, postArr)
+		arrToSVG(svg, ad)
 		return
-	} else {
-		tmpSVG := newSVGFlow(0, 0, 0, 0, tinyDiagramSize) // we just want the side effects
-		preArr := preArrowToSVG(tmpSVG, arrow, ad)
-		postArr := postArrowToSVG(tmpSVG, arrow, ad)
-		arrX, arrWidth = arrToSVG(tmpSVG, ad, preArr, postArr)
 	}
 
-	dataWidth := arrWidth - arrTipWidth
+	dataWidth := ad.width - arrTipWidth
 	lastIdx := len(arrow.DataTypes) - 1
 	idx := line - ad.minLine
 	dt := arrow.DataTypes[idx]
 
-	arrowDataTypeToSVG(svg, link, dt, arrX, dataWidth, arrow.dataTypesWidth,
+	arrowDataTypeToSVG(svg, link, dt, ad.x0, dataWidth, arrow.dataTypesWidth,
 		idx == 0, idx == lastIdx)
 }
 
@@ -142,37 +118,10 @@ func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,
 	return ad.x0, dtd.y0, dtd.height, ad.width
 }
 
-func preArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
-	if !arrow.HasSrcComp && arrow.SrcPort != "" {
+func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
+	if arrow.SrcPort != "" {
 		svg.Texts = append(svg.Texts, &svgText{
-			X:     ad.x0,
-			Y:     ad.y0 + ad.height - arrTextOffset,
-			Width: len(arrow.SrcPort) * CharWidth,
-			Text:  arrow.SrcPort,
-		})
-		return len(arrow.SrcPort)*CharWidth + WordGap
-	}
-	return 0
-}
-
-func postArrowToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) int {
-	if !arrow.HasDstComp && arrow.DstPort != "" {
-		postArr := len(arrow.DstPort)*CharWidth + WordGap
-		svg.Texts = append(svg.Texts, &svgText{
-			X:     ad.x0 + ad.width - postArr + WordGap,
-			Y:     ad.y0 + ad.height - arrTextOffset,
-			Width: len(arrow.DstPort) * CharWidth,
-			Text:  arrow.DstPort,
-		})
-		return postArr
-	}
-	return 0
-}
-
-func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, preArr int) {
-	if arrow.HasSrcComp && arrow.SrcPort != "" {
-		svg.Texts = append(svg.Texts, &svgText{
-			X:     ad.x0 + preArr + WordGap,
+			X:     ad.x0 + WordGap,
 			Y:     ad.y0 + ad.height - arrSmallTextOffset,
 			Width: len(arrow.SrcPort) * CharWidth,
 			Text:  arrow.SrcPort,
@@ -181,11 +130,11 @@ func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, preArr int) {
 	}
 }
 
-func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, postArr int) {
-	if arrow.HasDstComp && arrow.DstPort != "" {
+func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
+	if arrow.DstPort != "" {
 		w := len(arrow.DstPort) * CharWidth
 		svg.Texts = append(svg.Texts, &svgText{
-			X:     ad.x0 + ad.width - w - arrTipWidth - postArr,
+			X:     ad.x0 + ad.width - w - arrTipWidth,
 			Y:     ad.y0 + ad.height - arrSmallTextOffset,
 			Width: w,
 			Text:  arrow.DstPort,
@@ -194,23 +143,19 @@ func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData, postArr int) {
 	}
 }
 
-func arrToSVG(svg *svgFlow, ad *drawData, preArr, postArr int) (arrX, arrWidth int) {
+func arrToSVG(svg *svgFlow, ad *drawData) {
 
-	arrX = ad.x0 + preArr
 	arrY := ad.y0 + ad.height - LineHeight + arrTipHeight
-	arrWidth = ad.width - preArr - postArr
 	svg.Arrows = append(svg.Arrows, &svgArrow{
-		X1:    arrX,
+		X1:    ad.x0,
 		Y1:    arrY,
-		X2:    arrX + arrWidth,
+		X2:    ad.x0 + ad.width,
 		Y2:    arrY,
-		XTip1: arrX + arrWidth - arrTipHeight,
+		XTip1: ad.x0 + ad.width - arrTipHeight,
 		YTip1: arrY - arrTipHeight,
-		XTip2: arrX + arrWidth - arrTipHeight,
+		XTip2: ad.x0 + ad.width - arrTipHeight,
 		YTip2: arrY + arrTipHeight,
 	})
-
-	return arrX, arrWidth
 }
 
 func arrowDataTypeToSVG(

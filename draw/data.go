@@ -64,9 +64,7 @@ type Split struct {
 // and ports.
 type Arrow struct {
 	DataTypes      []*DataType
-	HasSrcComp     bool
 	SrcPort        string
-	HasDstComp     bool
 	DstPort        string
 	drawData       *drawData
 	dataTypesWidth int         // for centering the data types
