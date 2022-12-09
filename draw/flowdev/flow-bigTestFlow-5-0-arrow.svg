@@ -4,7 +4,6 @@
     <rect fill="rgb(13,17,23)" fill-opacity="1" width="192" height="24" x="400" y="0"/>
 
 
-
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="408" y="18" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="414" y="18" textLength="56" lengthAdjust="spacingAndGlyphs">bigData</text>
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="478" y="18" textLength="94" lengthAdjust="spacingAndGlyphs">BigDataType)</text>

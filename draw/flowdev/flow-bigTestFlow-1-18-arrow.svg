@@ -4,7 +4,6 @@
     <rect fill="rgb(13,17,23)" fill-opacity="1" width="128" height="24" x="24" y="432"/>
 
 
-
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="38" y="450" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="86" y="450" textLength="40" lengthAdjust="spacingAndGlyphs">data2</text>
 </svg>

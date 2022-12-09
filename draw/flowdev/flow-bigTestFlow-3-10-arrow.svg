@@ -4,7 +4,6 @@
     <rect fill="rgb(13,17,23)" fill-opacity="1" width="324" height="24" x="268" y="240"/>
 
 
-
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="374" y="258" textLength="6" lengthAdjust="spacingAndGlyphs">(</text>
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="380" y="258" textLength="32" lengthAdjust="spacingAndGlyphs">data</text>
     <text fill="rgb(96,192,255)" fill-opacity="1.0" font-size="16" x="428" y="258" textLength="32" lengthAdjust="spacingAndGlyphs">Data</text>
