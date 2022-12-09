@@ -46,7 +46,7 @@ const svgDiagram = `<?xml version="1.0" ?>
     <line stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" x1="{{.X1}}" y1="{{.Y1}}" x2="{{.X2}}" y2="{{.Y2}}"/>
     <line stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" x1="{{.XTip1}}" y1="{{.YTip1}}" x2="{{.X2}}" y2="{{.Y2}}"/>
     <line stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" x1="{{.XTip2}}" y1="{{.YTip2}}" x2="{{.X2}}" y2="{{.Y2}}"/>
-{{end}}
+{{end -}}
 {{- range .Rects}}
 {{- if .SubRect}}
     <rect fill="{{$colors.PluginType}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="1" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
@@ -57,9 +57,9 @@ const svgDiagram = `<?xml version="1.0" ?>
     <rect fill="{{$colors.Comp}}" fill-opacity="1.0" stroke="{{$colors.Text}}" stroke-opacity="1.0" stroke-width="2" width="{{.Width}}" height="{{.Height}}" x="{{.X}}" y="{{.Y}}" rx="10"/>
     {{- end}}
 {{- end}}
-{{- end}}
+{{- end -}}
 {{- if .Texts}}
-{{end}}
+{{end -}}
 {{- range .Texts}}
 {{- if .Small}}
     {{- if .GoLink}}
@@ -78,7 +78,9 @@ const svgDiagram = `<?xml version="1.0" ?>
     <text fill="{{$colors.Text}}" fill-opacity="1.0" font-size="16" x="{{.X}}" y="{{.Y}}" textLength="{{.Width}}" lengthAdjust="spacingAndGlyphs">{{.Text}}</text>
     {{- end}}
 {{- end}}
-{{- end}}
+{{- end -}}
+{{- if or .Texts .Rects}}
+{{end -}}
 </svg>
 `
 
