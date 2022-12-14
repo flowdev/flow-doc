@@ -10,7 +10,7 @@ var bigMerge = &draw.Merge{
 var BigTestFlowData = &draw.Flow{
 	Name: "bigTestFlow",
 	AllShapes: &draw.Split{
-		Shapes: [][]any{
+		Shapes: [][]draw.Shape{
 			{
 				&draw.ExtPort{
 					Name: "in",
@@ -26,7 +26,7 @@ var BigTestFlowData = &draw.Flow{
 					},
 				},
 				&draw.Split{
-					Shapes: [][]any{
+					Shapes: [][]draw.Shape{
 						{
 							&draw.Arrow{
 								DataTypes: []*draw.DataType{

@@ -21,6 +21,14 @@ const (
 	FlowModeSVGLinks
 )
 
+type Shape interface {
+	breakable() bool // shape can be broken into parts by inserting a Sequel
+	compish() bool   // shape behaves like a component rather than like an arrow
+	// enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData)
+	toSVG(smf *svgMDFlow, line int, mode FlowMode)
+	intersects(line int) bool // shape is visible on the given line
+}
+
 // Flow contains data for a whole flow.
 // The data is organized in rows and individual shapes per row.
 // Valid shapes are Arrow, Comp, Split, Merge, Sequel and Loop.
@@ -54,82 +62,6 @@ type Flow struct {
 	dark      bool
 }
 
-// Split contains data for multiple paths/arrows originating from a single Comp.
-type Split struct {
-	Shapes   [][]any
-	drawData *drawData
-}
-
-// Arrow contains all information for displaying an Arrow including data type
-// and ports.
-type Arrow struct {
-	DataTypes      []*DataType
-	SrcPort        string
-	DstPort        string
-	drawData       *drawData
-	dataTypesWidth int         // for centering the data types
-	splitState     *splitState // for spliting rows according to width
-}
-
-// Comp holds all data to describe a single component including possible plugins.
-type Comp struct {
-	Main     *DataType
-	Plugins  []*PluginGroup
-	drawData *drawData
-}
-
-// DataType contains the optional name of the data and its type.
-// Plus an optional link to the definition of the type.
-type DataType struct {
-	Name     string
-	Type     string
-	Link     string
-	GoLink   bool
-	drawData *drawData
-	x1       int // for aligning the data types of arrows
-}
-
-// PluginGroup is a helper component that is used inside a proper component.
-type PluginGroup struct {
-	Title    string
-	Types    []*Plugin
-	drawData *drawData
-}
-
-// Plugin contains the type of the plugin and optionally a link to its definition.
-type Plugin struct {
-	Type     string
-	Link     string
-	GoLink   bool
-	drawData *drawData
-}
-
-// Merge holds data for merging multiple paths/arrows into a single Comp.
-type Merge struct {
-	ID       string
-	Size     int
-	drawData *drawData
-	arrows   []*Arrow
-}
-
-type Sequel struct {
-	Number   int
-	drawData *drawData
-}
-
-type Loop struct {
-	Name     string
-	Port     string
-	Link     string
-	GoLink   bool
-	drawData *drawData
-}
-
-type ExtPort struct {
-	Name     string
-	drawData *drawData
-}
-
 // drawData contains all data needed for positioning the element correctly.
 type drawData struct {
 	x0, y0         int
@@ -150,7 +82,7 @@ type splitState struct {
 	lastArr                         *Arrow
 	x, y, line, xmax, ymax, maxLine int
 	i, j                            int
-	row                             []any
+	row                             []Shape
 	cutData                         []*cutData
 }
 

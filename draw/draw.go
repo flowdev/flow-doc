@@ -273,7 +273,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 	maxLine := minLine + fd.lines - 1
 	for line := minLine; line <= maxLine; line++ {
 		smf.lastX = 0
-		splitToSVG(smf, line, f.mode, f.AllShapes)
+		f.AllShapes.toSVG(smf, line, f.mode)
 
 		if f.mode == FlowModeSVGLinks &&
 			smf.lastX < f.AllShapes.drawData.width {

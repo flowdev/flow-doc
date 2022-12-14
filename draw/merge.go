@@ -1,5 +1,29 @@
 package draw
 
+// Merge holds data for merging multiple paths/arrows into a single Comp.
+type Merge struct {
+	ID       string
+	Size     int
+	drawData *drawData
+	arrows   []*Arrow
+}
+
+func (*Merge) breakable() bool {
+	return false
+}
+
+func (*Merge) compish() bool {
+	return true
+}
+
+func (m *Merge) intersects(line int) bool {
+	return withinShape(line, m.drawData)
+}
+
+func (m *Merge) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	// no SVG to create
+}
+
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------

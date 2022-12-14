@@ -1,5 +1,50 @@
 package draw
 
+// Comp holds all data to describe a single component including possible plugins.
+type Comp struct {
+	Main     *DataType
+	Plugins  []*PluginGroup
+	drawData *drawData
+}
+
+func (*Comp) breakable() bool {
+	return false
+}
+
+func (*Comp) compish() bool {
+	return true
+}
+
+func (comp *Comp) intersects(line int) bool {
+	return withinShape(line, comp.drawData)
+}
+
+// DataType contains the optional name of the data and its type.
+// Plus an optional link to the definition of the type.
+type DataType struct {
+	Name     string
+	Type     string
+	Link     string
+	GoLink   bool
+	drawData *drawData
+	x1       int // for aligning the data types of arrows
+}
+
+// PluginGroup is a helper component that is used inside a proper component.
+type PluginGroup struct {
+	Title    string
+	Types    []*Plugin
+	drawData *drawData
+}
+
+// Plugin contains the type of the plugin and optionally a link to its definition.
+type Plugin struct {
+	Type     string
+	Link     string
+	GoLink   bool
+	drawData *drawData
+}
+
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
@@ -122,11 +167,18 @@ func moveComp(comp *Comp, merge *drawData) {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func compToSVG(smf *svgMDFlow, line int, mode FlowMode, comp *Comp) {
+func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow
 	var link *svgLink
 	od := comp.drawData
 	idx := line - od.minLine
+
+	// add filler if necessary:
+	xDiff := od.x0 - smf.lastX
+	if mode == FlowModeSVGLinks && xDiff > 0 {
+		addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
+		smf.lastX += xDiff
+	}
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
@@ -142,16 +194,20 @@ func compToSVG(smf *svgMDFlow, line int, mode FlowMode, comp *Comp) {
 		rectToSVG(svg, od, false, false, false)
 	}
 	if compMainToSVG(svg, link, line, comp.Main) { // main data type
+		smf.lastX += od.width
 		return
 	}
 	for _, p := range comp.Plugins {
 		if pluginToSVG(svg, link, line, mode, p) {
+			smf.lastX += od.width
 			return
 		}
 	}
 	if link != nil {
 		link.Link = comp.Main.Link
 	}
+
+	smf.lastX += od.width
 }
 
 func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {

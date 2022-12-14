@@ -7,6 +7,29 @@ const (
 	arrTextOffset      = 11 // for elevated text
 )
 
+// Arrow contains all information for displaying an Arrow including data type
+// and ports.
+type Arrow struct {
+	DataTypes      []*DataType
+	SrcPort        string
+	DstPort        string
+	drawData       *drawData
+	dataTypesWidth int         // for centering the data types
+	splitState     *splitState // for spliting rows according to width
+}
+
+func (*Arrow) breakable() bool {
+	return true
+}
+
+func (*Arrow) compish() bool {
+	return false
+}
+
+func (arrow *Arrow) intersects(line int) bool {
+	return withinShape(line, arrow.drawData)
+}
+
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
@@ -71,7 +94,7 @@ func enrichDataType(dt *DataType, x0, y0, minLine int) {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
+func (arrow *Arrow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow
 	var link *svgLink
 	ad := arrow.drawData
@@ -93,6 +116,8 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 		dstPortToSVG(svg, arrow, ad)
 
 		arrToSVG(svg, ad)
+
+		smf.lastX += ad.width
 		return
 	}
 
@@ -103,6 +128,8 @@ func arrowToSVG(smf *svgMDFlow, line int, mode FlowMode, arrow *Arrow) {
 
 	arrowDataTypeToSVG(svg, link, dt, ad.x0, dataWidth, arrow.dataTypesWidth,
 		idx == 0, idx == lastIdx)
+
+	smf.lastX += ad.width
 }
 
 func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,

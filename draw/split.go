@@ -2,15 +2,32 @@ package draw
 
 import (
 	"fmt"
-	"strconv"
 )
+
+// Split contains data for multiple paths/arrows originating from a single Comp.
+type Split struct {
+	Shapes   [][]Shape
+	drawData *drawData
+}
+
+func (*Split) breakable() bool {
+	return true
+}
+
+func (*Split) compish() bool {
+	return false
+}
+
+func (split *Split) intersects(line int) bool {
+	return withinShape(line, split.drawData)
+}
 
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
 func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 	global *enrichData,
-) (newShapeLines [][]any) {
+) (newShapeLines [][]Shape) {
 	s := &splitState{
 		x:       x0,
 		y:       y0,
@@ -173,47 +190,6 @@ func growCompToDrawData(comp *drawData, d *drawData) {
 	comp.lines = max(comp.lines, d.minLine+d.lines-comp.minLine)
 }
 
-func enrichSequel(seq *Sequel, x0, y0, minLine int) {
-	width := SequelWidth + len(strconv.Itoa(seq.Number))*CharWidth
-
-	seq.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
-	}
-}
-
-func enrichLoop(loop *Loop, x0, y0, minLine int) {
-	txt := loop.Name + loop.Port
-	width := SequelWidth + LoopWidth + len(txt)*CharWidth
-	if loop.Port != "" {
-		width += CharWidth / 2
-	}
-
-	loop.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
-	}
-}
-
-func enrichExtPort(prt *ExtPort, x0, y0, minLine int) {
-	prt.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   len(prt.Name) * CharWidth,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
-	}
-}
-
 // copyState returns a SHALLOW copy of the given state.
 func copyState(stat *splitState) *splitState {
 	newStat := *stat
@@ -223,131 +199,17 @@ func copyState(stat *splitState) *splitState {
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
-func splitToSVG(smf *svgMDFlow, line int, mode FlowMode, split *Split) {
+func (split *Split) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	for _, row := range split.Shapes {
-		for _, ishape := range row {
-			switch shape := ishape.(type) {
-			case *Arrow:
-				if withinShape(line, shape.drawData) {
-					arrowToSVG(smf, line, mode, shape)
-					smf.lastX += shape.drawData.width
-				}
-			case *Comp:
-				if withinShape(line, shape.drawData) {
-					xDiff := shape.drawData.x0 - smf.lastX
-					if mode == FlowModeSVGLinks && xDiff > 0 {
-						addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
-						smf.lastX += xDiff
-					}
-					compToSVG(smf, line, mode, shape)
-					smf.lastX += shape.drawData.width
-				}
-			case *Split:
-				if withinShape(line, shape.drawData) {
-					splitToSVG(smf, line, mode, shape)
-				}
-			case *Merge:
-				// no SVG to create
-			case *Sequel:
-				if withinShape(line, shape.drawData) {
-					sequelToSVG(smf, line, mode, shape)
-					smf.lastX += shape.drawData.width
-				}
-			case *Loop:
-				if withinShape(line, shape.drawData) {
-					loopToSVG(smf, line, mode, shape)
-					smf.lastX += shape.drawData.width
-				}
-			case *ExtPort:
-				if withinShape(line, shape.drawData) {
-					portToSVG(smf, line, mode, shape)
-					smf.lastX += shape.drawData.width
-				}
-			default:
-				panic(fmt.Sprintf("unsupported type: %T", ishape))
+		for _, shape := range row {
+			if shape.intersects(line) {
+				shape.toSVG(smf, line, mode)
 			}
 		}
 	}
 }
 
-func sequelToSVG(smf *svgMDFlow, line int, mode FlowMode, seq *Sequel) {
-	var svg *svgFlow
-	sd := seq.drawData
-
-	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
-		svg, _ = addNewSVGFlow(smf,
-			sd.x0, sd.y0, sd.height, sd.width,
-			"sequel", line,
-		)
-	} else {
-		svg = smf.svgs[""]
-	}
-
-	svg.Texts = append(svg.Texts, &svgText{
-		X:     sd.x0,
-		Y:     sd.y0 + sd.height - arrTextOffset,
-		Width: sd.width,
-		Text:  SequelText + strconv.Itoa(seq.Number),
-	})
-}
-
-func loopToSVG(smf *svgMDFlow, line int, mode FlowMode, loop *Loop) {
-	var svg *svgFlow
-	ld := loop.drawData
-
-	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
-		var svgLink *svgLink
-		svg, svgLink = addNewSVGFlow(smf,
-			ld.x0, ld.y0, ld.height, ld.width,
-			"loop", line,
-		)
-		svgLink.Link = loop.Link
-	} else {
-		svg = smf.svgs[""]
-	}
-
-	txt := SequelText + LoopText + loop.Name
-	if loop.Port != "" {
-		txt += ":" + loop.Port
-	}
-	svg.Texts = append(svg.Texts, &svgText{
-		X:      ld.x0,
-		Y:      ld.y0 + ld.height - arrTextOffset,
-		Width:  ld.width,
-		Text:   txt,
-		Link:   !loop.GoLink && loop.Link != "",
-		GoLink: loop.GoLink,
-	})
-}
-
-func portToSVG(smf *svgMDFlow, line int, mode FlowMode, prt *ExtPort) {
-	var svg *svgFlow
-	pd := prt.drawData
-	idx := line - pd.minLine
-
-	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
-		svg, _ = addNewSVGFlow(smf,
-			pd.x0, pd.y0+idx*LineHeight, LineHeight, pd.width,
-			"port-"+prt.Name, line,
-		)
-	} else {
-		svg = smf.svgs[""]
-	}
-
-	if idx == pd.lines-1 { // only the last line has text
-		svg.Texts = append(svg.Texts, &svgText{
-			X:     pd.x0,
-			Y:     pd.y0 + pd.height - arrTextOffset,
-			Width: pd.width,
-			Text:  prt.Name,
-		})
-	}
-}
-
-func addRowsAfter(shapes [][]any, i int, newShapes [][]any) [][]any {
+func addRowsAfter(shapes [][]Shape, i int, newShapes [][]Shape) [][]Shape {
 	i++
 	shapes = append(shapes, newShapes...)       // grow bigShapes
 	copy(shapes[i+len(newShapes):], shapes[i:]) // move everything after i
