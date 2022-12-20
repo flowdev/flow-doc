@@ -48,8 +48,8 @@ type Plugin struct {
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichComp(comp *Comp, x0, y0, minLine int) {
-	enrichCompMain(comp.Main, x0, y0, minLine)
+func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData) {
+	comp.enrichMain(x0, y0, minLine)
 	omd := comp.Main.drawData
 	height := omd.height
 	width := omd.width
@@ -80,23 +80,49 @@ func enrichComp(comp *Comp, x0, y0, minLine int) {
 	}
 }
 
-func enrichCompMain(main *DataType, x0, y0, minLine int) {
+func (comp *Comp) enrichMain(x0, y0, minLine int) {
 	lines := 1 // for the type
-	if main.Name != "" {
+	if comp.Main.Name != "" {
 		lines++
 	}
 	height := lines * LineHeight
 
-	l := max(len(main.Name), len(main.Type))
+	l := max(len(comp.Main.Name), len(comp.Main.Type))
 	width := WordGap + l*CharWidth + WordGap
 
-	main.drawData = &drawData{
+	comp.Main.drawData = &drawData{
 		x0:      x0,
 		y0:      y0,
 		width:   width,
 		height:  height,
 		minLine: minLine,
 		lines:   lines,
+	}
+}
+
+func (comp *Comp) moveTo(merge *drawData) {
+	cd := comp.drawData
+	xDiff := merge.x0 - cd.x0
+	yDiff := merge.y0 - cd.y0
+	lDiff := merge.minLine - cd.minLine
+
+	cd.x0 += xDiff
+	cd.y0 += yDiff
+	cd.minLine += lDiff
+
+	comp.Main.drawData.x0 += xDiff
+	comp.Main.drawData.y0 += yDiff
+	comp.Main.drawData.minLine += lDiff
+
+	for _, p := range comp.Plugins {
+		p.drawData.x0 += xDiff
+		p.drawData.y0 += yDiff
+		p.drawData.minLine += lDiff
+		for _, pt := range p.Types {
+			pt.drawData.x0 += xDiff
+			pt.drawData.y0 += yDiff
+			pt.drawData.minLine += lDiff
+		}
 	}
 }
 
@@ -138,43 +164,17 @@ func enrichPluginType(pt *Plugin, x0, y0, minLine int) {
 	}
 }
 
-func moveComp(comp *Comp, merge *drawData) {
-	cd := comp.drawData
-	xDiff := merge.x0 - cd.x0
-	yDiff := merge.y0 - cd.y0
-	lDiff := merge.minLine - cd.minLine
-
-	cd.x0 += xDiff
-	cd.y0 += yDiff
-	cd.minLine += lDiff
-
-	comp.Main.drawData.x0 += xDiff
-	comp.Main.drawData.y0 += yDiff
-	comp.Main.drawData.minLine += lDiff
-
-	for _, p := range comp.Plugins {
-		p.drawData.x0 += xDiff
-		p.drawData.y0 += yDiff
-		p.drawData.minLine += lDiff
-		for _, pt := range p.Types {
-			pt.drawData.x0 += xDiff
-			pt.drawData.y0 += yDiff
-			pt.drawData.minLine += lDiff
-		}
-	}
-}
-
 // --------------------------------------------------------------------------
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
 func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow
 	var link *svgLink
-	od := comp.drawData
-	idx := line - od.minLine
+	cd := comp.drawData
+	idx := line - cd.minLine
 
 	// add filler if necessary:
-	xDiff := od.x0 - smf.lastX
+	xDiff := cd.x0 - smf.lastX
 	if mode == FlowModeSVGLinks && xDiff > 0 {
 		addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
 		smf.lastX += xDiff
@@ -183,7 +183,7 @@ func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
 		svg, link = addNewSVGFlow(smf,
-			od.x0, od.y0+idx*LineHeight, LineHeight, od.width,
+			cd.x0, cd.y0+idx*LineHeight, LineHeight, cd.width,
 			compID(comp), line,
 		)
 	} else {
@@ -191,15 +191,15 @@ func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	}
 
 	if mode == FlowModeSVGLinks || idx == 0 { // outer rect
-		rectToSVG(svg, od, false, false, false)
+		rectToSVG(svg, cd, false, false, false)
 	}
-	if compMainToSVG(svg, link, line, comp.Main) { // main data type
-		smf.lastX += od.width
+	if comp.mainToSVG(svg, link, line) { // main data type
+		smf.lastX += cd.width
 		return
 	}
 	for _, p := range comp.Plugins {
 		if pluginToSVG(svg, link, line, mode, p) {
-			smf.lastX += od.width
+			smf.lastX += cd.width
 			return
 		}
 	}
@@ -207,7 +207,42 @@ func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 		link.Link = comp.Main.Link
 	}
 
-	smf.lastX += od.width
+	smf.lastX += cd.width
+}
+
+func (comp *Comp) mainToSVG(svg *svgFlow, link *svgLink, line int) bool {
+	md := comp.Main.drawData
+	if !withinShape(line, md) {
+		return false
+	}
+	if link != nil {
+		link.Link = comp.Main.Link
+	}
+	y0 := md.y0
+	idx := line - md.minLine
+	if comp.Main.Name != "" {
+		if idx == 0 {
+			svg.Texts = append(svg.Texts, &svgText{
+				X:      md.x0 + WordGap,
+				Y:      y0 + LineHeight - TextOffset,
+				Width:  len(comp.Main.Name) * CharWidth,
+				Text:   comp.Main.Name,
+				Link:   !comp.Main.GoLink && comp.Main.Link != "",
+				GoLink: comp.Main.GoLink,
+			})
+			return true
+		}
+		y0 += LineHeight
+	}
+	svg.Texts = append(svg.Texts, &svgText{
+		X:      md.x0 + WordGap,
+		Y:      y0 + LineHeight - TextOffset,
+		Width:  len(comp.Main.Type) * CharWidth,
+		Text:   comp.Main.Type,
+		Link:   !comp.Main.GoLink && comp.Main.Link != "",
+		GoLink: comp.Main.GoLink,
+	})
+	return true
 }
 
 func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
@@ -235,41 +270,6 @@ func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
 		}
 	}
 	svg.Rects = append(svg.Rects, rect)
-}
-
-func compMainToSVG(svg *svgFlow, link *svgLink, line int, main *DataType) bool {
-	md := main.drawData
-	if !withinShape(line, md) {
-		return false
-	}
-	if link != nil {
-		link.Link = main.Link
-	}
-	y0 := md.y0
-	idx := line - md.minLine
-	if main.Name != "" {
-		if idx == 0 {
-			svg.Texts = append(svg.Texts, &svgText{
-				X:      md.x0 + WordGap,
-				Y:      y0 + LineHeight - TextOffset,
-				Width:  len(main.Name) * CharWidth,
-				Text:   main.Name,
-				Link:   !main.GoLink && main.Link != "",
-				GoLink: main.GoLink,
-			})
-			return true
-		}
-		y0 += LineHeight
-	}
-	svg.Texts = append(svg.Texts, &svgText{
-		X:      md.x0 + WordGap,
-		Y:      y0 + LineHeight - TextOffset,
-		Width:  len(main.Type) * CharWidth,
-		Text:   main.Type,
-		Link:   !main.GoLink && main.Link != "",
-		GoLink: main.GoLink,
-	})
-	return true
 }
 
 func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *PluginGroup) bool {

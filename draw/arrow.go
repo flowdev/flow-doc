@@ -33,7 +33,7 @@ func (arrow *Arrow) intersects(line int) bool {
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichArrow(arr *Arrow, x0, y0, minLine int) {
+func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData) {
 	height := 0
 	width := 0
 	lines := 0

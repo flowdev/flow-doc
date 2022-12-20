@@ -23,7 +23,7 @@ func (loop *Loop) intersects(line int) bool {
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichLoop(loop *Loop, x0, y0, minLine int) {
+func (loop *Loop) enrich(x0, y0, minLine int) {
 	txt := loop.Name + loop.Port
 	width := SequelWidth + LoopWidth + len(txt)*CharWidth
 	if loop.Port != "" {

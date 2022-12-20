@@ -22,7 +22,7 @@ func (seq *Sequel) intersects(line int) bool {
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichSequel(seq *Sequel, x0, y0, minLine int) {
+func (seq *Sequel) enrich(x0, y0, minLine int) {
 	width := SequelWidth + len(strconv.Itoa(seq.Number))*CharWidth
 
 	seq.drawData = &drawData{

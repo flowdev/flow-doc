@@ -62,7 +62,7 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 			switch shape := ishape.(type) {
 			case *Arrow:
 				//splitFit := enrichArrow(shape, s.x, s.y, s.line)
-				enrichArrow(shape, s.x, s.y, s.line)
+				shape.enrich(s.x, s.y, s.line, level, outerComp, global)
 				s.lastArr = shape
 				s.x = growX(s.lastArr.drawData)
 				s.ymax = growY(s.ymax, s.lastArr.drawData)
@@ -76,11 +76,11 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 					growCompToDrawData(s.lastComp, s.lastArr.drawData)
 				}
 			case *Comp:
-				enrichComp(shape, s.x, s.y, s.line)
+				shape.enrich(s.x, s.y, s.line, level, outerComp, global)
 				s.lastComp = shape.drawData
 				merge := global.merges[compID(shape)]
 				if s.j == 0 && merge != nil {
-					moveComp(shape, merge.drawData)
+					shape.moveTo(merge.drawData)
 					growCompToDrawData(s.lastComp, merge.drawData)
 
 					s.y = s.lastComp.y0
@@ -119,21 +119,21 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 			case *Sequel:
 				if s.lastArr != nil {
 					lad := s.lastArr.drawData
-					enrichSequel(
-						shape, s.x,
+					shape.enrich(
+						s.x,
 						lad.y0+lad.height-LineHeight,
 						lad.minLine+lad.lines-1,
 					)
 				} else {
-					enrichSequel(shape, s.x, s.y, s.line)
+					shape.enrich(s.x, s.y, s.line)
 				}
 				s.x = growX(shape.drawData)
 				s.lastComp = shape.drawData
 				s.lastArr = nil
 			case *Loop:
 				lad := s.lastArr.drawData
-				enrichLoop(
-					shape, s.x,
+				shape.enrich(
+					s.x,
 					lad.y0+lad.height-LineHeight,
 					lad.minLine+lad.lines-1,
 				)
