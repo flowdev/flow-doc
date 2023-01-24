@@ -154,6 +154,16 @@ var BigTestFlowData = &draw.Flow{
 						Type: "bigMerge", Link: "https://google.com?q=bigMerge",
 					},
 				},
+				&draw.Arrow{
+					DataTypes: []*draw.DataType{
+						{Name: "data", Type: "MergedData", Link: "https://google.com?q=MergedData"},
+					},
+				},
+				&draw.Comp{
+					Main: &draw.DataType{
+						Name: "postMerge", Type: "PostMerge", Link: "https://google.com?q=PostMerge",
+					},
+				},
 			}, { // empty to force more space
 			}, {
 				&draw.ExtPort{

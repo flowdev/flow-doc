@@ -265,7 +265,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 			Name: f.Name,
 			SVG:  smf.svgFilePrefix + ".svg",
 		}
-		svg := newSVGFlow(0, 0, fd.height, fd.width, bigDiagramSize)
+		svg := newSVGFlow(0, 0, fd.height, fd.width+1, bigDiagramSize)
 		smf.svgs[""] = svg
 	}
 
