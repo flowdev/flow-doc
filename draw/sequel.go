@@ -20,19 +20,30 @@ func (seq *Sequel) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate width, height and lines
 // --------------------------------------------------------------------------
-func (seq *Sequel) enrich(x0, y0, minLine int) {
+func (seq *Sequel) calcDimensions() {
 	width := SequelWidth + len(strconv.Itoa(seq.Number))*CharWidth
 
 	seq.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
+		width:  width,
+		height: LineHeight,
+		lines:  1,
 	}
+}
+
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (seq *Sequel) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	sd := seq.drawData
+	sd.x0 = x0
+	sd.y0 = y0
+	sd.minLine = minLine
+
+	return nil
 }
 
 // --------------------------------------------------------------------------

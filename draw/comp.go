@@ -27,7 +27,7 @@ type DataType struct {
 	Link     string
 	GoLink   bool
 	drawData *drawData
-	x1       int // for aligning the data types of arrows
+	w1       int // for aligning the data types of arrows
 }
 
 // PluginGroup is a helper component that is used inside a proper component.
@@ -46,23 +46,23 @@ type Plugin struct {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate width, height and lines
 // --------------------------------------------------------------------------
-func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData) {
-	comp.enrichMain(x0, y0, minLine)
-	omd := comp.Main.drawData
-	height := omd.height
-	width := omd.width
-	lines := omd.lines
+func (comp *Comp) calcDimensions() {
+	comp.calcMainDimensions()
+	cmd := comp.Main.drawData
+	height := cmd.height
+	width := cmd.width
+	lines := cmd.lines
 	for _, p := range comp.Plugins {
-		enrichPlugin(p, x0, y0+height, minLine+lines)
+		calcPluginDimensions(p)
 		pd := p.drawData
 		height += pd.height
 		width = max(width, pd.width)
 		lines += pd.lines
 	}
 
-	omd.width = width // set real width as it is known now
+	cmd.width = width // set real width as it is known now
 	for _, p := range comp.Plugins {
 		p.drawData.width = width
 		for _, pt := range p.Types {
@@ -71,16 +71,13 @@ func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData, global
 	}
 
 	comp.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  height,
-		minLine: minLine,
-		lines:   lines,
+		width:  width,
+		height: height,
+		lines:  lines,
 	}
 }
 
-func (comp *Comp) enrichMain(x0, y0, minLine int) {
+func (comp *Comp) calcMainDimensions() {
 	lines := 1 // for the type
 	if comp.Main.Name != "" {
 		lines++
@@ -91,13 +88,92 @@ func (comp *Comp) enrichMain(x0, y0, minLine int) {
 	width := WordGap + l*CharWidth + WordGap
 
 	comp.Main.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  height,
-		minLine: minLine,
-		lines:   lines,
+		width:  width,
+		height: height,
+		lines:  lines,
 	}
+}
+
+func calcPluginDimensions(p *PluginGroup) {
+	height := 0
+	width := 0
+	lines := 0
+	if p.Title != "" {
+		height += LineHeight
+		width = WordGap + (len(p.Title)+1)*CharWidth + WordGap // title text and padding
+		lines++
+	}
+	for _, t := range p.Types {
+		calcPluginTypeDimensions(t)
+		td := t.drawData
+		height += td.height
+		width = max(width, td.width)
+		lines += td.lines
+	}
+	p.drawData = &drawData{
+		width:  width,
+		height: height,
+		lines:  lines,
+	}
+}
+
+func calcPluginTypeDimensions(pt *Plugin) {
+	width := WordGap + len(pt.Type)*CharWidth + WordGap
+	pt.drawData = &drawData{
+		width:  width,
+		height: LineHeight,
+		lines:  1,
+	}
+}
+
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	cmd := comp.Main.drawData
+	cmd.x0 = x0
+	cmd.y0 = y0
+	cmd.minLine = minLine
+
+	height := cmd.height
+	lines := cmd.lines
+	for _, p := range comp.Plugins {
+		calcPluginPosition(p, x0, y0+height, minLine+lines)
+		pd := p.drawData
+		height += pd.height
+		lines += pd.lines
+	}
+
+	cd := comp.drawData
+	cd.x0 = x0
+	cd.y0 = y0
+	cd.minLine = minLine
+
+	return nil
+}
+
+func calcPluginPosition(p *PluginGroup, x0, y0, minLine int) {
+	height := 0
+	lines := 0
+	if p.Title != "" {
+		height += LineHeight
+		lines++
+	}
+	for _, t := range p.Types {
+		td := t.drawData
+		td.x0 = x0
+		td.y0 = y0 + height
+		td.minLine = minLine + lines
+
+		height += td.height
+		lines += td.lines
+	}
+	pd := p.drawData
+	pd.x0 = x0
+	pd.y0 = y0
+	pd.minLine = minLine
 }
 
 func (comp *Comp) moveTo(merge *drawData) {
@@ -123,44 +199,6 @@ func (comp *Comp) moveTo(merge *drawData) {
 			pt.drawData.y0 += yDiff
 			pt.drawData.minLine += lDiff
 		}
-	}
-}
-
-func enrichPlugin(p *PluginGroup, x0, y0, minLine int) {
-	height := 0
-	width := 0
-	lines := 0
-	if p.Title != "" {
-		height += LineHeight
-		width = WordGap + (len(p.Title)+1)*CharWidth + WordGap // title text and padding
-		lines++
-	}
-	for _, t := range p.Types {
-		enrichPluginType(t, x0, y0+height, minLine+lines)
-		td := t.drawData
-		height += td.height
-		width = max(width, td.width)
-		lines += td.lines
-	}
-	p.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  height,
-		minLine: minLine,
-		lines:   lines,
-	}
-}
-
-func enrichPluginType(pt *Plugin, x0, y0, minLine int) {
-	width := WordGap + len(pt.Type)*CharWidth + WordGap
-	pt.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
 	}
 }
 

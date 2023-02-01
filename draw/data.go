@@ -24,7 +24,8 @@ const (
 type Shape interface {
 	breakable() bool // shape can be broken into parts by inserting a Sequel
 	compish() bool   // shape behaves like a component rather than like an arrow
-	// enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData)
+	calcDimensions() // calculate width, height and lines of the shape
+	enrich(x0, y0, minLine, level int, outerComp *drawData, lastArr *Arrow, global *enrichData) (newShapeLines [][]Shape)
 	toSVG(smf *svgMDFlow, line int, mode FlowMode)
 	intersects(line int) bool // shape is visible on the given line
 }

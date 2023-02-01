@@ -23,10 +23,21 @@ func (split *Split) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
+// Calculate width and height
+// --------------------------------------------------------------------------
+func (split *Split) calcDimensions() {
+	for _, row := range split.Shapes {
+		for _, ishape := range row {
+			ishape.calcDimensions()
+		}
+	}
+}
+
+// --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
-	global *enrichData,
+func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
 	s := &splitState{
 		x:       x0,
@@ -38,6 +49,7 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 	}
 	/*
 		IDEAS:
+		- split enrich into calcDimensions, breakLines, calcPosition
 		- check minimum width of the first arrows before looping
 		- return early if no space for minimum width
 		- merges can be mended if only a minority needs a split
@@ -61,8 +73,9 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 			ishape := s.row[s.j]
 			switch shape := ishape.(type) {
 			case *Arrow:
-				//splitFit := enrichArrow(shape, s.x, s.y, s.line)
-				shape.enrich(s.x, s.y, s.line, level, outerComp, global)
+				shape.enrich(s.x, s.y, s.line, level,
+					outerComp, nil, global,
+				)
 				s.lastArr = shape
 				s.x = growX(s.lastArr.drawData)
 				s.ymax = growY(s.ymax, s.lastArr.drawData)
@@ -76,7 +89,9 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 					growCompToDrawData(s.lastComp, s.lastArr.drawData)
 				}
 			case *Comp:
-				shape.enrich(s.x, s.y, s.line, level, outerComp, global)
+				shape.enrich(s.x, s.y, s.line, level,
+					outerComp, nil, global,
+				)
 				s.lastComp = shape.drawData
 				merge := global.merges[compID(shape)]
 				if s.j == 0 && merge != nil {
@@ -96,9 +111,9 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 				s.ymax = growY(s.ymax, s.lastComp)
 				s.maxLine = growLine(s.maxLine, s.lastComp)
 			case *Split:
-				nsl := enrichSplit(
-					shape, s.x, s.y, s.line, level,
-					s.lastComp, global,
+				nsl := shape.enrich(
+					s.x, s.y, s.line, level,
+					s.lastComp, nil, global,
 				)
 				if outerComp != nil {
 					newShapeLines = append(newShapeLines, nsl...)
@@ -113,7 +128,10 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Merge:
-				enrichMerge(shape, s.lastArr, global.merges)
+				shape.enrich(
+					s.x, s.y, s.line, level,
+					nil, s.lastArr, global,
+				)
 				s.lastComp = nil
 				s.lastArr = nil
 			case *Sequel:
@@ -122,10 +140,13 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 					shape.enrich(
 						s.x,
 						lad.y0+lad.height-LineHeight,
-						lad.minLine+lad.lines-1,
+						lad.minLine+lad.lines-1, level,
+						nil, s.lastArr, global,
 					)
 				} else {
-					shape.enrich(s.x, s.y, s.line)
+					shape.enrich(s.x, s.y, s.line, level,
+						nil, s.lastArr, global,
+					)
 				}
 				s.x = growX(shape.drawData)
 				s.lastComp = shape.drawData
@@ -135,7 +156,8 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 				shape.enrich(
 					s.x,
 					lad.y0+lad.height-LineHeight,
-					lad.minLine+lad.lines-1,
+					lad.minLine+lad.lines-1, level,
+					nil, nil, global,
 				)
 				s.x = growX(shape.drawData)
 				s.lastComp = nil
@@ -143,13 +165,15 @@ func enrichSplit(split *Split, x0, y0, minLine, level int, outerComp *drawData,
 			case *ExtPort:
 				if s.lastArr != nil {
 					lad := s.lastArr.drawData
-					enrichExtPort(
-						shape, s.x,
-						lad.y0+lad.height-LineHeight,
-						lad.minLine+lad.lines-1,
+					shape.enrich(
+						s.x, lad.y0+lad.height-LineHeight,
+						lad.minLine+lad.lines-1, level,
+						nil, nil, global,
 					)
 				} else {
-					enrichExtPort(shape, s.x, s.y, s.line)
+					shape.enrich(s.x, s.y, s.line, level,
+						nil, nil, global,
+					)
 				}
 				s.x = growX(shape.drawData)
 				s.lastComp = shape.drawData

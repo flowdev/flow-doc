@@ -31,38 +31,47 @@ func (arrow *Arrow) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate width, height and lines
 // --------------------------------------------------------------------------
-func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData, global *enrichData) {
-	height := 0
+func (arr *Arrow) calcDimensions() {
 	width := 0
+	height := 0
 	lines := 0
-	x1 := x0
+	w1 := 1
 	for _, dt := range arr.DataTypes {
-		enrichDataType(dt, x0, y0+height, minLine+lines)
+		calcDataTypeDimensions(dt)
 		dtd := dt.drawData
-		x1 = max(x1, dt.x1)
+		w1 = max(w1, dt.w1)
 		height += dtd.height
-		width = max(width, dtd.width)
 		lines += dtd.lines
 	}
 	for _, dt := range arr.DataTypes { // now we know the real x1, set it everywhere
-		dt.drawData.width += x1 - dt.x1
-		dt.x1 = x1
+		dt.drawData.width += w1 - dt.w1
+		dt.w1 = w1
 		width = max(width, dt.drawData.width)
 	}
-	lines += 1 // for the arrow itself and optional ports
-	height += LineHeight
+	for _, dt := range arr.DataTypes { // now we know the real width, set it everywhere
+		dt.drawData.width = width
+	}
+	height += LineHeight // for the arrow itself and optional ports
+	lines += 1
 	arr.dataTypesWidth = width
 	width = arrowWidth(arr, width)
 
 	arr.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  height,
-		minLine: minLine,
-		lines:   lines,
+		width:  width,
+		height: height,
+		lines:  lines,
+	}
+}
+
+func calcDataTypeDimensions(dt *DataType) {
+	dt.w1 = ParenWidth + (1+len(dt.Name)+1)*CharWidth
+	width := dt.w1 + (len(dt.Type)+1)*CharWidth + ParenWidth
+	dt.drawData = &drawData{
+		width:  width,
+		height: LineHeight,
+		lines:  1,
 	}
 }
 
@@ -78,17 +87,26 @@ func arrowWidth(arr *Arrow, dataWidth int) int {
 	return max(portWidth, dataWidth) + arrTipWidth
 }
 
-func enrichDataType(dt *DataType, x0, y0, minLine int) {
-	dt.x1 = x0 + ParenWidth + (1+len(dt.Name)+1)*CharWidth
-	width := dt.x1 - x0 + (len(dt.Type)+1)*CharWidth + ParenWidth
-	dt.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	y := y0
+	for _, dt := range arr.DataTypes {
+		dtd := dt.drawData
+		dtd.x0 = x0
+		dtd.y0 = y
+		y += dtd.height
 	}
+
+	ad := arr.drawData
+	ad.x0 = x0
+	ad.y0 = y0
+	ad.minLine = minLine
+
+	return nil
 }
 
 // --------------------------------------------------------------------------
@@ -192,7 +210,7 @@ func arrowDataTypeToSVG(
 ) {
 	dtd := dt.drawData
 	padding := (width - dataTypesWidth) / 2
-	x1 := x0 + padding + dt.x1 - dtd.x0
+	x1 := x0 + padding + dt.w1
 	padding += CharWidth + ParenWidth
 	y := dtd.y0 + LineHeight - TextOffset
 

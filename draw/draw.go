@@ -218,6 +218,7 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 	f.width = width
 	f.dark = dark
 
+	f.AllShapes.calcDimensions()
 	enrichFlow(f)
 	smf := flowToSVGs(f)
 	if f.mode != FlowModeSVGLinks {
@@ -245,7 +246,7 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 
 func enrichFlow(f *Flow) {
 	merges := make(map[string]*Merge)
-	enrichSplit(f.AllShapes, 0, 0, 0, 0, nil, &enrichData{
+	f.AllShapes.enrich(0, 0, 0, 0, nil, nil, &enrichData{
 		width:  f.width,
 		mode:   f.mode,
 		merges: merges,

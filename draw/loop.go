@@ -21,9 +21,9 @@ func (loop *Loop) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate width, height and lines
 // --------------------------------------------------------------------------
-func (loop *Loop) enrich(x0, y0, minLine int) {
+func (loop *Loop) calcDimensions() {
 	txt := loop.Name + loop.Port
 	width := SequelWidth + LoopWidth + len(txt)*CharWidth
 	if loop.Port != "" {
@@ -31,13 +31,24 @@ func (loop *Loop) enrich(x0, y0, minLine int) {
 	}
 
 	loop.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   width,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
+		width:  width,
+		height: LineHeight,
+		lines:  1,
 	}
+}
+
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (loop *Loop) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	ld := loop.drawData
+	ld.x0 = x0
+	ld.y0 = y0
+	ld.minLine = minLine
+
+	return nil
 }
 
 // --------------------------------------------------------------------------

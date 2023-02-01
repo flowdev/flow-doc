@@ -18,17 +18,28 @@ func (prt *ExtPort) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
+// Calculate width, height and lines
+// --------------------------------------------------------------------------
+func (prt *ExtPort) calcDimensions() {
+	prt.drawData = &drawData{
+		width:  len(prt.Name) * CharWidth,
+		height: LineHeight,
+		lines:  1,
+	}
+}
+
+// --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
-func enrichExtPort(prt *ExtPort, x0, y0, minLine int) {
-	prt.drawData = &drawData{
-		x0:      x0,
-		y0:      y0,
-		width:   len(prt.Name) * CharWidth,
-		height:  LineHeight,
-		minLine: minLine,
-		lines:   1,
-	}
+func (prt *ExtPort) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	pd := prt.drawData
+	pd.x0 = x0
+	pd.y0 = y0
+	pd.minLine = minLine
+
+	return nil
 }
 
 // --------------------------------------------------------------------------
