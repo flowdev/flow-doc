@@ -31,12 +31,173 @@ func (split *Split) calcDimensions() {
 			ishape.calcDimensions()
 		}
 	}
+	split.drawData = &drawData{}
+}
+
+// --------------------------------------------------------------------------
+// Calculate x0, y0 and minLine
+// --------------------------------------------------------------------------
+func (split *Split) calcPosition(x0, y0, minLine, level int,
+	outerComp *drawData, lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
+	x := x0
+	y := y0
+	line := minLine
+	xmax := x0
+	ymax := y0
+	maxLine := minLine
+	lastComp := (*drawData)(nil)
+
+	for i := 0; i < len(split.Shapes); i++ {
+		row := split.Shapes[i]
+		x = x0
+		line = maxLine
+		if i > 0 {
+			line++
+			if mode != FlowModeSVGLinks {
+				ymax += LineGap
+			}
+		}
+		y = ymax
+		lastComp = nil
+		lastArr = nil
+		for j := 0; j < len(row); j++ {
+			ishape := row[j]
+			switch shape := ishape.(type) {
+			case *Arrow:
+				shape.enrich(x, y, line, level,
+					outerComp, nil, nil,
+				)
+				lastArr = shape
+				x = growX(lastArr.drawData)
+				ymax = growY(ymax, lastArr.drawData)
+				if lastComp != nil {
+					maxLine = growLine(maxLine, lastComp)
+				}
+				if j == 0 && outerComp != nil {
+					growCompToDrawData(outerComp, lastArr.drawData)
+				}
+				if lastComp != nil {
+					growCompToDrawData(lastComp, lastArr.drawData)
+				}
+			case *Comp:
+				shape.enrich(x, y, line, level,
+					outerComp, nil, nil,
+				)
+				lastComp = shape.drawData
+				merge := merges[compID(shape)]
+				if j == 0 && merge != nil {
+					shape.moveTo(merge.drawData)
+					growCompToDrawData(lastComp, merge.drawData)
+
+					y = lastComp.y0
+					if mode != FlowModeSVGLinks {
+						ymax -= LineGap
+					}
+					line = lastComp.minLine
+				}
+				if lastArr != nil {
+					growCompToDrawData(lastComp, lastArr.drawData)
+				}
+				x = growX(lastComp)
+				ymax = growY(ymax, lastComp)
+				maxLine = growLine(maxLine, lastComp)
+			case *Split:
+				shape.enrich(
+					x, y, line, level,
+					lastComp, nil, &enrichData{
+						mode:   mode,
+						merges: merges,
+					},
+				)
+				d := shape.drawData
+				x = growX(d)
+				ymax = growY(ymax, d)
+				maxLine = growLine(maxLine, d)
+				growCompToDrawData(lastComp, d)
+				lastComp = nil
+				lastArr = nil
+			case *Merge:
+				shape.enrich(
+					x, y, line, level,
+					nil, lastArr, &enrichData{
+						mode:   mode,
+						merges: merges,
+					},
+				)
+				lastComp = nil
+				lastArr = nil
+			case *Sequel:
+				if lastArr != nil {
+					lad := lastArr.drawData
+					shape.enrich(
+						x,
+						lad.y0+lad.height-LineHeight,
+						lad.minLine+lad.lines-1, level,
+						nil, lastArr, nil,
+					)
+				} else {
+					shape.enrich(x, y, line, level,
+						nil, lastArr, nil,
+					)
+				}
+				x = growX(shape.drawData)
+				lastComp = shape.drawData
+				lastArr = nil
+			case *Loop:
+				lad := lastArr.drawData
+				shape.enrich(
+					x,
+					lad.y0+lad.height-LineHeight,
+					lad.minLine+lad.lines-1, level,
+					nil, nil, nil,
+				)
+				x = growX(shape.drawData)
+				lastComp = nil
+				lastArr = nil
+			case *ExtPort:
+				if lastArr != nil {
+					lad := lastArr.drawData
+					shape.enrich(
+						x, lad.y0+lad.height-LineHeight,
+						lad.minLine+lad.lines-1, level,
+						nil, nil, nil,
+					)
+				} else {
+					shape.enrich(x, y, line, level,
+						nil, nil, nil,
+					)
+				}
+				x = growX(shape.drawData)
+				lastComp = shape.drawData
+				lastArr = nil
+			default:
+				panic(fmt.Sprintf("unsupported type: %T", ishape))
+			}
+		}
+		xmax = max(xmax, x)
+	}
+
+	sd := split.drawData
+	sd.x0 = x0
+	sd.y0 = y0
+	sd.height = ymax - y0
+	sd.width = xmax - x0
+	sd.minLine = minLine
+	sd.lines = maxLine - minLine + 1
 }
 
 // --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
 func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	split.calcPosition(x0, y0, minLine, level, outerComp, lastArr, global.mode, global.merges)
+	return nil
+}
+
+func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
 	s := &splitState{
@@ -49,7 +210,7 @@ func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	}
 	/*
 		IDEAS:
-		- split enrich into calcDimensions, breakLines, calcPosition
+		- split enrich into calcDimensions, breakRows, calcPosition
 		- check minimum width of the first arrows before looping
 		- return early if no space for minimum width
 		- merges can be mended if only a minority needs a split
