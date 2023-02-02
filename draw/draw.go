@@ -219,7 +219,12 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 	f.dark = dark
 
 	f.AllShapes.calcDimensions()
-	enrichFlow(f)
+
+	// TODO: breakRows
+
+	merges := make(map[string]*Merge)
+	f.AllShapes.calcPosition(0, 0, 0, nil, nil, f.mode, merges)
+
 	smf := flowToSVGs(f)
 	if f.mode != FlowModeSVGLinks {
 		svgName := smf.svgFilePrefix + ".svg"
@@ -242,15 +247,6 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 			fmt.Errorf("unable to create MarkDown content for %q flow: %w", f.Name, err)
 	}
 	return svgContents, mdContent, nil
-}
-
-func enrichFlow(f *Flow) {
-	merges := make(map[string]*Merge)
-	f.AllShapes.enrich(0, 0, 0, 0, nil, nil, &enrichData{
-		width:  f.width,
-		mode:   f.mode,
-		merges: merges,
-	})
 }
 
 func flowToSVGs(f *Flow) *svgMDFlow {

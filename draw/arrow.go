@@ -88,11 +88,11 @@ func arrowWidth(arr *Arrow, dataWidth int) int {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate x0, y0 and minLine
 // --------------------------------------------------------------------------
-func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData,
-	lastArr *Arrow, global *enrichData,
-) (newShapeLines [][]Shape) {
+func (arr *Arrow) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
 	y := y0
 	for _, dt := range arr.DataTypes {
 		dtd := dt.drawData
@@ -105,7 +105,14 @@ func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	ad.x0 = x0
 	ad.y0 = y0
 	ad.minLine = minLine
+}
 
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (arr *Arrow) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
 	return nil
 }
 

@@ -29,16 +29,23 @@ func (prt *ExtPort) calcDimensions() {
 }
 
 // --------------------------------------------------------------------------
+// Calculate x0, y0 and minLine
+// --------------------------------------------------------------------------
+func (prt *ExtPort) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
+	pd := prt.drawData
+	pd.x0 = x0
+	pd.y0 = y0
+	pd.minLine = minLine
+}
+
+// --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
 func (prt *ExtPort) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	pd := prt.drawData
-	pd.x0 = x0
-	pd.y0 = y0
-	pd.minLine = minLine
-
 	return nil
 }
 

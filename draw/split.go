@@ -23,7 +23,7 @@ func (split *Split) intersects(line int) bool {
 }
 
 // --------------------------------------------------------------------------
-// Calculate width and height
+// Calculate width and height (of other shapes)
 // --------------------------------------------------------------------------
 func (split *Split) calcDimensions() {
 	for _, row := range split.Shapes {
@@ -37,8 +37,8 @@ func (split *Split) calcDimensions() {
 // --------------------------------------------------------------------------
 // Calculate x0, y0 and minLine
 // --------------------------------------------------------------------------
-func (split *Split) calcPosition(x0, y0, minLine, level int,
-	outerComp *drawData, lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
 ) {
 	x := x0
 	y := y0
@@ -65,8 +65,8 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 			ishape := row[j]
 			switch shape := ishape.(type) {
 			case *Arrow:
-				shape.enrich(x, y, line, level,
-					outerComp, nil, nil,
+				shape.calcPosition(x, y, line,
+					outerComp, nil, mode, merges,
 				)
 				lastArr = shape
 				x = growX(lastArr.drawData)
@@ -81,8 +81,8 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 					growCompToDrawData(lastComp, lastArr.drawData)
 				}
 			case *Comp:
-				shape.enrich(x, y, line, level,
-					outerComp, nil, nil,
+				shape.calcPosition(x, y, line,
+					outerComp, nil, mode, merges,
 				)
 				lastComp = shape.drawData
 				merge := merges[compID(shape)]
@@ -103,12 +103,8 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 				ymax = growY(ymax, lastComp)
 				maxLine = growLine(maxLine, lastComp)
 			case *Split:
-				shape.enrich(
-					x, y, line, level,
-					lastComp, nil, &enrichData{
-						mode:   mode,
-						merges: merges,
-					},
+				shape.calcPosition(
+					x, y, line, lastComp, nil, mode, merges,
 				)
 				d := shape.drawData
 				x = growX(d)
@@ -118,27 +114,23 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 				lastComp = nil
 				lastArr = nil
 			case *Merge:
-				shape.enrich(
-					x, y, line, level,
-					nil, lastArr, &enrichData{
-						mode:   mode,
-						merges: merges,
-					},
+				shape.calcPosition(
+					x, y, line, nil, lastArr, mode, merges,
 				)
 				lastComp = nil
 				lastArr = nil
 			case *Sequel:
 				if lastArr != nil {
 					lad := lastArr.drawData
-					shape.enrich(
+					shape.calcPosition(
 						x,
 						lad.y0+lad.height-LineHeight,
-						lad.minLine+lad.lines-1, level,
-						nil, lastArr, nil,
+						lad.minLine+lad.lines-1,
+						nil, lastArr, mode, merges,
 					)
 				} else {
-					shape.enrich(x, y, line, level,
-						nil, lastArr, nil,
+					shape.calcPosition(x, y, line,
+						nil, lastArr, mode, merges,
 					)
 				}
 				x = growX(shape.drawData)
@@ -146,11 +138,11 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 				lastArr = nil
 			case *Loop:
 				lad := lastArr.drawData
-				shape.enrich(
+				shape.calcPosition(
 					x,
 					lad.y0+lad.height-LineHeight,
-					lad.minLine+lad.lines-1, level,
-					nil, nil, nil,
+					lad.minLine+lad.lines-1,
+					nil, nil, mode, merges,
 				)
 				x = growX(shape.drawData)
 				lastComp = nil
@@ -158,14 +150,14 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 			case *ExtPort:
 				if lastArr != nil {
 					lad := lastArr.drawData
-					shape.enrich(
+					shape.calcPosition(
 						x, lad.y0+lad.height-LineHeight,
-						lad.minLine+lad.lines-1, level,
-						nil, nil, nil,
+						lad.minLine+lad.lines-1,
+						nil, nil, mode, merges,
 					)
 				} else {
-					shape.enrich(x, y, line, level,
-						nil, nil, nil,
+					shape.calcPosition(x, y, line,
+						nil, nil, mode, merges,
 					)
 				}
 				x = growX(shape.drawData)
@@ -193,7 +185,7 @@ func (split *Split) calcPosition(x0, y0, minLine, level int,
 func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	split.calcPosition(x0, y0, minLine, level, outerComp, lastArr, global.mode, global.merges)
+	split.calcPosition(x0, y0, minLine, outerComp, lastArr, global.mode, global.merges)
 	return nil
 }
 

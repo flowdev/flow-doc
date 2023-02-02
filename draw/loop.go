@@ -38,16 +38,23 @@ func (loop *Loop) calcDimensions() {
 }
 
 // --------------------------------------------------------------------------
+// Calculate x0, y0 and minLine
+// --------------------------------------------------------------------------
+func (loop *Loop) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
+	ld := loop.drawData
+	ld.x0 = x0
+	ld.y0 = y0
+	ld.minLine = minLine
+}
+
+// --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
 func (loop *Loop) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	ld := loop.drawData
-	ld.x0 = x0
-	ld.y0 = y0
-	ld.minLine = minLine
-
 	return nil
 }
 

@@ -32,21 +32,21 @@ func (m *Merge) calcDimensions() {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate x0, y0 and minLine
 // --------------------------------------------------------------------------
-func (m *Merge) enrich(x0, y0, minLine, level int, outerComp *drawData,
-	lastArr *Arrow, global *enrichData,
-) (newShapeLines [][]Shape) {
+func (m *Merge) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
 	lad := lastArr.drawData
-	if _, ok := global.merges[m.ID]; !ok {
+	if _, ok := merges[m.ID]; !ok {
 		m.drawData = &drawData{
 			x0:      lad.x0 + lad.width,
 			y0:      lad.y0,
-			height:  lad.height,
 			minLine: lad.minLine,
+			height:  lad.height,
 			lines:   lad.lines,
 		}
-		global.merges[m.ID] = m
+		merges[m.ID] = m
 		m.arrows = make([]*Arrow, 1, m.Size)
 		m.arrows[0] = lastArr
 		return
@@ -62,7 +62,14 @@ func (m *Merge) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	if len(m.arrows) == m.Size {
 		growArrows(m.arrows, m.drawData)
 	}
+}
 
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (m *Merge) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
 	return nil
 }
 func growArrows(arrs []*Arrow, d *drawData) {

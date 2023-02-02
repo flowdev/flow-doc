@@ -33,16 +33,23 @@ func (seq *Sequel) calcDimensions() {
 }
 
 // --------------------------------------------------------------------------
+// Calculate x0, y0 and minLine
+// --------------------------------------------------------------------------
+func (seq *Sequel) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
+	sd := seq.drawData
+	sd.x0 = x0
+	sd.y0 = y0
+	sd.minLine = minLine
+}
+
+// --------------------------------------------------------------------------
 // Add drawData
 // --------------------------------------------------------------------------
 func (seq *Sequel) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	sd := seq.drawData
-	sd.x0 = x0
-	sd.y0 = y0
-	sd.minLine = minLine
-
 	return nil
 }
 

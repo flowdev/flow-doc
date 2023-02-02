@@ -127,11 +127,11 @@ func calcPluginTypeDimensions(pt *Plugin) {
 }
 
 // --------------------------------------------------------------------------
-// Add drawData
+// Calculate x0, y0 and minLine
 // --------------------------------------------------------------------------
-func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData,
-	lastArr *Arrow, global *enrichData,
-) (newShapeLines [][]Shape) {
+func (comp *Comp) calcPosition(x0, y0, minLine int, outerComp *drawData,
+	lastArr *Arrow, mode FlowMode, merges map[string]*Merge,
+) {
 	cmd := comp.Main.drawData
 	cmd.x0 = x0
 	cmd.y0 = y0
@@ -150,7 +150,14 @@ func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	cd.x0 = x0
 	cd.y0 = y0
 	cd.minLine = minLine
+}
 
+// --------------------------------------------------------------------------
+// Add drawData
+// --------------------------------------------------------------------------
+func (comp *Comp) enrich(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
 	return nil
 }
 
