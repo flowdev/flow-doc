@@ -1,7 +1,7 @@
 package draw
 
 const (
-	LineGap     = 8
+	RowGap      = 8
 	LineHeight  = 24
 	CharWidth   = 8
 	ParenWidth  = 6

@@ -55,7 +55,7 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 		if i > 0 {
 			line++
 			if mode != FlowModeSVGLinks {
-				ymax += LineGap
+				ymax += RowGap
 			}
 		}
 		y = ymax
@@ -65,8 +65,8 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 			ishape := row[j]
 			switch shape := ishape.(type) {
 			case *Arrow:
-				shape.calcPosition(x, y, line,
-					outerComp, nil, mode, merges,
+				shape.calcPosition(
+					x, y, line, nil, nil, mode, merges,
 				)
 				lastArr = shape
 				x = growX(lastArr.drawData)
@@ -81,8 +81,8 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 					growCompToDrawData(lastComp, lastArr.drawData)
 				}
 			case *Comp:
-				shape.calcPosition(x, y, line,
-					outerComp, nil, mode, merges,
+				shape.calcPosition(
+					x, y, line, nil, nil, mode, merges,
 				)
 				lastComp = shape.drawData
 				merge := merges[compID(shape)]
@@ -92,7 +92,7 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 
 					y = lastComp.y0
 					if mode != FlowModeSVGLinks {
-						ymax -= LineGap
+						ymax -= RowGap
 					}
 					line = lastComp.minLine
 				}
@@ -123,14 +123,13 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 				if lastArr != nil {
 					lad := lastArr.drawData
 					shape.calcPosition(
-						x,
-						lad.y0+lad.height-LineHeight,
+						x, lad.y0+lad.height-LineHeight,
 						lad.minLine+lad.lines-1,
-						nil, lastArr, mode, merges,
+						nil, nil, mode, merges,
 					)
 				} else {
-					shape.calcPosition(x, y, line,
-						nil, lastArr, mode, merges,
+					shape.calcPosition(
+						x, y, line, nil, nil, mode, merges,
 					)
 				}
 				x = growX(shape.drawData)
@@ -139,8 +138,7 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 			case *Loop:
 				lad := lastArr.drawData
 				shape.calcPosition(
-					x,
-					lad.y0+lad.height-LineHeight,
+					x, lad.y0+lad.height-LineHeight,
 					lad.minLine+lad.lines-1,
 					nil, nil, mode, merges,
 				)
@@ -156,8 +154,8 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 						nil, nil, mode, merges,
 					)
 				} else {
-					shape.calcPosition(x, y, line,
-						nil, nil, mode, merges,
+					shape.calcPosition(
+						x, y, line, nil, nil, mode, merges,
 					)
 				}
 				x = growX(shape.drawData)
@@ -185,7 +183,6 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	split.calcPosition(x0, y0, minLine, outerComp, lastArr, global.mode, global.merges)
 	return nil
 }
 
@@ -216,7 +213,7 @@ func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
 		if s.i > 0 {
 			s.line++
 			if global.mode != FlowModeSVGLinks {
-				s.ymax += LineGap
+				s.ymax += RowGap
 			}
 		}
 		s.y = s.ymax
@@ -253,7 +250,7 @@ func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
 
 					s.y = s.lastComp.y0
 					if global.mode != FlowModeSVGLinks {
-						s.ymax -= LineGap
+						s.ymax -= RowGap
 					}
 					s.line = s.lastComp.minLine
 				}
