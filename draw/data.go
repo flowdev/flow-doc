@@ -73,7 +73,7 @@ type drawData struct {
 type enrichData struct {
 	width                   int
 	mode                    FlowMode
-	merges                  map[string]*Merge
+	merges                  map[string]*Merge // TODO: remove!
 	saveState, currentState *splitState
 }
 

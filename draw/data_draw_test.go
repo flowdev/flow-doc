@@ -7,6 +7,11 @@ var bigMerge = &draw.Merge{
 	Size: 3,
 }
 
+var lastMerge = &draw.Merge{
+	ID:   "lastMerge",
+	Size: 2,
+}
+
 var BigTestFlowData = &draw.Flow{
 	Name: "bigTestFlow",
 	AllShapes: &draw.Split{
@@ -162,6 +167,53 @@ var BigTestFlowData = &draw.Flow{
 				&draw.Comp{
 					Main: &draw.DataType{
 						Name: "postMerge", Type: "PostMerge", Link: "https://google.com?q=PostMerge",
+					},
+				},
+				&draw.Split{
+					Shapes: [][]draw.Shape{
+						{
+							&draw.Arrow{
+								DataTypes: []*draw.DataType{
+									{Name: "data", Type: "MergedData", Link: "https://google.com?q=MergedData"},
+								},
+							},
+							&draw.Comp{
+								Main: &draw.DataType{
+									Type: "Split1", Link: "https://google.com?q=Split1",
+								},
+							},
+							&draw.Arrow{
+								DataTypes: []*draw.DataType{
+									{Name: "data", Type: "MergedData", Link: "https://google.com?q=MergedData"},
+								},
+							},
+							lastMerge,
+						}, {
+							&draw.Arrow{
+								DataTypes: []*draw.DataType{
+									{Name: "data", Type: "MergedData", Link: "https://google.com?q=MergedData"},
+								},
+								SrcPort: "longNamedOutputPort",
+								DstPort: "inputPort",
+							},
+							&draw.Comp{
+								Main: &draw.DataType{
+									Type: "Split2", Link: "https://google.com?q=Split2",
+								},
+							},
+							&draw.Arrow{
+								DataTypes: []*draw.DataType{
+									{Name: "data", Type: "MergedData", Link: "https://google.com?q=MergedData"},
+								},
+							},
+							lastMerge,
+						},
+					},
+				},
+			}, {
+				&draw.Comp{
+					Main: &draw.DataType{
+						Type: "lastMerge", Link: "https://google.com?q=lastMerge",
 					},
 				},
 			}, { // empty to force more space

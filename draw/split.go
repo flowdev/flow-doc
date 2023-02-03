@@ -183,12 +183,6 @@ func (split *Split) calcPosition(x0, y0, minLine int, outerComp *drawData,
 func (split *Split) enrich(x0, y0, minLine, level int, outerComp *drawData,
 	lastArr *Arrow, global *enrichData,
 ) (newShapeLines [][]Shape) {
-	return nil
-}
-
-func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
-	lastArr *Arrow, global *enrichData,
-) (newShapeLines [][]Shape) {
 	s := &splitState{
 		x:       x0,
 		y:       y0,
@@ -199,7 +193,7 @@ func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
 	}
 	/*
 		IDEAS:
-		- split enrich into calcDimensions, breakRows, calcPosition
+		- split enrich into calcDimensions, divideRows, calcPosition
 		- check minimum width of the first arrows before looping
 		- return early if no space for minimum width
 		- merges can be mended if only a minority needs a split
@@ -345,6 +339,12 @@ func (split *Split) breakRows(x0, y0, minLine, level int, outerComp *drawData,
 	}
 
 	return newShapeLines
+}
+
+func (split *Split) divideRows(x0, y0, minLine, level int, outerComp *drawData,
+	lastArr *Arrow, global *enrichData,
+) (newShapeLines [][]Shape) {
+	return nil
 }
 
 func growX(d *drawData) int {

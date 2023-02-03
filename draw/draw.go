@@ -220,7 +220,10 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 
 	f.AllShapes.calcDimensions()
 
-	// TODO: breakRows
+	f.AllShapes.divideRows(0, 0, 0, 0, nil, nil, &enrichData{
+		width: f.width,
+		mode:  f.mode,
+	})
 
 	merges := make(map[string]*Merge)
 	f.AllShapes.calcPosition(0, 0, 0, nil, nil, f.mode, merges)
