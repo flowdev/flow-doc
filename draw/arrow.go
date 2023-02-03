@@ -56,7 +56,7 @@ func (arr *Arrow) calcDimensions() {
 	height += LineHeight // for the arrow itself and optional ports
 	lines += 1
 	arr.dataTypesWidth = width
-	width = arrowWidth(arr, width)
+	width = arr.width()
 
 	arr.drawData = &drawData{
 		width:  width,
@@ -75,7 +75,7 @@ func calcDataTypeDimensions(dt *DataType) {
 	}
 }
 
-func arrowWidth(arr *Arrow, dataWidth int) int {
+func (arr *Arrow) width() int {
 	portWidth := len(arr.SrcPort)*CharWidth + len(arr.DstPort)*CharWidth
 
 	if portWidth != 0 {
@@ -84,7 +84,26 @@ func arrowWidth(arr *Arrow, dataWidth int) int {
 		// ... clear which type a single port is
 	}
 
-	return max(portWidth, dataWidth) + arrTipWidth
+	return max(portWidth, arr.dataTypesWidth) + arrTipWidth
+}
+
+// --------------------------------------------------------------------------
+// Needed for dividing rows
+// --------------------------------------------------------------------------
+func (arr *Arrow) minimumWidth(num int) int {
+	width := 0
+	if len(arr.SrcPort) > 0 {
+		width += WordGap + // so the port text isn't glued to the comp
+			len(arr.SrcPort)*CharWidth
+	}
+	return width + arrTipWidth + sequelWidth(num)
+}
+
+func (arr *Arrow) mediumWidth(num int) int {
+	return max(
+		arr.dataTypesWidth+arrTipWidth+sequelWidth(num),
+		arr.minimumWidth(num),
+	)
 }
 
 // --------------------------------------------------------------------------

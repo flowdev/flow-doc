@@ -23,13 +23,37 @@ func (seq *Sequel) intersects(line int) bool {
 // Calculate width, height and lines
 // --------------------------------------------------------------------------
 func (seq *Sequel) calcDimensions() {
-	width := SequelWidth + len(strconv.Itoa(seq.Number))*CharWidth
-
 	seq.drawData = &drawData{
-		width:  width,
+		width:  sequelWidth(seq.Number),
 		height: LineHeight,
 		lines:  1,
 	}
+}
+
+func sequelWidth(num int) int {
+	return SequelWidth + numWidth(num)
+}
+
+// numWidth returns the width to the given number.
+// It panics for negative numbers and numbers bigger than 9,999.
+func numWidth(num int) int {
+	if num < 0 {
+		panic("unable to calculate the width of a negative number")
+	}
+
+	if num < 10 {
+		return CharWidth
+	}
+	if num < 100 {
+		return 2 * CharWidth
+	}
+	if num < 1000 {
+		return 3 * CharWidth
+	}
+	if num < 10_000 {
+		return 4 * CharWidth
+	}
+	panic("unable to calculate the width of a number bigger than 9,999")
 }
 
 // --------------------------------------------------------------------------
