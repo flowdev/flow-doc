@@ -90,19 +90,20 @@ func (arr *Arrow) width() int {
 // --------------------------------------------------------------------------
 // Needed for dividing rows
 // --------------------------------------------------------------------------
-func (arr *Arrow) minimumWidth(num int) int {
+func (arr *Arrow) divideRowShortWidth(num int) int {
 	width := 0
 	if len(arr.SrcPort) > 0 {
 		width += WordGap + // so the port text isn't glued to the comp
-			len(arr.SrcPort)*CharWidth
+			len(arr.SrcPort)*CharWidth +
+			2*CharWidth // so it is clear which type a single port is
 	}
 	return width + arrTipWidth + sequelWidth(num)
 }
 
-func (arr *Arrow) mediumWidth(num int) int {
+func (arr *Arrow) divideRowLongWidth(num int) int {
 	return max(
 		arr.dataTypesWidth+arrTipWidth+sequelWidth(num),
-		arr.minimumWidth(num),
+		arr.divideRowShortWidth(num),
 	)
 }
 
