@@ -90,7 +90,7 @@ func (arr *Arrow) width() int {
 // --------------------------------------------------------------------------
 // Needed for dividing rows
 // --------------------------------------------------------------------------
-func (arr *Arrow) divideRowShortWidth(num int) int {
+func (arr *Arrow) divideShortWidth(num int) int {
 	width := 0
 	if len(arr.SrcPort) > 0 {
 		width += WordGap + // so the port text isn't glued to the comp
@@ -100,11 +100,35 @@ func (arr *Arrow) divideRowShortWidth(num int) int {
 	return width + arrTipWidth + sequelWidth(num)
 }
 
-func (arr *Arrow) divideRowLongWidth(num int) int {
+func (arr *Arrow) divideShort() *Arrow {
+	seqArr := &Arrow{
+		DataTypes: arr.DataTypes,
+		DstPort:   arr.DstPort,
+	}
+	seqArr.calcDimensions()
+
+	arr.DataTypes = nil
+	arr.DstPort = ""
+	arr.calcDimensions()
+	return seqArr
+}
+
+func (arr *Arrow) divideLongWidth(num int) int {
 	return max(
 		arr.dataTypesWidth+arrTipWidth+sequelWidth(num),
-		arr.divideRowShortWidth(num),
+		arr.divideShortWidth(num),
 	)
+}
+
+func (arr *Arrow) divideLong() *Arrow {
+	seqArr := &Arrow{
+		DstPort: arr.DstPort,
+	}
+	seqArr.calcDimensions()
+
+	arr.DstPort = ""
+	arr.calcDimensions()
+	return seqArr
 }
 
 // --------------------------------------------------------------------------
