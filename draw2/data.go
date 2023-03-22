@@ -1,5 +1,7 @@
 package draw2
 
+import "fmt"
+
 const (
 	RowGap     = 8
 	LineHeight = 24
@@ -18,7 +20,7 @@ type FlowMode int
 const (
 	FlowModeNoLinks FlowMode = iota
 	FlowModeMDLinks
-	FlowModeSVGLinks
+	FlowModeSVGLinks // not implemented yet
 )
 
 // Shapes:
@@ -85,31 +87,25 @@ func (cl *ShapeCluster) calcHorizontalValues() {
 	}
 }
 
-// Flow contains data for a whole flow.
-// The data is organized in rows and individual shapes per row.
-// Valid shapes are Arrow, Comp, Split, Merge, Sequel and Loop.
-//
-// The following rules apply:
-// - Arrows and Comps alternate.
-// - Instead of a single Arrow a Split can be used for multiple Arrows.
-//   So the first element of such a split is always an Arrow.
-//   (exception: a component that completes a merge).
-//   Such a split has to be the last element of a row.
-//   A split can never be the first element of a row.
-// - The last Comp (and element) in a row can instead be a Merge.
-//   The real Comp for the merge has to be the first element of a future row
-//   (possibly of the outer Split).
-//   Of course multiple merges can "point" to the same Comp (using the same ID).
-//   The same Merge instance has to be used for this (only 1 instance per ID).
-// - The real Comp of a merge can be followed by an Arrow or Split as usual.
-// - The last Comp (and element) in a row can be replaced by a Loop, too.
-//   The loop points back to a component we can't draw an arrow to.
-//   In the diagram you will see: ...back to: <component>:<port>
-// - The first and last Comp and element of a row can instead be an OuterPort.
-// - The last Comp (and element) in a row can also be replaced by a Sequel.
-//   The other part of the Sequel should be at the start of one of the next rows
-//   of the outer Split.
-//   Sequels are in general inserted by the layout algorithm itself.
+func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum int) {
+	var newRows []StartComp
+	addRows := make([]StartComp, 0, 64)
+
+	for _, comp := range cl.shapeRows {
+		newRows, num = comp.respectMaxWidth(maxWidth, num)
+		addRows = append(addRows, newRows...)
+	}
+
+	cl.shapeRows = append(cl.shapeRows, addRows...)
+	return num
+}
+
+func (cl *ShapeCluster) calcVerticalValues(mode FlowMode) {
+	for _, comp := range cl.shapeRows {
+		comp.calcVerticalValues(0, 0, mode)
+	}
+}
+
 type Flow struct {
 	name     string
 	mode     FlowMode
@@ -128,9 +124,30 @@ func NewFlow(name string, mode FlowMode, width int, dark bool) *Flow {
 	}
 }
 
+func (flow *Flow) ChangeConfig(name string, mode FlowMode, width int, dark bool) {
+	flow.name = name
+	flow.mode = mode
+	flow.width = width
+	flow.dark = dark
+}
+
 func (flow *Flow) AddCluster(cl *ShapeCluster) *Flow {
 	flow.clusters = append(flow.clusters, cl)
 	return flow
+}
+
+func (flow *Flow) validate() error {
+	if len(flow.clusters) == 0 {
+		return fmt.Errorf("no shape clusters found in flow")
+	}
+
+	for i, cl := range flow.clusters {
+		if len(cl.shapeRows) == 0 {
+			return fmt.Errorf("no shapes found in the %d-th cluster of the flow", i+1)
+		}
+	}
+
+	return nil
 }
 
 func (flow *Flow) calcHorizontalValues() {
@@ -139,26 +156,22 @@ func (flow *Flow) calcHorizontalValues() {
 	}
 }
 
+func (flow *Flow) respectMaxWidth(maxWidth int) {
+	num := 0
+	for _, cl := range flow.clusters {
+		num = cl.respectMaxWidth(maxWidth, num)
+	}
+}
+
+func (flow *Flow) calcVerticalValues(mode FlowMode) {
+	for _, cl := range flow.clusters {
+		cl.calcVerticalValues(mode)
+	}
+}
+
 // drawData contains all data needed for positioning the element correctly.
 type drawData struct {
 	x0, y0         int
 	height, width  int
 	minLine, lines int
-}
-
-func withinShape(line int, d *drawData) bool {
-	return d.minLine <= line && line < d.minLine+d.lines
-}
-
-func min(a, b int) int {
-	if a <= b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a >= b {
-		return a
-	}
-	return b
 }

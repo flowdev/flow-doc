@@ -154,11 +154,12 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
 	if arr.drawData.x0+longBroken > maxWidth {
 		newArr := arr.breakShort()
 
-		arr.dstComp = NewBreakStart(num)
+		brk := NewBreakStart(num)
+		arr.dstComp = brk
 		arr.dstComp.addInput(arr)
 		arr.calcHorizontalValues(arr.drawData.x0)
 
-		newStart := NewBreakEnd(num)
+		newStart := brk.End()
 		newStart.AddOutput(newArr)
 		newStart.calcHorizontalValues(0)
 
@@ -168,11 +169,12 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
 	if arr.drawData.x0+unBroken > maxWidth {
 		newArr := arr.breakLong()
 
-		arr.dstComp = NewBreakStart(num)
+		brk := NewBreakStart(num)
+		arr.dstComp = brk
 		arr.dstComp.addInput(arr)
 		arr.calcHorizontalValues(arr.drawData.x0)
 
-		newStart := NewBreakEnd(num)
+		newStart := brk.End()
 		newStart.AddOutput(newArr)
 		newStart.calcHorizontalValues(0)
 

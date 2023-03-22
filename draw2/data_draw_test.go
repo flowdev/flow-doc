@@ -6,6 +6,7 @@ var BigTestFlowData = buildBigTestFlowData()
 
 func buildBigTestFlowData() *draw2.Flow {
 	cl1 := draw2.NewCluster()
+	brk1 := draw2.NewBreakStart(1)
 	flow := draw2.NewFlow("bigTestFlow", draw2.FlowModeNoLinks, 1500, false).AddCluster(
 		cl1.AddStartComp(
 			draw2.NewStartPort("in").AddOutput(
@@ -60,7 +61,7 @@ func buildBigTestFlowData() *draw2.Flow {
 							draw2.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
 								draw2.NewArrow("", "").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									draw2.NewBreakStart(1),
+									brk1,
 								),
 							),
 						),
@@ -68,7 +69,7 @@ func buildBigTestFlowData() *draw2.Flow {
 				),
 			),
 		).AddStartComp(
-			draw2.NewBreakEnd(1).AddOutput(
+			brk1.End().AddOutput(
 				draw2.NewArrow("", "in").AddDestination(
 					draw2.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
 						draw2.NewArrow("out", "in2").AddDataType(

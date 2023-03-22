@@ -8,6 +8,7 @@ type BreakStart struct {
 	number     int
 	input      *Arrow
 	inReturned bool
+	end        *BreakEnd
 	drawData   *drawData
 }
 
@@ -53,6 +54,15 @@ func (brk *BreakStart) calcVerticalValues(y0, minLine int, mode FlowMode) {
 	breakVerticalValues(brk.drawData, y0, minLine)
 }
 
+func (brk *BreakStart) End() *BreakEnd {
+	if brk.end == nil {
+		brk.end = &BreakEnd{
+			number: brk.number,
+		}
+	}
+	return brk.end
+}
+
 // --------------------------------------------------------------------------
 // BreakEnd
 // --------------------------------------------------------------------------
@@ -62,12 +72,6 @@ type BreakEnd struct {
 	output      *Arrow
 	outReturned bool
 	drawData    *drawData
-}
-
-func NewBreakEnd(num int) *BreakEnd {
-	return &BreakEnd{
-		number: num,
-	}
 }
 
 func (brk *BreakEnd) AddOutput(arr *Arrow) *BreakEnd {
@@ -153,14 +157,4 @@ func numWidth(num int) int {
 		return 4 * CharWidth
 	}
 	panic("unable to calculate the width of a number bigger than 9,999")
-}
-
-// --------------------------------------------------------------------------
-// Calculate y0 and minLine
-// --------------------------------------------------------------------------
-func (brk *BreakStart) calcPosition(y0, minLine int, outerComp *drawData, mode FlowMode) {
-
-	sd := brk.drawData
-	sd.y0 = y0
-	sd.minLine = minLine
 }
