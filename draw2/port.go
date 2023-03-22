@@ -52,6 +52,10 @@ func (prt *StartPort) calcHorizontalValues(x0 int) {
 	prt.output.calcHorizontalValues(prt.drawData.x0 + prt.drawData.width)
 }
 
+func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) {
+	portVerticalValues(prt.drawData, y0, minLine)
+}
+
 // --------------------------------------------------------------------------
 // EndPort
 // --------------------------------------------------------------------------
@@ -97,17 +101,26 @@ func (prt *EndPort) calcHorizontalValues(x0 int) {
 	prt.drawData = portHorizontalValues(x0, prt.name)
 }
 
+func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) {
+	portVerticalValues(prt.drawData, y0, minLine)
+}
+
 // --------------------------------------------------------------------------
 // Helpers:
 // --------------------------------------------------------------------------
 
 func portHorizontalValues(x0 int, name string) *drawData {
 	return &drawData{
-		x0:     x0,
-		width:  len(name) * CharWidth,
-		height: LineHeight,
-		lines:  1,
+		x0:    x0,
+		width: len(name) * CharWidth,
 	}
+}
+
+func portVerticalValues(d *drawData, y0, minLine int) {
+	d.y0 = y0
+	d.minLine = minLine
+	d.height = LineHeight
+	d.lines = 1
 }
 
 // --------------------------------------------------------------------------

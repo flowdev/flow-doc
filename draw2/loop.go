@@ -59,19 +59,15 @@ func (loop *Loop) calcHorizontalValues(x0 int) {
 	}
 
 	loop.drawData = &drawData{
-		x0:     x0,
-		width:  width,
-		height: LineHeight,
-		lines:  1,
+		x0:    x0,
+		width: width,
 	}
 }
 
-// --------------------------------------------------------------------------
-// Calculate x0, y0 and minLine
-// --------------------------------------------------------------------------
-func (loop *Loop) calcVerticalValues(y0, minLine int, outerComp *drawData, mode FlowMode) {
-
+func (loop *Loop) calcVerticalValues(y0, minLine int, mode FlowMode) {
 	ld := loop.drawData
 	ld.y0 = y0
 	ld.minLine = minLine
+	ld.height = LineHeight
+	ld.lines = 1
 }

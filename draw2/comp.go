@@ -224,35 +224,39 @@ func calcPluginTypeDimensions(pt *Plugin, x0 int) {
 }
 
 // --------------------------------------------------------------------------
-// Calculate y0 and minLine
+// Calculate vertical values of shapes (y0, height, lines and minLine)
 // --------------------------------------------------------------------------
-func (comp *Comp) calcPosition(y0, minLine int, outerComp *drawData, mode FlowMode) {
+func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) {
+	cd := comp.drawData
+	cd.y0 = y0
+	cd.minLine = minLine
 
-	cmd := comp.drawData
-	cmd.y0 = y0
-	cmd.minLine = minLine
+	height := LineHeight
+	lines := 1
+	if comp.name != "" {
+		height += LineHeight
+		lines++
+	}
 
-	height := cmd.height
-	lines := cmd.lines
 	for _, p := range comp.plugins {
-		calcPluginPosition(p, y0+height, minLine+lines)
+		calcPluginVerticals(p, y0+height, minLine+lines)
 		pd := p.drawData
 		height += pd.height
 		lines += pd.lines
 	}
 
-	cd := comp.drawData
-	cd.y0 = y0
-	cd.minLine = minLine
+	cd.height = height
+	cd.lines = lines
 }
 
-func calcPluginPosition(p *PluginGroup, y0, minLine int) {
+func calcPluginVerticals(p *PluginGroup, y0, minLine int) {
 	height := 0
 	lines := 0
 	if p.title != "" {
 		height += LineHeight
 		lines++
 	}
+
 	for _, t := range p.types {
 		td := t.drawData
 		td.y0 = y0 + height
@@ -261,32 +265,12 @@ func calcPluginPosition(p *PluginGroup, y0, minLine int) {
 		height += td.height
 		lines += td.lines
 	}
+
 	pd := p.drawData
 	pd.y0 = y0
 	pd.minLine = minLine
-}
-
-// TODO: move X separately from Y (or only X?)
-func (comp *Comp) moveTo(merge *drawData) {
-	cd := comp.drawData
-	xDiff := merge.x0 - cd.x0
-	yDiff := merge.y0 - cd.y0
-	lDiff := merge.minLine - cd.minLine
-
-	cd.x0 += xDiff
-	cd.y0 += yDiff
-	cd.minLine += lDiff
-
-	for _, p := range comp.plugins {
-		p.drawData.x0 += xDiff
-		p.drawData.y0 += yDiff
-		p.drawData.minLine += lDiff
-		for _, pt := range p.types {
-			pt.drawData.x0 += xDiff
-			pt.drawData.y0 += yDiff
-			pt.drawData.minLine += lDiff
-		}
-	}
+	pd.height = height
+	pd.lines = lines
 }
 
 func (comp *Comp) ID() string {

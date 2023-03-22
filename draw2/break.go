@@ -49,6 +49,10 @@ func (brk *BreakStart) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
 	return nil, num
 }
 
+func (brk *BreakStart) calcVerticalValues(y0, minLine int, mode FlowMode) {
+	breakVerticalValues(brk.drawData, y0, minLine)
+}
+
 // --------------------------------------------------------------------------
 // BreakEnd
 // --------------------------------------------------------------------------
@@ -101,6 +105,10 @@ func (brk *BreakEnd) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
 	return brk.output.respectMaxWidth(maxWidth, num)
 }
 
+func (brk *BreakEnd) calcVerticalValues(y0, minLine int, mode FlowMode) {
+	breakVerticalValues(brk.drawData, y0, minLine)
+}
+
 // --------------------------------------------------------------------------
 // Helpers:
 // --------------------------------------------------------------------------
@@ -112,6 +120,13 @@ func breakHorizontalValues(x0, num int) *drawData {
 		height: LineHeight,
 		lines:  1,
 	}
+}
+
+func breakVerticalValues(d *drawData, y0, minLine int) {
+	d.y0 = y0
+	d.minLine = minLine
+	d.height = LineHeight
+	d.lines = 1
 }
 
 func breakWidth(num int) int {

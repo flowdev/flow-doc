@@ -256,7 +256,7 @@ func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) {
 	height := 0
 	lines := 0
 	for _, dt := range arr.dataTypes {
-		calcDataTypeVerticals(dt, y)
+		calcDataTypeVerticals(dt, y, minLine+lines)
 		dtd := dt.drawData
 		y += dtd.height
 		height += dtd.height
@@ -273,10 +273,10 @@ func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) {
 	ad.lines = lines
 }
 
-func calcDataTypeVerticals(dt *DataType, y0 int) {
-	dt.drawData = &drawData{
-		y0:     y0,
-		height: LineHeight,
-		lines:  1,
-	}
+func calcDataTypeVerticals(dt *DataType, y0, minLine int) {
+	dd := dt.drawData
+	dd.y0 = y0
+	dd.minLine = minLine
+	dd.height = LineHeight
+	dd.lines = 1
 }

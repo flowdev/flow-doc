@@ -36,7 +36,7 @@ const (
 type StartComp interface {
 	nextArrow() *Arrow
 	calcHorizontalValues(x0 int)
-	//calcVerticalValues(y0, minLine int, mode FlowMode)
+	calcVerticalValues(y0, minLine int, mode FlowMode)
 	respectMaxWidth(maxWidth, num int) ([]StartComp, int)
 }
 
@@ -44,7 +44,7 @@ type EndComp interface {
 	prevArrow() *Arrow
 	addInput(*Arrow)
 	calcHorizontalValues(x0 int)
-	//calcVerticalValues(y0, minLine int, mode FlowMode)
+	calcVerticalValues(y0, minLine int, mode FlowMode)
 	respectMaxWidth(maxWidth, num int) ([]StartComp, int)
 	minRestOfRowWidth(num int) int
 }
