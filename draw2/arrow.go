@@ -12,22 +12,22 @@ const (
 // DataType contains the optional name of the data and its type.
 // Plus an optional link to the definition of the type.
 type DataType struct {
-	name     string
-	typ      string
-	link     string
-	drawData *drawData
-	w1       int // for aligning the data types of arrows
+	withDrawData
+	name string
+	typ  string
+	link string
+	w1   int // for aligning the data types of arrows
 }
 
 // Arrow contains all information for displaying an Arrow including data type
 // and ports.
 type Arrow struct {
+	withDrawData
 	dataTypes      []*DataType
 	srcPort        string
 	dstPort        string
 	srcComp        StartComp
 	dstComp        EndComp
-	drawData       *drawData
 	dataTypesWidth int // for centering the data types
 }
 
@@ -53,6 +53,7 @@ func (arr *Arrow) LinkComp(id string, compRegistry CompRegistry) error {
 		return fmt.Errorf("unable to link to component with ID: %q", id)
 	}
 	arr.dstComp = comp
+	comp.addInput(arr)
 	return nil
 }
 
@@ -72,10 +73,6 @@ func (arr *Arrow) AddDataType(name, typ, link string) *Arrow {
 	return arr
 }
 
-func (arrow *Arrow) intersects(line int) bool {
-	return withinShape(line, arrow.drawData)
-}
-
 // --------------------------------------------------------------------------
 // Calculate horizontal values of shapes (x0 and width)
 // --------------------------------------------------------------------------
@@ -93,7 +90,7 @@ func (arr *Arrow) calcHorizontalValues(x0 int) {
 		width: width,
 	}
 
-	arr.dstComp.calcHorizontalValues(arr.drawData.x0 + arr.drawData.width)
+	arr.dstComp.calcHorizontalValues(x0 + width)
 }
 
 func (arr *Arrow) calcWidth() int {
@@ -149,36 +146,30 @@ func (arr *Arrow) extendTo(xn int) {
 // Needed for dividing rows
 // --------------------------------------------------------------------------
 
-func (arr *Arrow) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
+func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
 	longBroken, unBroken := arr.brokenWidths(num)
-	if arr.drawData.x0+longBroken > maxWidth {
-		newArr := arr.breakShort()
+	ad := arr.drawData
+	if ad.x0+unBroken > maxWidth {
+		var newArr *Arrow
+		if ad.x0+longBroken > maxWidth {
+			newArr = arr.breakShort()
+		} else {
+			newArr = arr.breakLong()
+		}
 
 		brk := NewBreakStart(num)
 		arr.dstComp = brk
 		arr.dstComp.addInput(arr)
-		arr.calcHorizontalValues(arr.drawData.x0)
+		arr.calcHorizontalValues(ad.x0)
+		newStartComps, newNum, newWidth = brk.respectMaxWidth(maxWidth, num+1)
 
 		newStart := brk.End()
 		newStart.AddOutput(newArr)
 		newStart.calcHorizontalValues(0)
+		newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, newNum)
 
-		return []StartComp{newStart}, num + 1
-	}
-
-	if arr.drawData.x0+unBroken > maxWidth {
-		newArr := arr.breakLong()
-
-		brk := NewBreakStart(num)
-		arr.dstComp = brk
-		arr.dstComp.addInput(arr)
-		arr.calcHorizontalValues(arr.drawData.x0)
-
-		newStart := brk.End()
-		newStart.AddOutput(newArr)
-		newStart.calcHorizontalValues(0)
-
-		return []StartComp{newStart}, num + 1
+		newStartComps = append(newStartComps, newStart)
+		return append(newStartComps, newStartComps2...), newNum2, max(newWidth, newWidth2)
 	}
 
 	return arr.dstComp.respectMaxWidth(maxWidth, num)
@@ -219,7 +210,7 @@ func (arr *Arrow) brokenWidths(num int) (longBroken, unBroken int) {
 }
 
 // breakShort breaks this arrow into two arrows.
-// The second arrow is returned and it's horizontal values haven't been
+// The second arrow is returned, and it's horizontal values haven't been
 // calculated yet.
 func (arr *Arrow) breakShort() *Arrow {
 	seqArr := &Arrow{
@@ -252,8 +243,7 @@ func (arr *Arrow) breakLong() *Arrow {
 // --------------------------------------------------------------------------
 // Calculate vertical values of shapes (y0, height, lines and minLine)
 // --------------------------------------------------------------------------
-func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) {
-
+func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
 	y := y0
 	height := 0
 	lines := 0
@@ -273,6 +263,9 @@ func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) {
 	ad.height = height
 	ad.minLine = minLine
 	ad.lines = lines
+
+	lines, height = arr.dstComp.calcVerticalValues(y0, minLine, mode)
+	return max(lines, minLine+ad.lines), max(height, y0+ad.height)
 }
 
 func calcDataTypeVerticals(dt *DataType, y0, minLine int) {
@@ -281,4 +274,153 @@ func calcDataTypeVerticals(dt *DataType, y0, minLine int) {
 	dd.minLine = minLine
 	dd.height = LineHeight
 	dd.lines = 1
+}
+
+// --------------------------------------------------------------------------
+// Convert To SVG and MD
+// --------------------------------------------------------------------------
+func (arr *Arrow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	arr.arrowToSVG(smf, line, mode)
+	arr.dstComp.toSVG(smf, line, mode)
+}
+func (arr *Arrow) arrowToSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	var svg *svgFlow
+	var link *svgLink
+	ad := arr.drawData
+	maxLine := ad.maxLines() - 1
+
+	if !ad.contains(line) {
+		return
+	}
+
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		x0, y0, height, width := svgDimensionsForLine(line, arr, ad, maxLine)
+		svg, link = addNewSVGFlow(smf,
+			x0, y0, height, width,
+			"arrow", line,
+		)
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	if line == maxLine { // draw arrow line
+		srcPortToSVG(svg, arr, ad)
+		dstPortToSVG(svg, arr, ad)
+
+		arrToSVG(svg, ad)
+
+		smf.lastX += ad.width
+		return
+	} else if line < maxLine {
+		dataWidth := ad.width - arrTipWidth
+		lastIdx := len(arr.dataTypes) - 1
+		idx := line - ad.minLine
+		dt := arr.dataTypes[idx]
+
+		arrowDataTypeToSVG(svg, link, dt, ad.x0, dataWidth, arr.dataTypesWidth,
+			idx == 0, idx == lastIdx)
+	}
+
+	smf.lastX += ad.width
+}
+
+func svgDimensionsForLine(line int, arrow *Arrow, ad *drawData, maxLine int,
+) (x0, y0, height, width int) {
+
+	if line == maxLine {
+		return ad.x0, ad.y0 + ad.height - LineHeight, LineHeight, ad.width
+	}
+
+	idx := line - ad.minLine
+	dt := arrow.dataTypes[idx]
+	dtd := dt.drawData
+	return ad.x0, dtd.y0, dtd.height, ad.width
+}
+
+func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
+	if arrow.srcPort != "" {
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     ad.x0 + WordGap,
+			Y:     ad.y0 + ad.height - arrSmallTextOffset,
+			Width: len(arrow.srcPort) * CharWidth,
+			Text:  arrow.srcPort,
+			Small: true,
+		})
+	}
+}
+
+func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
+	if arrow.dstPort != "" {
+		w := len(arrow.dstPort) * CharWidth
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     ad.x0 + ad.width - w - arrTipWidth,
+			Y:     ad.y0 + ad.height - arrSmallTextOffset,
+			Width: w,
+			Text:  arrow.dstPort,
+			Small: true,
+		})
+	}
+}
+
+func arrToSVG(svg *svgFlow, ad *drawData) {
+
+	arrY := ad.y0 + ad.height - LineHeight + arrTipHeight
+	svg.Arrows = append(svg.Arrows, &svgArrow{
+		X1:    ad.x0,
+		Y1:    arrY,
+		X2:    ad.x0 + ad.width,
+		Y2:    arrY,
+		XTip1: ad.x0 + ad.width - arrTipHeight,
+		YTip1: arrY - arrTipHeight,
+		XTip2: ad.x0 + ad.width - arrTipHeight,
+		YTip2: arrY + arrTipHeight,
+	})
+}
+
+func arrowDataTypeToSVG(
+	svg *svgFlow, link *svgLink, dt *DataType,
+	x0, width, dataTypesWidth int,
+	first, last bool,
+) {
+	dtd := dt.drawData
+	padding := (width - dataTypesWidth) / 2
+	x1 := x0 + padding + dt.w1
+	padding += CharWidth + ParenWidth
+	y := dtd.y0 + LineHeight - TextOffset
+
+	if first { // opening parenthesis
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     x0 + padding - ParenWidth,
+			Y:     y,
+			Width: ParenWidth,
+			Text:  "(",
+			Link:  dt.link != "",
+		})
+	}
+	svg.Texts = append(svg.Texts, &svgText{
+		X:     x0 + padding,
+		Y:     y,
+		Width: len(dt.name) * CharWidth,
+		Text:  dt.name,
+		Link:  dt.link != "",
+	})
+
+	typText := dt.typ
+	typWidth := len(dt.typ) * CharWidth
+	if last {
+		typText += ")"
+		typWidth += ParenWidth
+	}
+	svg.Texts = append(svg.Texts, &svgText{
+		X:     x1,
+		Y:     y,
+		Width: typWidth,
+		Text:  typText,
+		Link:  dt.link != "",
+	})
+
+	if link != nil {
+		link.Link = dt.link
+	}
 }

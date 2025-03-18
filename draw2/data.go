@@ -35,20 +35,56 @@ const (
 // ----------------------------
 // Arrow    | No    | Yes | No
 
-type StartComp interface {
-	nextArrow() *Arrow
+type anyComp interface {
 	calcHorizontalValues(x0 int)
-	calcVerticalValues(y0, minLine int, mode FlowMode)
-	respectMaxWidth(maxWidth, num int) ([]StartComp, int)
+
+	// maxWidth is constant and newWidth the full width (x0 + width)
+	respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int)
+
+	// newNum is full num (minLine + lines) and newHeight is the full height (y0 + height)
+	calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int)
+	toSVG(smf *svgMDFlow, line int, mode FlowMode)
+	getDrawData() *drawData
+}
+
+type StartComp interface {
+	anyComp
+	nextArrow() *Arrow
 }
 
 type EndComp interface {
+	anyComp
 	prevArrow() *Arrow
 	addInput(*Arrow)
-	calcHorizontalValues(x0 int)
-	calcVerticalValues(y0, minLine int, mode FlowMode)
-	respectMaxWidth(maxWidth, num int) ([]StartComp, int)
 	minRestOfRowWidth(num int) int
+}
+
+// drawData contains all data needed for positioning an element correctly.
+type drawData struct {
+	x0, y0         int
+	height, width  int
+	minLine, lines int
+}
+
+func (d *drawData) contains(line int) bool {
+	return d.minLine <= line && line < d.minLine+d.lines
+}
+func (d *drawData) xmax() int {
+	return d.x0 + d.width
+}
+func (d *drawData) ymax() int {
+	return d.y0 + d.height
+}
+func (d *drawData) maxLines() int {
+	return d.minLine + d.lines
+}
+
+type withDrawData struct {
+	drawData *drawData
+}
+
+func (wd withDrawData) getDrawData() *drawData {
+	return wd.drawData
 }
 
 type CompRegistry interface {
@@ -57,6 +93,7 @@ type CompRegistry interface {
 }
 
 type ShapeCluster struct {
+	withDrawData
 	shapeRows    []StartComp
 	compRegistry map[string]*Comp
 }
@@ -87,26 +124,51 @@ func (cl *ShapeCluster) calcHorizontalValues() {
 	}
 }
 
-func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum int) {
+func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int) {
 	var newRows []StartComp
 	addRows := make([]StartComp, 0, 64)
+	width := 0
 
 	for _, comp := range cl.shapeRows {
-		newRows, num = comp.respectMaxWidth(maxWidth, num)
+		newRows, num, width = comp.respectMaxWidth(maxWidth, num)
 		addRows = append(addRows, newRows...)
+		newWidth = max(newWidth, width)
 	}
 
 	cl.shapeRows = append(cl.shapeRows, addRows...)
-	return num
+	cl.drawData = &drawData{
+		x0: 0, width: newWidth,
+		minLine: 0, lines: num,
+	}
+	return num, newWidth
 }
 
-func (cl *ShapeCluster) calcVerticalValues(mode FlowMode) {
+func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+	cd := cl.drawData
+	cd.y0 = y0
+	cd.minLine = minLine
+	for i, comp := range cl.shapeRows {
+		if i > 0 && mode != FlowModeSVGLinks {
+			y0 += RowGap
+		}
+		minLine, y0 = comp.calcVerticalValues(y0, minLine, mode)
+	}
+	cl.drawData.lines = minLine - cd.minLine
+	cl.drawData.height = y0 - cd.y0
+	return minLine, y0
+}
+
+func (cl *ShapeCluster) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	if !cl.drawData.contains(line) {
+		return
+	}
 	for _, comp := range cl.shapeRows {
-		comp.calcVerticalValues(0, 0, mode)
+		comp.toSVG(smf, line, mode)
 	}
 }
 
 type Flow struct {
+	withDrawData
 	name     string
 	mode     FlowMode
 	width    int
@@ -156,22 +218,35 @@ func (flow *Flow) calcHorizontalValues() {
 	}
 }
 
-func (flow *Flow) respectMaxWidth(maxWidth int) {
+func (flow *Flow) respectMaxWidth() {
 	num := 0
+	width, maxWidth := 0, 0
 	for _, cl := range flow.clusters {
-		num = cl.respectMaxWidth(maxWidth, num)
+		num, width = cl.respectMaxWidth(flow.width, num)
+		maxWidth = max(maxWidth, width)
+	}
+	flow.drawData = &drawData{
+		x0:      0,
+		y0:      0,
+		width:   maxWidth,
+		minLine: 0,
 	}
 }
 
-func (flow *Flow) calcVerticalValues(mode FlowMode) {
-	for _, cl := range flow.clusters {
-		cl.calcVerticalValues(mode)
+func (flow *Flow) calcVerticalValues() {
+	height, lines := 0, 0
+	for i, cl := range flow.clusters {
+		if i > 0 && flow.mode != FlowModeSVGLinks {
+			height += RowGap
+		}
+		lines, height = cl.calcVerticalValues(height, lines, flow.mode)
 	}
+	flow.drawData.height = height
+	flow.drawData.lines = lines
 }
 
-// drawData contains all data needed for positioning the element correctly.
-type drawData struct {
-	x0, y0         int
-	height, width  int
-	minLine, lines int
+func (flow *Flow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	for _, cl := range flow.clusters {
+		cl.toSVG(smf, line, mode)
+	}
 }

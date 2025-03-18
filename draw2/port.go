@@ -5,10 +5,9 @@ package draw2
 // --------------------------------------------------------------------------
 
 type StartPort struct {
-	name        string
-	output      *Arrow
-	outReturned bool
-	drawData    *drawData
+	withDrawData
+	name   string
+	output *Arrow
 }
 
 func NewStartPort(name string) *StartPort {
@@ -24,27 +23,11 @@ func (prt *StartPort) AddOutput(arr *Arrow) *StartPort {
 }
 
 func (prt *StartPort) nextArrow() *Arrow {
-	if prt.output == nil {
-		return nil
-	}
-
-	prt.outReturned = !prt.outReturned
-	if prt.outReturned {
-		return prt.output
-	}
-	return nil
+	return prt.output
 }
 
 func (prt *StartPort) minRestOfRowWidth(num int) int {
 	return prt.drawData.width + prt.output.minRestOfRowWidth(num)
-}
-
-func (prt *StartPort) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
-	return prt.output.respectMaxWidth(maxWidth, num)
-}
-
-func (prt *StartPort) intersects(line int) bool {
-	return withinShape(line, prt.drawData)
 }
 
 func (prt *StartPort) calcHorizontalValues(x0 int) {
@@ -52,8 +35,22 @@ func (prt *StartPort) calcHorizontalValues(x0 int) {
 	prt.output.calcHorizontalValues(prt.drawData.x0 + prt.drawData.width)
 }
 
-func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) {
-	portVerticalValues(prt.drawData, y0, minLine)
+func (prt *StartPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	return prt.output.respectMaxWidth(maxWidth, num)
+}
+
+func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+	pd := prt.drawData
+	num, height := prt.output.calcVerticalValues(y0, minLine, mode)
+
+	// align the port with the arrow itself (last line of the arrow):
+	portVerticalValues(pd, prt.output.drawData.ymax(), prt.output.drawData.maxLines())
+	return num, height
+}
+
+func (prt *StartPort) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	portToSVG(smf, line, mode, prt.drawData, prt.name)
+	prt.output.toSVG(smf, line, mode)
 }
 
 // --------------------------------------------------------------------------
@@ -61,10 +58,9 @@ func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) {
 // --------------------------------------------------------------------------
 
 type EndPort struct {
-	name       string
-	input      *Arrow
-	inReturned bool
-	drawData   *drawData
+	withDrawData
+	name  string
+	input *Arrow
 }
 
 func NewEndPort(name string) *EndPort {
@@ -78,37 +74,31 @@ func (prt *EndPort) addInput(arr *Arrow) {
 }
 
 func (prt *EndPort) prevArrow() *Arrow {
-	if prt.input == nil {
-		return nil
-	}
-
-	prt.inReturned = !prt.inReturned
-	if prt.inReturned {
-		return prt.input
-	}
-	return nil
-}
-
-func (prt *EndPort) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
-	return nil, num
-}
-
-func (prt *EndPort) intersects(line int) bool {
-	return withinShape(line, prt.drawData)
+	return prt.input
 }
 
 func (prt *EndPort) calcHorizontalValues(x0 int) {
 	prt.drawData = portHorizontalValues(x0, prt.name)
 }
 
-func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) {
-	portVerticalValues(prt.drawData, y0, minLine)
+func (prt *EndPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	return nil, num, prt.drawData.xmax()
+}
+
+func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+	pd := prt.drawData
+	// align the port with the arrow itself (last line of the arrow):
+	portVerticalValues(pd, prt.input.drawData.ymax(), prt.input.drawData.maxLines())
+	return pd.maxLines(), pd.ymax()
+}
+
+func (prt *EndPort) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	portToSVG(smf, line, mode, prt.drawData, prt.name)
 }
 
 // --------------------------------------------------------------------------
 // Helpers:
 // --------------------------------------------------------------------------
-
 func portHorizontalValues(x0 int, name string) *drawData {
 	return &drawData{
 		x0:    x0,
@@ -116,19 +106,39 @@ func portHorizontalValues(x0 int, name string) *drawData {
 	}
 }
 
-func portVerticalValues(d *drawData, y0, minLine int) {
-	d.y0 = y0
-	d.minLine = minLine
+func portVerticalValues(d *drawData, ymax, maxLines int) {
+	d.y0 = ymax - LineHeight
+	d.minLine = maxLines - 1
 	d.height = LineHeight
 	d.lines = 1
 }
 
-// --------------------------------------------------------------------------
-// Calculate x0, y0 and minLine
-// --------------------------------------------------------------------------
-func (prt *EndPort) calcPosition(y0, minLine int, outerComp *drawData, mode FlowMode) {
+func portToSVG(smf *svgMDFlow, line int, mode FlowMode, pd *drawData, name string) {
+	var svg *svgFlow
 
-	pd := prt.drawData
-	pd.y0 = y0
-	pd.minLine = minLine
+	if !pd.contains(line) {
+		return
+	}
+
+	idx := line - pd.minLine
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		svg, _ = addNewSVGFlow(smf,
+			pd.x0, pd.y0+idx*LineHeight, LineHeight, pd.width,
+			"port-"+name, line,
+		)
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	if idx == pd.lines-1 { // only the last line has text
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     pd.x0,
+			Y:     pd.y0 + pd.height - arrTextOffset,
+			Width: pd.width,
+			Text:  name,
+		})
+	}
+
+	smf.lastX += pd.width
 }

@@ -1,13 +1,13 @@
 package draw2
 
 type Loop struct {
+	withDrawData
 	name       string
 	port       string
 	link       string
 	input      *Arrow
 	inReturned bool
 	goLink     bool
-	drawData   *drawData
 }
 
 func NewLoop(name, port, link string) *Loop {
@@ -43,14 +43,6 @@ func (loop *Loop) minRestOfRowWidth(num int) int {
 	return loop.drawData.width
 }
 
-func (loop *Loop) intersects(line int) bool {
-	return withinShape(line, loop.drawData)
-}
-
-func (loop *Loop) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
-	return nil, num
-}
-
 func (loop *Loop) calcHorizontalValues(x0 int) {
 	txt := loop.name + loop.port
 	width := BreakWidth + LoopWidth + len(txt)*CharWidth
@@ -64,10 +56,51 @@ func (loop *Loop) calcHorizontalValues(x0 int) {
 	}
 }
 
-func (loop *Loop) calcVerticalValues(y0, minLine int, mode FlowMode) {
+func (loop *Loop) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	return nil, num, loop.drawData.xmax()
+}
+
+func (loop *Loop) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
 	ld := loop.drawData
-	ld.y0 = y0
-	ld.minLine = minLine
+	ld.y0 = loop.input.drawData.ymax() - LineHeight
+	ld.minLine = loop.input.drawData.maxLines() - 1
 	ld.height = LineHeight
 	ld.lines = 1
+	return ld.maxLines(), ld.ymax()
+}
+
+func (loop *Loop) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	var svg *svgFlow
+	ld := loop.drawData
+
+	if !ld.contains(line) {
+		return
+	}
+
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		var svgLink *svgLink
+		svg, svgLink = addNewSVGFlow(smf,
+			ld.x0, ld.y0, ld.height, ld.width,
+			"loop", line,
+		)
+		svgLink.Link = loop.link
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	txt := BreakText + LoopText + loop.name
+	if loop.port != "" {
+		txt += ":" + loop.port
+	}
+	svg.Texts = append(svg.Texts, &svgText{
+		X:      ld.x0,
+		Y:      ld.y0 + ld.height - arrTextOffset,
+		Width:  ld.width,
+		Text:   txt,
+		Link:   !loop.goLink && loop.link != "",
+		GoLink: loop.goLink,
+	})
+
+	smf.lastX += ld.width
 }

@@ -322,7 +322,9 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 }
 
 // --------------------------------------------------------------------------
-//    U T I L s :
+//
+//	U T I L s :
+//
 // --------------------------------------------------------------------------
 func addNewSVGFlow(
 	smf *svgMDFlow,
@@ -378,17 +380,4 @@ func maximumLine(d *drawData) int {
 
 func withinShape(line int, d *drawData) bool {
 	return d.minLine <= line && line < d.minLine+d.lines
-}
-
-func min(a, b int) int {
-	if a <= b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a >= b {
-		return a
-	}
-	return b
 }

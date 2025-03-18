@@ -219,8 +219,8 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 	f.dark = dark
 
 	f.calcHorizontalValues()
-	//f.respectMaxWidth(width)
-	f.calcVerticalValues(mode)
+	f.respectMaxWidth()
+	f.calcVerticalValues()
 
 	smf := flowToSVGs(f)
 	if f.mode != FlowModeSVGLinks {
@@ -252,7 +252,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 		md:            newMDFlow(),
 		svgFilePrefix: filepath.Join(".", "flowdev", "flow-"+f.name),
 	}
-	fd := f.AllShapes.drawData
+	fd := f.drawData
 
 	if f.mode != FlowModeSVGLinks {
 		smf.md.Flow = svgLink{
@@ -267,13 +267,13 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 	maxLine := minLine + fd.lines - 1
 	for line := minLine; line <= maxLine; line++ {
 		smf.lastX = 0
-		f.AllShapes.toSVG(smf, line, f.mode)
+		f.toSVG(smf, line, f.mode)
 
 		if f.mode == FlowModeSVGLinks &&
-			smf.lastX < f.AllShapes.drawData.width {
+			smf.lastX < fd.width {
 
 			addFillerSVG(smf, line, smf.lastX, LineHeight,
-				f.AllShapes.drawData.width-smf.lastX)
+				fd.width-smf.lastX)
 		}
 	}
 	return smf
@@ -316,7 +316,9 @@ func mdFlowToBytes(mdf *mdFlow) ([]byte, error) {
 }
 
 // --------------------------------------------------------------------------
-//    U T I L s :
+//
+//	U T I L s :
+//
 // --------------------------------------------------------------------------
 func addNewSVGFlow(
 	smf *svgMDFlow,
@@ -364,25 +366,4 @@ func svgFileName(smf *svgMDFlow, compName string, line int) string {
 		return fmt.Sprintf("%s-%d-%d.svg", smf.svgFilePrefix, idx, line)
 	}
 	return fmt.Sprintf("%s-%d-%d-%s.svg", smf.svgFilePrefix, idx, line, compName)
-}
-
-func maximumLine(d *drawData) int {
-	return d.minLine + d.lines - 1
-}
-
-func withinShape(line int, d *drawData) bool {
-	return d.minLine <= line && line < d.minLine+d.lines
-}
-
-func min(a, b int) int {
-	if a <= b {
-		return a
-	}
-	return b
-}
-func max(a, b int) int {
-	if a >= b {
-		return a
-	}
-	return b
 }

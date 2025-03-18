@@ -1,7 +1,10 @@
 package draw2
 
+import "math"
+
 // Comp holds all data to describe a single component including possible plugins.
 type Comp struct {
+	withDrawData
 	name   string
 	typ    string
 	link   string
@@ -14,8 +17,6 @@ type Comp struct {
 
 	outputs []*Arrow
 	outIdx  int
-
-	drawData *drawData
 }
 
 func NewComp(name, typ, link string, registry CompRegistry) *Comp {
@@ -70,16 +71,6 @@ func (comp *Comp) nextArrow() *Arrow {
 	return nil
 }
 
-func (comp *Comp) respectMaxWidth(maxWidth, num int) ([]StartComp, int) {
-	newLines := make([]StartComp, 0, 32)
-	for _, out := range comp.outputs {
-		arrLines, arrNum := out.respectMaxWidth(maxWidth, num)
-		newLines = append(newLines, arrLines...)
-		num = arrNum
-	}
-	return newLines, num
-}
-
 func (comp *Comp) minRestOfRowWidth(num int) int {
 	if comp == nil {
 		return 0 // prevent endless loop
@@ -90,10 +81,6 @@ func (comp *Comp) minRestOfRowWidth(num int) int {
 		maxArrWidth = max(maxArrWidth, out.minRestOfRowWidth(num+i))
 	}
 	return comp.drawData.width + maxArrWidth
-}
-
-func (comp *Comp) intersects(line int) bool {
-	return withinShape(line, comp.drawData)
 }
 
 // PluginGroup is a helper component that is used inside a proper component.
@@ -138,20 +125,17 @@ func (p *Plugin) GoLink() *Plugin {
 // Calculate horizontal values of shapes (x0 and width)
 // --------------------------------------------------------------------------
 func (comp *Comp) calcHorizontalValues(x0 int) {
-	cd := comp.drawData
-	if cd != nil && cd.x0 == x0 {
-		return
-	} else if cd != nil && cd.x0 >= x0 {
-		for _, in := range comp.inputs {
-			in.extendTo(x0)
-		}
+	if comp.drawData != nil {
+		comp.drawData.x0 = max(x0, comp.drawData.x0)
 		return
 	}
 
 	width := comp.calcWidth(x0)
 	comp.drawData = &drawData{
-		x0:    x0,
-		width: width,
+		x0:      x0,
+		width:   width,
+		y0:      math.MaxInt, // we will use the min() function to correct this later
+		minLine: math.MaxInt, // we will use the min() function to correct this later
 	}
 
 	xn := x0 + width
@@ -224,18 +208,43 @@ func calcPluginTypeDimensions(pt *Plugin, x0 int) {
 }
 
 // --------------------------------------------------------------------------
+// Respect the given maximum width (also in components to the right)
+// --------------------------------------------------------------------------
+func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	newLines := make([]StartComp, 0, 32)
+	for _, out := range comp.outputs {
+		outLines, outNum, outWidth := out.respectMaxWidth(maxWidth, num)
+		newLines = append(newLines, outLines...)
+		newWidth = max(newWidth, outWidth)
+		num = outNum
+	}
+	cd := comp.drawData
+	if len(comp.outputs) == 0 {
+		newWidth = cd.xmax()
+	}
+
+	// we shouldn't do this too early:
+	for _, in := range comp.inputs {
+		in.extendTo(cd.x0)
+	}
+
+	return newLines, num, newWidth
+}
+
+// --------------------------------------------------------------------------
 // Calculate vertical values of shapes (y0, height, lines and minLine)
 // --------------------------------------------------------------------------
-func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) {
+func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
 	cd := comp.drawData
-	cd.y0 = y0
-	cd.minLine = minLine
+
+	cd.y0 = min(cd.y0, y0)
+	cd.minLine = min(cd.minLine, minLine)
 
 	height := LineHeight
 	lines := 1
 	if comp.name != "" {
-		height += LineHeight
 		lines++
+		height += LineHeight
 	}
 
 	for _, p := range comp.plugins {
@@ -247,6 +256,30 @@ func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) {
 
 	cd.height = height
 	cd.lines = lines
+
+	height += cd.y0
+	lines += cd.minLine
+	for i, out := range comp.outputs {
+		if i > 0 && mode != FlowModeSVGLinks {
+			y0 += RowGap
+		}
+		minLine, y0 = out.calcVerticalValues(y0, minLine, mode)
+	}
+	height, lines = max(height, y0), max(lines, minLine)
+
+	if len(comp.inputs) > 0 {
+		ind := comp.inputs[len(comp.inputs)-1].drawData
+		cd.height = max(cd.height, ind.ymax()-cd.y0)
+		cd.lines = max(cd.lines, ind.maxLines()-cd.minLine)
+		height = max(height, ind.ymax())
+		lines = max(lines, ind.maxLines())
+	}
+	if len(comp.outputs) > 0 {
+		outd := comp.outputs[len(comp.outputs)-1].drawData
+		cd.height = max(cd.height, outd.ymax()-cd.y0)
+		cd.lines = max(cd.lines, outd.maxLines()-cd.minLine)
+	}
+	return lines, height
 }
 
 func calcPluginVerticals(p *PluginGroup, y0, minLine int) {
@@ -274,6 +307,185 @@ func calcPluginVerticals(p *PluginGroup, y0, minLine int) {
 }
 
 func (comp *Comp) ID() string {
+	if comp.name != "" {
+		return comp.name
+	}
+	return comp.typ
+}
+
+// --------------------------------------------------------------------------
+// Convert To SVG and MD
+// --------------------------------------------------------------------------
+func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	comp.allToSVG(smf, line, mode)
+
+	for _, out := range comp.outputs {
+		out.toSVG(smf, line, mode)
+	}
+}
+
+func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
+	var svg *svgFlow
+	var link *svgLink
+	cd := comp.drawData
+
+	if !cd.contains(line) {
+		return
+	}
+
+	idx := line - cd.minLine
+
+	// add filler if necessary:
+	xDiff := cd.x0 - smf.lastX
+	if mode == FlowModeSVGLinks && xDiff > 0 {
+		addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
+		smf.lastX += xDiff
+	}
+
+	// get or create correct SVG flow:
+	if mode == FlowModeSVGLinks {
+		svg, link = addNewSVGFlow(smf,
+			cd.x0, cd.y0+idx*LineHeight, LineHeight, cd.width,
+			compID(comp), line,
+		)
+	} else {
+		svg = smf.svgs[""]
+	}
+
+	if mode == FlowModeSVGLinks || idx == 0 { // outer rect
+		rectToSVG(svg, cd, false, false, false)
+	}
+	if comp.mainToSVG(svg, link, line) { // main data type
+		smf.lastX += cd.width
+		return
+	}
+	for _, p := range comp.plugins {
+		if pluginToSVG(svg, link, line, mode, p) {
+			smf.lastX += cd.width
+			return
+		}
+	}
+	if link != nil {
+		link.Link = comp.link
+	}
+
+	smf.lastX += cd.width
+}
+
+func (comp *Comp) mainToSVG(svg *svgFlow, link *svgLink, line int) bool {
+	md := comp.drawData
+	if !md.contains(line) {
+		return false
+	}
+	if link != nil {
+		link.Link = comp.link
+	}
+	y0 := md.y0
+	idx := line - md.minLine
+	if comp.name != "" {
+		if idx == 0 {
+			svg.Texts = append(svg.Texts, &svgText{
+				X:      md.x0 + WordGap,
+				Y:      y0 + LineHeight - TextOffset,
+				Width:  len(comp.name) * CharWidth,
+				Text:   comp.name,
+				Link:   !comp.goLink && comp.link != "",
+				GoLink: comp.goLink,
+			})
+			return true
+		}
+		y0 += LineHeight
+		idx--
+	}
+	if idx == 0 {
+		svg.Texts = append(svg.Texts, &svgText{
+			X:      md.x0 + WordGap,
+			Y:      y0 + LineHeight - TextOffset,
+			Width:  len(comp.typ) * CharWidth,
+			Text:   comp.typ,
+			Link:   !comp.goLink && comp.link != "",
+			GoLink: comp.goLink,
+		})
+		return true
+	}
+	return false
+}
+
+func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
+	var rect *svgRect
+	if subRect {
+		rect = &svgRect{
+			X:       d.x0,
+			Y:       d.y0,
+			Width:   d.width,
+			Height:  d.height,
+			Plugin:  plugin,
+			SubRect: true,
+		}
+		if last {
+			rect.Height--
+		}
+	} else {
+		rect = &svgRect{
+			X:       d.x0,
+			Y:       d.y0 + 1,
+			Width:   d.width,
+			Height:  d.height - 2,
+			Plugin:  plugin,
+			SubRect: false,
+		}
+	}
+	svg.Rects = append(svg.Rects, rect)
+}
+
+func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *PluginGroup) bool {
+	pd := p.drawData
+	if !pd.contains(line) {
+		return false
+	}
+
+	if mode == FlowModeSVGLinks || line == pd.minLine { // plugin rect
+		rectToSVG(svg, pd, true, false, false)
+	}
+	if p.title != "" && line == pd.minLine {
+		txt := p.title + ":"
+		svg.Texts = append(svg.Texts, &svgText{
+			X:     pd.x0 + WordGap,
+			Y:     pd.y0 + LineHeight - TextOffset,
+			Width: len(txt) * CharWidth,
+			Text:  txt,
+		})
+		return true
+	}
+	for _, pt := range p.types {
+		if pluginTypeToSVG(svg, link, line, pt) {
+			return true
+		}
+	}
+	return true // should never happen
+}
+
+func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *Plugin) bool {
+	ptd := pt.drawData
+	if !ptd.contains(line) {
+		return false
+	}
+	if link != nil {
+		link.Link = pt.link
+	}
+	rectToSVG(svg, ptd, true, true, true)
+	svg.Texts = append(svg.Texts, &svgText{
+		X:      ptd.x0 + WordGap,
+		Y:      ptd.y0 + LineHeight - TextOffset,
+		Width:  len(pt.typ) * CharWidth,
+		Text:   pt.typ,
+		Link:   !pt.goLink && pt.link != "",
+		GoLink: pt.goLink,
+	})
+	return true
+}
+
+func compID(comp *Comp) string {
 	if comp.name != "" {
 		return comp.name
 	}
