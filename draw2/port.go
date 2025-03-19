@@ -22,10 +22,6 @@ func (prt *StartPort) AddOutput(arr *Arrow) *StartPort {
 	return prt
 }
 
-func (prt *StartPort) nextArrow() *Arrow {
-	return prt.output
-}
-
 func (prt *StartPort) minRestOfRowWidth(num int) int {
 	return prt.drawData.width + prt.output.minRestOfRowWidth(num)
 }
@@ -39,17 +35,20 @@ func (prt *StartPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartC
 	return prt.output.respectMaxWidth(maxWidth, num)
 }
 
-func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	pd := prt.drawData
-	num, height := prt.output.calcVerticalValues(y0, minLine, mode)
+	maxLines, newHeight = prt.output.calcVerticalValues(y0, minLine, mode)
 
 	// align the port with the arrow itself (last line of the arrow):
 	portVerticalValues(pd, prt.output.drawData.ymax(), prt.output.drawData.maxLines())
-	return num, height
+	return maxLines, newHeight
 }
 
 func (prt *StartPort) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	portToSVG(smf, line, mode, prt.drawData, prt.name)
+	if prt.drawData.drawLine(line) {
+		portToSVG(smf, line, mode, prt.drawData, prt.name)
+		prt.drawData.drawnLines[line] = true
+	}
 	prt.output.toSVG(smf, line, mode)
 }
 
@@ -73,8 +72,8 @@ func (prt *EndPort) addInput(arr *Arrow) {
 	prt.input = arr
 }
 
-func (prt *EndPort) prevArrow() *Arrow {
-	return prt.input
+func (prt *EndPort) minRestOfRowWidth(num int) int {
+	return prt.drawData.width
 }
 
 func (prt *EndPort) calcHorizontalValues(x0 int) {
@@ -85,7 +84,7 @@ func (prt *EndPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartCom
 	return nil, num, prt.drawData.xmax()
 }
 
-func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	pd := prt.drawData
 	// align the port with the arrow itself (last line of the arrow):
 	portVerticalValues(pd, prt.input.drawData.ymax(), prt.input.drawData.maxLines())
@@ -93,17 +92,17 @@ func (prt *EndPort) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, 
 }
 
 func (prt *EndPort) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	portToSVG(smf, line, mode, prt.drawData, prt.name)
+	if prt.drawData.drawLine(line) {
+		portToSVG(smf, line, mode, prt.drawData, prt.name)
+		prt.drawData.drawnLines[line] = true
+	}
 }
 
 // --------------------------------------------------------------------------
 // Helpers:
 // --------------------------------------------------------------------------
 func portHorizontalValues(x0 int, name string) *drawData {
-	return &drawData{
-		x0:    x0,
-		width: len(name) * CharWidth,
-	}
+	return newDrawData(x0, len(name)*CharWidth)
 }
 
 func portVerticalValues(d *drawData, ymax, maxLines int) {
@@ -115,10 +114,6 @@ func portVerticalValues(d *drawData, ymax, maxLines int) {
 
 func portToSVG(smf *svgMDFlow, line int, mode FlowMode, pd *drawData, name string) {
 	var svg *svgFlow
-
-	if !pd.contains(line) {
-		return
-	}
 
 	idx := line - pd.minLine
 	// get or create correct SVG flow:

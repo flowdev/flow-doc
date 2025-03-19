@@ -27,18 +27,6 @@ func (loop *Loop) addInput(arr *Arrow) {
 	loop.input = arr
 }
 
-func (loop *Loop) prevArrow() *Arrow {
-	if loop.input == nil {
-		return nil
-	}
-
-	loop.inReturned = !loop.inReturned
-	if loop.inReturned {
-		return loop.input
-	}
-	return nil
-}
-
 func (loop *Loop) minRestOfRowWidth(num int) int {
 	return loop.drawData.width
 }
@@ -50,17 +38,14 @@ func (loop *Loop) calcHorizontalValues(x0 int) {
 		width += CharWidth / 2
 	}
 
-	loop.drawData = &drawData{
-		x0:    x0,
-		width: width,
-	}
+	loop.withDrawData.drawData = newDrawData(x0, width)
 }
 
 func (loop *Loop) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
 	return nil, num, loop.drawData.xmax()
 }
 
-func (loop *Loop) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (loop *Loop) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	ld := loop.drawData
 	ld.y0 = loop.input.drawData.ymax() - LineHeight
 	ld.minLine = loop.input.drawData.maxLines() - 1
@@ -73,7 +58,7 @@ func (loop *Loop) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow
 	ld := loop.drawData
 
-	if !ld.contains(line) {
+	if !ld.drawLine(line) {
 		return
 	}
 

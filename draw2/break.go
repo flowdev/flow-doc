@@ -26,19 +26,7 @@ func (brk *BreakStart) addInput(arr *Arrow) {
 	brk.input = arr
 }
 
-func (brk *BreakStart) prevArrow() *Arrow {
-	if brk.input == nil {
-		return nil
-	}
-
-	brk.inReturned = !brk.inReturned
-	if brk.inReturned {
-		return brk.input
-	}
-	return nil
-}
-
-func (brk *BreakStart) minRestOfRowWidth(_ int) int {
+func (brk *BreakStart) minRestOfRowWidth(num int) int {
 	return brk.drawData.width
 }
 
@@ -50,7 +38,7 @@ func (brk *BreakStart) respectMaxWidth(maxWidth, num int) (newStartComps []Start
 	return nil, num, brk.drawData.xmax()
 }
 
-func (brk *BreakStart) calcVerticalValues(y0, minLine int, _ FlowMode) (newNum, newHeight int) {
+func (brk *BreakStart) calcVerticalValues(y0, minLine int, _ FlowMode) (maxLines, newHeight int) {
 	bd := brk.drawData
 	breakVerticalValues(bd, brk.input.drawData.ymax(), brk.input.drawData.maxLines())
 	return bd.maxLines(), bd.ymax()
@@ -66,7 +54,10 @@ func (brk *BreakStart) End() *BreakEnd {
 }
 
 func (brk *BreakStart) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	breakToSVG(smf, line, mode, brk.drawData, brk.number)
+	if brk.drawData.drawLine(line) {
+		breakToSVG(smf, line, mode, brk.drawData, brk.number)
+		brk.drawData.drawnLines[line] = true
+	}
 }
 
 // --------------------------------------------------------------------------
@@ -86,24 +77,12 @@ func (brk *BreakEnd) AddOutput(arr *Arrow) *BreakEnd {
 	return brk
 }
 
-func (brk *BreakEnd) nextArrow() *Arrow {
-	if brk.output == nil {
-		return nil
-	}
-
-	brk.outReturned = !brk.outReturned
-	if brk.outReturned {
-		return brk.output
-	}
-	return nil
-}
-
 func (brk *BreakEnd) minRestOfRowWidth(num int) int {
 	return brk.drawData.width + brk.output.minRestOfRowWidth(num)
 }
 
 func (brk *BreakEnd) calcHorizontalValues(x0 int) {
-	brk.drawData = breakHorizontalValues(x0, brk.number)
+	brk.withDrawData.drawData = breakHorizontalValues(x0, brk.number)
 	brk.output.calcHorizontalValues(brk.drawData.x0 + brk.drawData.width)
 }
 
@@ -111,15 +90,18 @@ func (brk *BreakEnd) respectMaxWidth(maxWidth, num int) (newStartComps []StartCo
 	return brk.output.respectMaxWidth(maxWidth, num)
 }
 
-func (brk *BreakEnd) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (brk *BreakEnd) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	bd := brk.drawData
-	newNum, newHeight = brk.output.calcVerticalValues(y0, minLine, mode)
+	maxLines, newHeight = brk.output.calcVerticalValues(y0, minLine, mode)
 	breakVerticalValues(bd, brk.output.drawData.ymax(), brk.output.drawData.maxLines())
-	return newNum, newHeight
+	return maxLines, newHeight
 }
 
 func (brk *BreakEnd) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	breakToSVG(smf, line, mode, brk.drawData, brk.number)
+	if brk.drawData.drawLine(line) {
+		breakToSVG(smf, line, mode, brk.drawData, brk.number)
+		brk.drawData.drawnLines[line] = true
+	}
 	brk.output.toSVG(smf, line, mode)
 }
 
@@ -127,10 +109,7 @@ func (brk *BreakEnd) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 // Helpers:
 // --------------------------------------------------------------------------
 func breakHorizontalValues(x0, num int) *drawData {
-	return &drawData{
-		x0:    x0,
-		width: breakWidth(num),
-	}
+	return newDrawData(x0, breakWidth(num))
 }
 
 func breakVerticalValues(d *drawData, ymax, maxLines int) {
@@ -168,10 +147,6 @@ func numWidth(num int) int {
 
 func breakToSVG(smf *svgMDFlow, line int, mode FlowMode, bd *drawData, number int) {
 	var svg *svgFlow
-
-	if !bd.contains(line) {
-		return
-	}
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {

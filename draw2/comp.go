@@ -48,27 +48,8 @@ func (comp *Comp) AddPluginGroup(pg *PluginGroup) *Comp {
 }
 
 func (comp *Comp) addInput(arr *Arrow) {
+	arr.dstComp = comp
 	comp.inputs = append(comp.inputs, arr)
-}
-
-func (comp *Comp) prevArrow() *Arrow {
-	if comp.inIdx < len(comp.inputs) {
-		arr := comp.inputs[comp.inIdx]
-		comp.inIdx++
-		return arr
-	}
-	comp.inIdx = 0
-	return nil
-}
-
-func (comp *Comp) nextArrow() *Arrow {
-	if comp.outIdx < len(comp.outputs) {
-		arr := comp.outputs[comp.outIdx]
-		comp.outIdx++
-		return arr
-	}
-	comp.outIdx = 0
-	return nil
 }
 
 func (comp *Comp) minRestOfRowWidth(num int) int {
@@ -131,12 +112,9 @@ func (comp *Comp) calcHorizontalValues(x0 int) {
 	}
 
 	width := comp.calcWidth(x0)
-	comp.drawData = &drawData{
-		x0:      x0,
-		width:   width,
-		y0:      math.MaxInt, // we will use the min() function to correct this later
-		minLine: math.MaxInt, // we will use the min() function to correct this later
-	}
+	comp.drawData = newDrawData(x0, width)
+	comp.drawData.y0 = math.MaxInt      // we will use the min() function to correct this later
+	comp.drawData.minLine = math.MaxInt // we will use the min() function to correct this later
 
 	xn := x0 + width
 	for _, out := range comp.outputs {
@@ -234,7 +212,7 @@ func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 // --------------------------------------------------------------------------
 // Calculate vertical values of shapes (y0, height, lines and minLine)
 // --------------------------------------------------------------------------
-func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	cd := comp.drawData
 
 	cd.y0 = min(cd.y0, y0)
@@ -317,7 +295,10 @@ func (comp *Comp) ID() string {
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
 func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	comp.allToSVG(smf, line, mode)
+	if comp.drawData.drawLine(line) {
+		comp.allToSVG(smf, line, mode)
+		comp.drawData.drawnLines[line] = true
+	}
 
 	for _, out := range comp.outputs {
 		out.toSVG(smf, line, mode)
@@ -328,10 +309,6 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow
 	var link *svgLink
 	cd := comp.drawData
-
-	if !cd.contains(line) {
-		return
-	}
 
 	idx := line - cd.minLine
 
@@ -346,7 +323,7 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	if mode == FlowModeSVGLinks {
 		svg, link = addNewSVGFlow(smf,
 			cd.x0, cd.y0+idx*LineHeight, LineHeight, cd.width,
-			compID(comp), line,
+			comp.ID(), line,
 		)
 	} else {
 		svg = smf.svgs[""]
@@ -360,7 +337,7 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 		return
 	}
 	for _, p := range comp.plugins {
-		if pluginToSVG(svg, link, line, mode, p) {
+		if pluginGroupToSVG(svg, link, line, mode, p) {
 			smf.lastX += cd.width
 			return
 		}
@@ -374,9 +351,6 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 
 func (comp *Comp) mainToSVG(svg *svgFlow, link *svgLink, line int) bool {
 	md := comp.drawData
-	if !md.contains(line) {
-		return false
-	}
 	if link != nil {
 		link.Link = comp.link
 	}
@@ -438,7 +412,7 @@ func rectToSVG(svg *svgFlow, d *drawData, plugin, subRect, last bool) {
 	svg.Rects = append(svg.Rects, rect)
 }
 
-func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *PluginGroup) bool {
+func pluginGroupToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *PluginGroup) bool {
 	pd := p.drawData
 	if !pd.contains(line) {
 		return false
@@ -458,14 +432,14 @@ func pluginToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *Plugin
 		return true
 	}
 	for _, pt := range p.types {
-		if pluginTypeToSVG(svg, link, line, pt) {
+		if pluginToSVG(svg, link, line, pt) {
 			return true
 		}
 	}
 	return true // should never happen
 }
 
-func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *Plugin) bool {
+func pluginToSVG(svg *svgFlow, link *svgLink, line int, pt *Plugin) bool {
 	ptd := pt.drawData
 	if !ptd.contains(line) {
 		return false
@@ -483,11 +457,4 @@ func pluginTypeToSVG(svg *svgFlow, link *svgLink, line int, pt *Plugin) bool {
 		GoLink: pt.goLink,
 	})
 	return true
-}
-
-func compID(comp *Comp) string {
-	if comp.name != "" {
-		return comp.name
-	}
-	return comp.typ
 }

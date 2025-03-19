@@ -42,12 +42,7 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	}
 
 	BigTestFlowData.ChangeConfig("bigTestFlow", flowMode, 1500, darkMode)
-	svgContents, mdContent, err := draw2.FromFlowData(
-		BigTestFlowData,
-		flowMode,
-		800,
-		darkMode,
-	)
+	svgContents, mdContent, err := draw2.FromFlowData(BigTestFlowData)
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)
 	}

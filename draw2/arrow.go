@@ -12,23 +12,24 @@ const (
 // DataType contains the optional name of the data and its type.
 // Plus an optional link to the definition of the type.
 type DataType struct {
-	withDrawData
-	name string
-	typ  string
-	link string
-	w1   int // for aligning the data types of arrows
+	name     string
+	typ      string
+	link     string
+	w1       int // for aligning the data types of arrows
+	drawData *drawData
 }
 
 // Arrow contains all information for displaying an Arrow including data type
 // and ports.
 type Arrow struct {
 	withDrawData
-	dataTypes      []*DataType
-	srcPort        string
-	dstPort        string
-	srcComp        StartComp
-	dstComp        EndComp
-	dataTypesWidth int // for centering the data types
+	dataTypes         []*DataType
+	srcPort           string
+	dstPort           string
+	srcComp           StartComp
+	dstComp           EndComp
+	dataTypesWidth    int  // for centering the data types
+	maxWidthRespected bool // remember that respectMaxWidth has been called already
 }
 
 func NewArrow(srcPort, dstPort string) *Arrow {
@@ -52,7 +53,6 @@ func (arr *Arrow) LinkComp(id string, compRegistry CompRegistry) error {
 	if comp == nil {
 		return fmt.Errorf("unable to link to component with ID: %q", id)
 	}
-	arr.dstComp = comp
 	comp.addInput(arr)
 	return nil
 }
@@ -77,19 +77,16 @@ func (arr *Arrow) AddDataType(name, typ, link string) *Arrow {
 // Calculate horizontal values of shapes (x0 and width)
 // --------------------------------------------------------------------------
 func (arr *Arrow) calcHorizontalValues(x0 int) {
+	if arr.drawData != nil && x0 == arr.drawData.x0 {
+		return
+	}
 	for _, dt := range arr.dataTypes {
 		dt.drawData = &drawData{
 			x0: x0,
 		}
 	}
-
 	width := arr.calcWidth()
-
-	arr.drawData = &drawData{
-		x0:    x0,
-		width: width,
-	}
-
+	arr.drawData = newDrawData(x0, width)
 	arr.dstComp.calcHorizontalValues(x0 + width)
 }
 
@@ -147,6 +144,9 @@ func (arr *Arrow) extendTo(xn int) {
 // --------------------------------------------------------------------------
 
 func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	if arr.maxWidthRespected {
+		return nil, num, arr.drawData.ymax()
+	}
 	longBroken, unBroken := arr.brokenWidths(num)
 	ad := arr.drawData
 	if ad.x0+unBroken > maxWidth {
@@ -227,7 +227,7 @@ func (arr *Arrow) breakShort() *Arrow {
 }
 
 // breakLong breaks this arrow into two arrows.
-// The second arrow is returned and it's horizontal values haven't been
+// The second arrow is returned, and it's horizontal values haven't been
 // calculated yet.
 func (arr *Arrow) breakLong() *Arrow {
 	seqArr := &Arrow{
@@ -243,7 +243,12 @@ func (arr *Arrow) breakLong() *Arrow {
 // --------------------------------------------------------------------------
 // Calculate vertical values of shapes (y0, height, lines and minLine)
 // --------------------------------------------------------------------------
-func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
+	ad := arr.drawData
+	if ad.height > 0 && y0 >= ad.y0 {
+		return ad.maxLines(), ad.ymax()
+	}
+
 	y := y0
 	height := 0
 	lines := 0
@@ -258,7 +263,6 @@ func (arr *Arrow) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, ne
 	height += LineHeight // for the arrow itself and optional ports
 	lines += 1
 
-	ad := arr.drawData
 	ad.y0 = y0
 	ad.height = height
 	ad.minLine = minLine
@@ -280,7 +284,10 @@ func calcDataTypeVerticals(dt *DataType, y0, minLine int) {
 // Convert To SVG and MD
 // --------------------------------------------------------------------------
 func (arr *Arrow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	arr.arrowToSVG(smf, line, mode)
+	if arr.drawData.drawLine(line) {
+		arr.arrowToSVG(smf, line, mode)
+		arr.drawData.drawnLines[line] = true
+	}
 	arr.dstComp.toSVG(smf, line, mode)
 }
 func (arr *Arrow) arrowToSVG(smf *svgMDFlow, line int, mode FlowMode) {
@@ -288,10 +295,6 @@ func (arr *Arrow) arrowToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var link *svgLink
 	ad := arr.drawData
 	maxLine := ad.maxLines() - 1
-
-	if !ad.contains(line) {
-		return
-	}
 
 	// get or create correct SVG flow:
 	if mode == FlowModeSVGLinks {
@@ -342,7 +345,7 @@ func srcPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
 	if arrow.srcPort != "" {
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + WordGap,
-			Y:     ad.y0 + ad.height - arrSmallTextOffset,
+			Y:     ad.ymax() - arrSmallTextOffset,
 			Width: len(arrow.srcPort) * CharWidth,
 			Text:  arrow.srcPort,
 			Small: true,
@@ -355,7 +358,7 @@ func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
 		w := len(arrow.dstPort) * CharWidth
 		svg.Texts = append(svg.Texts, &svgText{
 			X:     ad.x0 + ad.width - w - arrTipWidth,
-			Y:     ad.y0 + ad.height - arrSmallTextOffset,
+			Y:     ad.ymax() - arrSmallTextOffset,
 			Width: w,
 			Text:  arrow.dstPort,
 			Small: true,
@@ -365,7 +368,7 @@ func dstPortToSVG(svg *svgFlow, arrow *Arrow, ad *drawData) {
 
 func arrToSVG(svg *svgFlow, ad *drawData) {
 
-	arrY := ad.y0 + ad.height - LineHeight + arrTipHeight
+	arrY := ad.ymax() - LineHeight + arrTipHeight
 	svg.Arrows = append(svg.Arrows, &svgArrow{
 		X1:    ad.x0,
 		Y1:    arrY,

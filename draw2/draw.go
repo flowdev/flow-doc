@@ -206,17 +206,11 @@ type svgMDFlow struct {
 // FromFlowData creates a set of SVG diagrams and a MarkDown file from flow
 // data. If the flow data isn't valid or the SVG diagrams or the MarkDown file
 // can't be created with their template, an error is returned.
-func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
-) (svgContents map[string][]byte, mdContent []byte, err error) {
-
+func FromFlowData(f *Flow) (svgContents map[string][]byte, mdContent []byte, err error) {
 	err = f.validate()
 	if err != nil {
 		return nil, nil, err
 	}
-
-	f.mode = mode
-	f.width = width
-	f.dark = dark
 
 	f.calcHorizontalValues()
 	f.respectMaxWidth()
@@ -234,7 +228,7 @@ func FromFlowData(f *Flow, mode FlowMode, width int, dark bool,
 		}
 	}
 
-	svgContents, err = svgFlowsToBytes(smf.svgs, dark)
+	svgContents, err = svgFlowsToBytes(smf.svgs, f.dark)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -252,7 +246,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 		md:            newMDFlow(),
 		svgFilePrefix: filepath.Join(".", "flowdev", "flow-"+f.name),
 	}
-	fd := f.drawData
+	fd := f.getDrawData()
 
 	if f.mode != FlowModeSVGLinks {
 		smf.md.Flow = svgLink{

@@ -41,20 +41,18 @@ type anyComp interface {
 	// maxWidth is constant and newWidth the full width (x0 + width)
 	respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int)
 
-	// newNum is full num (minLine + lines) and newHeight is the full height (y0 + height)
-	calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int)
+	// maxLines is full number of lines (minLine + lines) and newHeight is the full height (y0 + height)
+	calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int)
 	toSVG(smf *svgMDFlow, line int, mode FlowMode)
 	getDrawData() *drawData
 }
 
 type StartComp interface {
 	anyComp
-	nextArrow() *Arrow
 }
 
 type EndComp interface {
 	anyComp
-	prevArrow() *Arrow
 	addInput(*Arrow)
 	minRestOfRowWidth(num int) int
 }
@@ -64,10 +62,15 @@ type drawData struct {
 	x0, y0         int
 	height, width  int
 	minLine, lines int
+	drawnLines     map[int]bool
 }
 
-func (d *drawData) contains(line int) bool {
-	return d.minLine <= line && line < d.minLine+d.lines
+func newDrawData(x0, width int) *drawData {
+	return &drawData{
+		x0:         x0,
+		width:      width,
+		drawnLines: make(map[int]bool),
+	}
 }
 func (d *drawData) xmax() int {
 	return d.x0 + d.width
@@ -77,6 +80,12 @@ func (d *drawData) ymax() int {
 }
 func (d *drawData) maxLines() int {
 	return d.minLine + d.lines
+}
+func (d *drawData) contains(line int) bool {
+	return d.minLine <= line && line < d.minLine+d.lines
+}
+func (d *drawData) drawLine(line int) bool {
+	return d.contains(line) && !d.drawnLines[line]
 }
 
 type withDrawData struct {
@@ -136,14 +145,11 @@ func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int
 	}
 
 	cl.shapeRows = append(cl.shapeRows, addRows...)
-	cl.drawData = &drawData{
-		x0: 0, width: newWidth,
-		minLine: 0, lines: num,
-	}
+	cl.drawData = newDrawData(0, newWidth)
 	return num, newWidth
 }
 
-func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (newNum, newHeight int) {
+func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	cd := cl.drawData
 	cd.y0 = y0
 	cd.minLine = minLine
@@ -159,12 +165,13 @@ func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (newN
 }
 
 func (cl *ShapeCluster) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
-	if !cl.drawData.contains(line) {
+	if !cl.drawData.drawLine(line) {
 		return
 	}
 	for _, comp := range cl.shapeRows {
 		comp.toSVG(smf, line, mode)
 	}
+	cl.drawData.drawnLines[line] = true
 }
 
 type Flow struct {
@@ -237,7 +244,7 @@ func (flow *Flow) calcVerticalValues() {
 	height, lines := 0, 0
 	for i, cl := range flow.clusters {
 		if i > 0 && flow.mode != FlowModeSVGLinks {
-			height += RowGap
+			height += LineHeight - RowGap
 		}
 		lines, height = cl.calcVerticalValues(height, lines, flow.mode)
 	}
