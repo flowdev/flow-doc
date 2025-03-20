@@ -23,8 +23,8 @@ func TestFromFlowData(t *testing.T) {
 func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	workDir := ts.Getenv("WORK")
 
-	if len(args) != 2 {
-		ts.Fatalf("expected 2 args (splitMode and darkMode), got: %q", args)
+	if len(args) != 3 {
+		ts.Fatalf("expected 3 args (splitMode, darkMode and width), got: %q", args)
 	}
 	splitMode, err := strconv.ParseBool(args[0])
 	if err != nil {
@@ -34,20 +34,18 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	if err != nil {
 		ts.Fatalf("expected boolean for darkMode, got: %q; err: %v", args[1], err)
 	}
-	mdFile := "markdown-" + args[0] + "-" + args[1] + ".actual"
+	width, err := strconv.ParseUint(args[2], 10, 32)
+	if err != nil {
+		ts.Fatalf("expected unsigned int for width, got: %q; err: %v", args[2], err)
+	}
+	mdFile := "markdown-" + args[0] + "-" + args[1] + "-" + args[2] + ".actual"
 
 	flowMode := draw2.FlowModeNoLinks
 	if splitMode {
 		flowMode = draw2.FlowModeSVGLinks
 	}
 
-	// width values:
-	// 1550 (no break at all)
-	// 750 (break short after bigMerge)
-	// 850 (break long after bigMerge)
-	// 1250 (break after Split1 and before Split2)
-	// 1350 (break long and short before lastMerge)
-	BigTestFlowData.ChangeConfig("bigTestFlow", flowMode, 1250, darkMode)
+	BigTestFlowData.ChangeConfig("bigTestFlow"+args[2], flowMode, int(width), darkMode)
 	svgContents, mdContent, err := BigTestFlowData.Draw()
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)

@@ -1,10 +1,18 @@
+# width values:
+# 1550 (no break at all)
+# 750 (break short after bigMerge)
+# 850 (break long after bigMerge)
+# 1150 (break before Split1 and Split2)
+# 1250 (break after Split1 and before Split2)
+# 1350 (break long and short before lastMerge)
+#
 # draw the BigTestFlowData and compare the resulting SVG with the expected one:
-drawBigTestFlowData false false
-cmp markdown-false-false.actual markdown-false-false.expected 
-#cmp flowdev/flow-bigTestFlow.svg flowdev/flow-bigTestFlow.expected
+#drawBigTestFlowData false false 1550
+#cmp markdown-false-false-1550.actual markdown-false-false-1550.expected
+#cmp flowdev/flow-bigTestFlow1550.svg flowdev/flow-bigTestFlow1550.expected
 # draw the BigTestFlowData split up in many SVGs and in dark mode:
-#drawBigTestFlowData true true
-#cmp markdown-true-true.actual markdown-true-true.expected
+drawBigTestFlowData true true 1000
+cmp markdown-true-true-1000.actual markdown-true-true-1000.expected
 #cmp flowdev/flow-bigTestFlow-0-0-port-in.svg flowdev/flow-bigTestFlow-0-0-port-in.expected
 #cmp flowdev/flow-bigTestFlow-0-10-port-in2.svg flowdev/flow-bigTestFlow-0-10-port-in2.expected
 #cmp flowdev/flow-bigTestFlow-0-11-port-in2.svg flowdev/flow-bigTestFlow-0-11-port-in2.expected
@@ -131,7 +139,7 @@ cmp markdown-false-false.actual markdown-false-false.expected
 -- markdown-false-false.expected --
 ![bigTestFlow](flowdev/flow-bigTestFlow.svg)
 
--- markdown-true-true.expected --
+-- markdown-true-true-1000.expected --
 ![port-in](flowdev/flow-bigTestFlow-0-0-port-in.svg)[![arrow](flowdev/flow-bigTestFlow-1-0-arrow.svg)](https://google.com?q=Data)[![Xa](flowdev/flow-bigTestFlow-2-0-Xa.svg)](https://google.com?q=MiSo)[![arrow](flowdev/flow-bigTestFlow-3-0-arrow.svg)](https://google.com?q=Data)[![To](flowdev/flow-bigTestFlow-4-0-To.svg)](https://google.com?q=To)[![arrow](flowdev/flow-bigTestFlow-5-0-arrow.svg)](https://google.com?q=BigDataType)[![bigMerge](flowdev/flow-bigTestFlow-6-0-bigMerge.svg)](https://google.com?q=bigMerge)[![arrow](flowdev/flow-bigTestFlow-7-0-arrow.svg)](https://google.com?q=MergedData)[![postMerge](flowdev/flow-bigTestFlow-8-0-postMerge.svg)](https://google.com?q=PostMerge)[![arrow](flowdev/flow-bigTestFlow-9-0-arrow.svg)](https://google.com?q=MergedData)[![Split1](flowdev/flow-bigTestFlow-10-0-Split1.svg)](https://google.com?q=Split1)[![arrow](flowdev/flow-bigTestFlow-11-0-arrow.svg)](https://google.com?q=MergedData)[![lastMerge](flowdev/flow-bigTestFlow-12-0-lastMerge.svg)](https://google.com?q=lastMerge)\
 ![port-in](flowdev/flow-bigTestFlow-0-1-port-in.svg)![arrow](flowdev/flow-bigTestFlow-1-1-arrow.svg)[![Xa](flowdev/flow-bigTestFlow-2-1-Xa.svg)](https://google.com?q=MiSo)![arrow](flowdev/flow-bigTestFlow-3-1-arrow.svg)![To](flowdev/flow-bigTestFlow-4-1-To.svg)![arrow](flowdev/flow-bigTestFlow-5-1-arrow.svg)[![bigMerge](flowdev/flow-bigTestFlow-6-1-bigMerge.svg)](https://google.com?q=bigMerge)![arrow](flowdev/flow-bigTestFlow-7-1-arrow.svg)[![postMerge](flowdev/flow-bigTestFlow-8-1-postMerge.svg)](https://google.com?q=PostMerge)![arrow](flowdev/flow-bigTestFlow-9-1-arrow.svg)[![Split1](flowdev/flow-bigTestFlow-10-1-Split1.svg)](https://google.com?q=Split1)![arrow](flowdev/flow-bigTestFlow-11-1-arrow.svg)[![lastMerge](flowdev/flow-bigTestFlow-12-1-lastMerge.svg)](https://google.com?q=lastMerge)\
 ![filler](flowdev/flow-bigTestFlow-filler-128-24.svg)[![Xa](flowdev/flow-bigTestFlow-1-2-Xa.svg)](https://google.com?q=MiSo)![filler](flowdev/flow-bigTestFlow-filler-112-24.svg)[![To](flowdev/flow-bigTestFlow-3-2-To.svg)](https://google.com?q=TextSemantics)![filler](flowdev/flow-bigTestFlow-filler-192-24.svg)[![bigMerge](flowdev/flow-bigTestFlow-5-2-bigMerge.svg)](https://google.com?q=bigMerge)![filler](flowdev/flow-bigTestFlow-filler-160-24.svg)[![postMerge](flowdev/flow-bigTestFlow-7-2-postMerge.svg)](https://google.com?q=PostMerge)[![arrow](flowdev/flow-bigTestFlow-8-2-arrow.svg)](https://google.com?q=MergedData)[![Split2](flowdev/flow-bigTestFlow-9-2-Split2.svg)](https://google.com?q=Split2)[![arrow](flowdev/flow-bigTestFlow-10-2-arrow.svg)](https://google.com?q=MergedData)[![lastMerge](flowdev/flow-bigTestFlow-11-2-lastMerge.svg)](https://google.com?q=lastMerge)\
@@ -154,7 +162,7 @@ cmp markdown-false-false.actual markdown-false-false.expected
 ![port-in3](flowdev/flow-bigTestFlow-0-19-port-in3.svg)[![arrow](flowdev/flow-bigTestFlow-1-19-arrow.svg)](https://google.com?q=Data3)[![recursive](flowdev/flow-bigTestFlow-2-19-recursive.svg)](https://google.com?q=recursive)![filler](flowdev/flow-bigTestFlow-filler-112-24.svg)[![secondOp](flowdev/flow-bigTestFlow-4-19-secondOp.svg)](https://google.com?q=secondOp)[![arrow](flowdev/flow-bigTestFlow-5-19-arrow.svg)](https://google.com?q=Data3)![filler](flowdev/flow-bigTestFlow-filler-922-24.svg)\
 ![port-in3](flowdev/flow-bigTestFlow-0-20-port-in3.svg)![arrow](flowdev/flow-bigTestFlow-1-20-arrow.svg)[![recursive](flowdev/flow-bigTestFlow-2-20-recursive.svg)](https://google.com?q=recursive)![filler](flowdev/flow-bigTestFlow-filler-112-24.svg)[![secondOp](flowdev/flow-bigTestFlow-4-20-secondOp.svg)](https://google.com?q=secondOp)![arrow](flowdev/flow-bigTestFlow-5-20-arrow.svg)[![loop](flowdev/flow-bigTestFlow-6-20-loop.svg)](https://google.com?q=recursive)![filler](flowdev/flow-bigTestFlow-filler-750-24.svg)
 
--- flowdev/flow-bigTestFlow.expected --
+-- flowdev/flow-bigTestFlow1550.expected --
 <?xml version="1.0" ?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1475 544" width="1475px" height="544px">
     <!-- Generated by FlowDev tool. -->
