@@ -27,6 +27,10 @@ func (loop *Loop) addInput(arr *Arrow) {
 	loop.input = arr
 }
 
+func (loop *Loop) switchInput(oldArr, newArr *Arrow) {
+	loop.input = newArr
+}
+
 func (loop *Loop) minRestOfRowWidth(num int) int {
 	return loop.drawData.width
 }

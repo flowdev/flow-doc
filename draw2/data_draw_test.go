@@ -271,13 +271,15 @@ func buildBigTestFlowData() *draw2.Flow {
 									draw2.NewComp("", "bigMerge", "https://google.com?q=bigMerge", cl1).AddOutput(
 										draw2.NewArrow("", "").AddDataType(
 											"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-											draw2.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", cl1).AddOutput( // 2. split
+											draw2.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", cl1), /*.AddOutput( // 2. split
 												draw2.NewArrow("", "").AddDataType(
 													"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
 													draw2.NewComp("", "Split1", "https://google.com?q=Split1", cl1).AddOutput(
 														draw2.NewArrow("", "").AddDataType(
 															"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-															draw2.NewComp("", "lastMerge", "https://google.com?q=lastMerge", cl1),
+															draw2.NewComp("", "lastMerge", "https://google.com?q=lastMerge", cl1).AddOutput(
+																draw2.NewArrow("", "").AddDestination(draw2.NewEndPort("error")),
+															),
 														),
 													),
 												),
@@ -289,7 +291,7 @@ func buildBigTestFlowData() *draw2.Flow {
 															"data", "MergedData", "https://google.com?q=MergedData").MustLinkComp("lastMerge", cl1),
 													),
 												),
-											),
+											),*/
 										),
 									),
 								),

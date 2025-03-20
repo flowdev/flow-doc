@@ -40,6 +40,7 @@ type anyComp interface {
 
 	// maxWidth is constant and newWidth the full width (x0 + width)
 	respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int)
+	resetDrawData()
 
 	// maxLines is full number of lines (minLine + lines) and newHeight is the full height (y0 + height)
 	calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int)
@@ -54,6 +55,7 @@ type StartComp interface {
 type EndComp interface {
 	anyComp
 	addInput(*Arrow)
+	switchInput(oldArr, newArr *Arrow)
 	minRestOfRowWidth(num int) int
 }
 
@@ -92,8 +94,11 @@ type withDrawData struct {
 	drawData *drawData
 }
 
-func (wd withDrawData) getDrawData() *drawData {
+func (wd *withDrawData) getDrawData() *drawData {
 	return wd.drawData
+}
+func (wd *withDrawData) resetDrawData() {
+	wd.drawData = nil
 }
 
 type CompRegistry interface {
@@ -205,6 +210,43 @@ func (flow *Flow) AddCluster(cl *ShapeCluster) *Flow {
 	return flow
 }
 
+// Draw creates a set of SVG diagrams and a MarkDown file for this flow.
+// If the flow data isn't valid or the SVG diagrams or the MarkDown file
+// can't be created with their template, an error is returned.
+func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err error) {
+	err = flow.validate()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	flow.calcHorizontalValues()
+	flow.respectMaxWidth()
+	flow.calcVerticalValues()
+
+	smf := flowToSVGs(flow)
+	if flow.mode != FlowModeSVGLinks {
+		svgName := smf.svgFilePrefix + ".svg"
+		smf.svgs[svgName] = smf.svgs[""]
+		delete(smf.svgs, "")
+		smf.md.FlowLines = append(smf.md.FlowLines, make([]*svgLink, 1))
+		smf.md.FlowLines[0][0] = &svgLink{
+			Name: flow.name,
+			SVG:  svgName,
+		}
+	}
+
+	svgContents, err = svgFlowsToBytes(smf.svgs, flow.dark)
+	if err != nil {
+		return nil, nil, err
+	}
+	mdContent, err = mdFlowToBytes(smf.md)
+	if err != nil {
+		return nil, nil,
+			fmt.Errorf("unable to create MarkDown content for %q flow: %w", flow.name, err)
+	}
+	return svgContents, mdContent, nil
+}
+
 func (flow *Flow) validate() error {
 	if len(flow.clusters) == 0 {
 		return fmt.Errorf("no shape clusters found in flow")
@@ -226,7 +268,7 @@ func (flow *Flow) calcHorizontalValues() {
 }
 
 func (flow *Flow) respectMaxWidth() {
-	num := 0
+	num := 1 // breaks start with 1
 	width, maxWidth := 0, 0
 	for _, cl := range flow.clusters {
 		num, width = cl.respectMaxWidth(flow.width, num)

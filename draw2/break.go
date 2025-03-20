@@ -26,6 +26,10 @@ func (brk *BreakStart) addInput(arr *Arrow) {
 	brk.input = arr
 }
 
+func (brk *BreakStart) switchInput(oldArr, newArr *Arrow) {
+	brk.input = newArr
+}
+
 func (brk *BreakStart) minRestOfRowWidth(num int) int {
 	return brk.drawData.width
 }
@@ -88,6 +92,11 @@ func (brk *BreakEnd) calcHorizontalValues(x0 int) {
 
 func (brk *BreakEnd) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
 	return brk.output.respectMaxWidth(maxWidth, num)
+}
+
+func (brk *BreakEnd) resetDrawData() {
+	brk.withDrawData.resetDrawData()
+	brk.output.resetDrawData()
 }
 
 func (brk *BreakEnd) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {

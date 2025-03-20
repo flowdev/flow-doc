@@ -35,6 +35,11 @@ func (prt *StartPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartC
 	return prt.output.respectMaxWidth(maxWidth, num)
 }
 
+func (prt *StartPort) resetDrawData() {
+	prt.withDrawData.resetDrawData()
+	prt.output.resetDrawData()
+}
+
 func (prt *StartPort) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	pd := prt.drawData
 	maxLines, newHeight = prt.output.calcVerticalValues(y0, minLine, mode)
@@ -70,6 +75,10 @@ func NewEndPort(name string) *EndPort {
 
 func (prt *EndPort) addInput(arr *Arrow) {
 	prt.input = arr
+}
+
+func (prt *EndPort) switchInput(oldArr, newArr *Arrow) {
+	prt.input = newArr
 }
 
 func (prt *EndPort) minRestOfRowWidth(num int) int {

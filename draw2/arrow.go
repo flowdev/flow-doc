@@ -147,26 +147,28 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 	if arr.maxWidthRespected {
 		return nil, num, arr.drawData.ymax()
 	}
+	arr.maxWidthRespected = true
 	longBroken, unBroken := arr.brokenWidths(num)
 	ad := arr.drawData
-	if ad.x0+unBroken > maxWidth {
+	x0 := ad.x0
+	if x0+unBroken > maxWidth {
 		var newArr *Arrow
-		if ad.x0+longBroken > maxWidth {
+		if x0+longBroken > maxWidth {
 			newArr = arr.breakShort()
 		} else {
 			newArr = arr.breakLong()
 		}
 
 		brk := NewBreakStart(num)
-		arr.dstComp = brk
-		arr.dstComp.addInput(arr)
-		arr.calcHorizontalValues(ad.x0)
-		newStartComps, newNum, newWidth = brk.respectMaxWidth(maxWidth, num+1)
+		arr.AddDestination(brk)
+		arr.calcHorizontalValues(x0)
+		_, _, newWidth = brk.respectMaxWidth(maxWidth, num+1)
 
 		newStart := brk.End()
 		newStart.AddOutput(newArr)
+		newStart.resetDrawData()
 		newStart.calcHorizontalValues(0)
-		newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, newNum)
+		newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, num+1)
 
 		newStartComps = append(newStartComps, newStart)
 		return append(newStartComps, newStartComps2...), newNum2, max(newWidth, newWidth2)
@@ -213,31 +215,38 @@ func (arr *Arrow) brokenWidths(num int) (longBroken, unBroken int) {
 // The second arrow is returned, and it's horizontal values haven't been
 // calculated yet.
 func (arr *Arrow) breakShort() *Arrow {
-	seqArr := &Arrow{
+	newArr := &Arrow{
 		dataTypes: arr.dataTypes,
 		dstPort:   arr.dstPort,
-		dstComp:   arr.dstComp,
 	}
 
+	arr.dstComp.switchInput(arr, newArr)
 	arr.dataTypes = nil
 	arr.dstPort = ""
 	arr.dstComp = nil
 	arr.dataTypesWidth = 0
-	return seqArr
+	arr.drawData = nil
+	return newArr
 }
 
 // breakLong breaks this arrow into two arrows.
 // The second arrow is returned, and it's horizontal values haven't been
 // calculated yet.
 func (arr *Arrow) breakLong() *Arrow {
-	seqArr := &Arrow{
+	newArr := &Arrow{
 		dstPort: arr.dstPort,
-		dstComp: arr.dstComp,
 	}
 
+	arr.dstComp.switchInput(arr, newArr)
 	arr.dstPort = ""
 	arr.dstComp = nil
-	return seqArr
+	arr.drawData = nil
+	return newArr
+}
+
+func (arr *Arrow) resetDrawData() {
+	arr.withDrawData.resetDrawData()
+	arr.dstComp.resetDrawData()
 }
 
 // --------------------------------------------------------------------------

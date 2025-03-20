@@ -52,6 +52,16 @@ func (comp *Comp) addInput(arr *Arrow) {
 	comp.inputs = append(comp.inputs, arr)
 }
 
+func (comp *Comp) switchInput(oldArr, newArr *Arrow) {
+	newArr.dstComp = comp
+	for i, arr := range comp.inputs {
+		if arr == oldArr {
+			comp.inputs[i] = newArr
+			return
+		}
+	}
+}
+
 func (comp *Comp) minRestOfRowWidth(num int) int {
 	if comp == nil {
 		return 0 // prevent endless loop
@@ -106,19 +116,21 @@ func (p *Plugin) GoLink() *Plugin {
 // Calculate horizontal values of shapes (x0 and width)
 // --------------------------------------------------------------------------
 func (comp *Comp) calcHorizontalValues(x0 int) {
-	if comp.drawData != nil {
-		comp.drawData.x0 = max(x0, comp.drawData.x0)
-		return
+	first := false
+	if comp.drawData == nil {
+		width := comp.calcWidth(x0)
+		comp.drawData = newDrawData(x0, width)
+		comp.drawData.y0 = math.MaxInt      // we will use the min() function to correct this later
+		comp.drawData.minLine = math.MaxInt // we will use the min() function to correct this later
+		first = true
 	}
 
-	width := comp.calcWidth(x0)
-	comp.drawData = newDrawData(x0, width)
-	comp.drawData.y0 = math.MaxInt      // we will use the min() function to correct this later
-	comp.drawData.minLine = math.MaxInt // we will use the min() function to correct this later
-
-	xn := x0 + width
-	for _, out := range comp.outputs {
-		out.calcHorizontalValues(xn)
+	cd := comp.drawData
+	if first || cd.x0 < x0 {
+		cd.x0 = max(x0, cd.x0)
+		for _, out := range comp.outputs {
+			out.calcHorizontalValues(cd.xmax())
+		}
 	}
 }
 
@@ -207,6 +219,13 @@ func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 	}
 
 	return newLines, num, newWidth
+}
+
+func (comp *Comp) resetDrawData() {
+	comp.withDrawData.resetDrawData()
+	for _, out := range comp.outputs {
+		out.resetDrawData()
+	}
 }
 
 // --------------------------------------------------------------------------
