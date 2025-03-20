@@ -1,6 +1,9 @@
 package draw2
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const (
 	arrTipWidth        = 12
@@ -53,7 +56,7 @@ func (arr *Arrow) LinkComp(id string, compRegistry CompRegistry) error {
 	if comp == nil {
 		return fmt.Errorf("unable to link to component with ID: %q", id)
 	}
-	comp.addInput(arr)
+	arr.AddDestination(comp)
 	return nil
 }
 
@@ -136,7 +139,7 @@ func (arr *Arrow) extendTo(xn int) {
 		return
 	}
 
-	arr.drawData.width = xn - arr.drawData.x0
+	arr.drawData.width = max(arr.drawData.width, xn-arr.drawData.x0)
 }
 
 // --------------------------------------------------------------------------
@@ -435,4 +438,22 @@ func arrowDataTypeToSVG(
 	if link != nil {
 		link.Link = dt.link
 	}
+}
+
+func (arr *Arrow) debugID(comp anyComp) string {
+	switch c := comp.(type) {
+	case *BreakStart:
+		return "BreakStart:" + strconv.FormatInt(int64(c.number), 10)
+	case *BreakEnd:
+		return "BreakEnd:" + strconv.FormatInt(int64(c.number), 10)
+	case *Comp:
+		return "Comp:" + c.ID()
+	case *Loop:
+		return "Loop:" + c.name + ":" + c.port
+	case *StartPort:
+		return "StartPort:" + c.name
+	case *EndPort:
+		return "EndPort:" + c.name
+	}
+	return "UNKNOWN"
 }

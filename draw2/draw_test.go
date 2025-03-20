@@ -41,8 +41,13 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 		flowMode = draw2.FlowModeSVGLinks
 	}
 
-	// width values: 1550 (no break at all), 750 (break short after bigMerge), 850 (break long after bigMerge)
-	BigTestFlowData.ChangeConfig("bigTestFlow", flowMode, 850, darkMode)
+	// width values:
+	// 1550 (no break at all)
+	// 750 (break short after bigMerge)
+	// 850 (break long after bigMerge)
+	// 1250 (break after Split1 and before Split2)
+	// 1350 (break long and short before lastMerge)
+	BigTestFlowData.ChangeConfig("bigTestFlow", flowMode, 1250, darkMode)
 	svgContents, mdContent, err := BigTestFlowData.Draw()
 	if err != nil {
 		ts.Fatalf("unexpected error: %s", err)

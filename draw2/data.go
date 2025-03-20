@@ -1,6 +1,8 @@
 package draw2
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	RowGap     = 8
