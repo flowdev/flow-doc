@@ -2,7 +2,6 @@ package draw2
 
 import (
 	"fmt"
-	"strconv"
 )
 
 const (
@@ -438,22 +437,4 @@ func arrowDataTypeToSVG(
 	if link != nil {
 		link.Link = dt.link
 	}
-}
-
-func (arr *Arrow) debugID(comp anyComp) string {
-	switch c := comp.(type) {
-	case *BreakStart:
-		return "BreakStart:" + strconv.FormatInt(int64(c.number), 10)
-	case *BreakEnd:
-		return "BreakEnd:" + strconv.FormatInt(int64(c.number), 10)
-	case *Comp:
-		return "Comp:" + c.ID()
-	case *Loop:
-		return "Loop:" + c.name + ":" + c.port
-	case *StartPort:
-		return "StartPort:" + c.name
-	case *EndPort:
-		return "EndPort:" + c.name
-	}
-	return "UNKNOWN"
 }

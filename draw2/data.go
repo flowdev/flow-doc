@@ -134,6 +134,13 @@ func (cl *ShapeCluster) register(comp *Comp) {
 	cl.compRegistry[comp.ID()] = comp
 }
 
+func (cl *ShapeCluster) resetDrawData() {
+	for _, cl := range cl.shapeRows {
+		cl.resetDrawData()
+	}
+	cl.withDrawData.resetDrawData()
+}
+
 func (cl *ShapeCluster) calcHorizontalValues() {
 	for _, comp := range cl.shapeRows {
 		comp.calcHorizontalValues(0)
@@ -221,6 +228,7 @@ func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err e
 		return nil, nil, err
 	}
 
+	flow.resetDrawData()
 	flow.calcHorizontalValues()
 	flow.respectMaxWidth()
 	flow.calcVerticalValues()
@@ -261,6 +269,13 @@ func (flow *Flow) validate() error {
 	}
 
 	return nil
+}
+
+func (flow *Flow) resetDrawData() {
+	for _, cl := range flow.clusters {
+		cl.resetDrawData()
+	}
+	flow.withDrawData.resetDrawData()
 }
 
 func (flow *Flow) calcHorizontalValues() {

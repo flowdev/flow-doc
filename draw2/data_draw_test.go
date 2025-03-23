@@ -2,7 +2,7 @@ package draw2_test
 
 import "github.com/flowdev/ea-flow-doc/draw2"
 
-var BigTestFlowData = buildBigTestFlowData()
+var BigTestFlowData = buildBigTestFlowData4()
 
 func buildBigTestFlowData5() *draw2.Flow {
 	cl1 := draw2.NewCluster()
