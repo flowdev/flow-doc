@@ -1,4 +1,4 @@
-package draw2
+package draw
 
 type Loop struct {
 	withDrawData

@@ -1,4 +1,4 @@
-package draw2_test
+package draw_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/flowdev/ea-flow-doc/draw2"
+	"github.com/flowdev/ea-flow-doc/draw"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -40,9 +40,9 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 	}
 	mdFile := "markdown-" + args[0] + "-" + args[1] + "-" + args[2] + ".actual"
 
-	flowMode := draw2.FlowModeNoLinks
+	flowMode := draw.FlowModeNoLinks
 	if splitMode {
-		flowMode = draw2.FlowModeSVGLinks
+		flowMode = draw.FlowModeSVGLinks
 	}
 	bigTestFlowData := buildBigTestFlowData()
 	bigTestFlowData.ChangeConfig("bigTestFlow"+args[2], flowMode, int(width), darkMode)
