@@ -5,13 +5,14 @@ import "math"
 // Comp holds all data to describe a single component including possible plugins.
 type Comp struct {
 	withDrawData
-	name    string
-	typ     string
-	link    string
-	goLink  bool
-	plugins []*PluginGroup
-	inputs  []*Arrow
-	outputs []*Arrow
+	name              string
+	typ               string
+	link              string
+	goLink            bool
+	plugins           []*PluginGroup
+	inputs            []*Arrow
+	outputs           []*Arrow
+	maxWidthRespected int
 }
 
 func NewComp(name, typ, link string, registry CompRegistry) *Comp {
@@ -196,6 +197,10 @@ func calcPluginTypeDimensions(pt *Plugin, x0 int) {
 // Respect the given maximum width (also in components to the right)
 // --------------------------------------------------------------------------
 func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
+	comp.maxWidthRespected++
+	if comp.maxWidthRespected < len(comp.inputs) {
+		return nil, num, comp.drawData.xmax()
+	}
 	newLines := make([]StartComp, 0, 32)
 	for _, out := range comp.outputs {
 		outLines, outNum, outWidth := out.respectMaxWidth(maxWidth, num)
