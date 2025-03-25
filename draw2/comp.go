@@ -213,11 +213,6 @@ func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 		newWidth = cd.xmax()
 	}
 
-	// we shouldn't do this too early:
-	for _, in := range comp.inputs {
-		in.extendTo(cd.x0)
-	}
-
 	return newLines, num, newWidth
 }
 
@@ -263,6 +258,11 @@ func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, 
 		minLine, y0 = out.calcVerticalValues(y0, minLine, mode)
 	}
 	height, lines = max(height, y0), max(lines, minLine)
+
+	// we shouldn't do this too early:
+	for _, in := range comp.inputs {
+		in.extendTo(cd.x0)
+	}
 
 	if len(comp.inputs) > 0 {
 		ind := comp.inputs[len(comp.inputs)-1].drawData
@@ -319,8 +319,8 @@ func (comp *Comp) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 		comp.drawData.drawnLines[line] = true
 	}
 
-	for _, out := range comp.outputs {
-		out.toSVG(smf, line, mode)
+	for i := len(comp.outputs) - 1; i >= 0; i-- {
+		comp.outputs[i].toSVG(smf, line, mode)
 	}
 }
 

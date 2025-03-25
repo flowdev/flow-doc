@@ -27,6 +27,7 @@ func (brk *BreakStart) addInput(arr *Arrow) {
 }
 
 func (brk *BreakStart) switchInput(oldArr, newArr *Arrow) {
+	newArr.dstComp = brk
 	brk.input = newArr
 }
 

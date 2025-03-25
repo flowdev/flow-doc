@@ -158,7 +158,19 @@ func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int
 		newWidth = max(newWidth, width)
 	}
 
-	cl.shapeRows = append(cl.shapeRows, addRows...)
+	for len(addRows) > 0 {
+		n := len(cl.shapeRows)
+		cl.shapeRows = append(cl.shapeRows, addRows...)
+		addRows = addRows[:0]
+		for i := n; i < len(cl.shapeRows); i++ {
+			start := cl.shapeRows[i]
+			start.resetDrawData()
+			start.calcHorizontalValues(0)
+			newRows, num, width = start.respectMaxWidth(maxWidth, num)
+			addRows = append(addRows, newRows...)
+			newWidth = max(newWidth, width)
+		}
+	}
 	cl.drawData = newDrawData(0, newWidth)
 	return num, newWidth
 }
@@ -182,8 +194,8 @@ func (cl *ShapeCluster) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	if !cl.drawData.drawLine(line) {
 		return
 	}
-	for _, comp := range cl.shapeRows {
-		comp.toSVG(smf, line, mode)
+	for i := len(cl.shapeRows) - 1; i >= 0; i-- {
+		cl.shapeRows[i].toSVG(smf, line, mode)
 	}
 	cl.drawData.drawnLines[line] = true
 }

@@ -28,6 +28,7 @@ func (loop *Loop) addInput(arr *Arrow) {
 }
 
 func (loop *Loop) switchInput(oldArr, newArr *Arrow) {
+	newArr.dstComp = loop
 	loop.input = newArr
 }
 

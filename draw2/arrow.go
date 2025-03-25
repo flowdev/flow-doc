@@ -134,10 +134,6 @@ func calcDataTypeWidth(dt *DataType) {
 }
 
 func (arr *Arrow) extendTo(xn int) {
-	if arr.drawData == nil {
-		return
-	}
-
 	arr.drawData.width = max(arr.drawData.width, xn-arr.drawData.x0)
 }
 
@@ -150,12 +146,17 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 		return nil, num, arr.drawData.ymax()
 	}
 	arr.maxWidthRespected = true
+	_, breakLong := arr.srcComp.(*BreakEnd) // never break short after a break, or we have an endless loop
+	noBreak := false
+	if breakLong && len(arr.dataTypes) == 0 && arr.srcPort == "" {
+		noBreak = true
+	}
 	longBroken, unBroken := arr.brokenWidths(num)
 	ad := arr.drawData
 	x0 := ad.x0
-	if x0+unBroken > maxWidth {
+	if !noBreak && x0+unBroken > maxWidth {
 		var newArr *Arrow
-		if x0+longBroken > maxWidth {
+		if !breakLong && x0+longBroken > maxWidth {
 			newArr = arr.breakShort()
 		} else {
 			newArr = arr.breakLong()
@@ -168,12 +169,13 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 
 		newStart := brk.End()
 		newStart.AddOutput(newArr)
-		newStart.resetDrawData()
-		newStart.calcHorizontalValues(0)
-		newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, num+1)
-
-		newStartComps = append(newStartComps, newStart)
-		return append(newStartComps, newStartComps2...), newNum2, max(newWidth, newWidth2)
+		//newStart.resetDrawData()
+		//newStart.calcHorizontalValues(0)
+		//newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, num+1)
+		//
+		//newStartComps = append(newStartComps, newStart)
+		//return append(newStartComps, newStartComps2...), newNum2, max(newWidth, newWidth2)
+		return append(newStartComps, newStart), num + 1, newWidth
 	}
 
 	return arr.dstComp.respectMaxWidth(maxWidth, num)
@@ -299,7 +301,9 @@ func (arr *Arrow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 		arr.arrowToSVG(smf, line, mode)
 		arr.drawData.drawnLines[line] = true
 	}
-	arr.dstComp.toSVG(smf, line, mode)
+	if line >= arr.drawData.minLine {
+		arr.dstComp.toSVG(smf, line, mode)
+	}
 }
 func (arr *Arrow) arrowToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	var svg *svgFlow

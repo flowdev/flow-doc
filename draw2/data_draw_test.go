@@ -2,7 +2,9 @@ package draw2_test
 
 import "github.com/flowdev/ea-flow-doc/draw2"
 
-var BigTestFlowData = buildBigTestFlowData4()
+func buildBigTestFlowData() *draw2.Flow {
+	return buildBigTestFlowData1()
+}
 
 func buildBigTestFlowData5() *draw2.Flow {
 	cl1 := draw2.NewCluster()
@@ -244,7 +246,7 @@ func buildBigTestFlowData2() *draw2.Flow {
 	return flow
 }
 
-func buildBigTestFlowData() *draw2.Flow {
+func buildBigTestFlowData1() *draw2.Flow {
 	cl1 := draw2.NewCluster()
 	brk1 := draw2.NewBreakStart(99)
 	flow := draw2.NewFlow("bigTestFlow", draw2.FlowModeNoLinks, 1500, false).AddCluster(

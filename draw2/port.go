@@ -78,6 +78,7 @@ func (prt *EndPort) addInput(arr *Arrow) {
 }
 
 func (prt *EndPort) switchInput(oldArr, newArr *Arrow) {
+	newArr.dstComp = prt
 	prt.input = newArr
 }
 
