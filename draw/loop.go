@@ -68,7 +68,7 @@ func (loop *Loop) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	}
 
 	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
+	if mode == FlowModeMDLinks {
 		var svgLink *svgLink
 		svg, svgLink = addNewSVGFlow(smf,
 			ld.x0, ld.y0, ld.height, ld.width,

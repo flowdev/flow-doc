@@ -22,7 +22,6 @@ type FlowMode int
 const (
 	FlowModeNoLinks FlowMode = iota
 	FlowModeMDLinks
-	FlowModeSVGLinks // not implemented yet
 )
 
 // Shapes:
@@ -180,7 +179,7 @@ func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (maxL
 	cd.y0 = y0
 	cd.minLine = minLine
 	for i, comp := range cl.shapeRows {
-		if i > 0 && mode != FlowModeSVGLinks {
+		if i > 0 && mode != FlowModeMDLinks {
 			y0 += RowGap
 		}
 		minLine, y0 = comp.calcVerticalValues(y0, minLine, mode)
@@ -246,7 +245,7 @@ func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err e
 	flow.calcVerticalValues()
 
 	smf := flowToSVGs(flow)
-	if flow.mode != FlowModeSVGLinks {
+	if flow.mode != FlowModeMDLinks {
 		svgName := smf.svgFilePrefix + ".svg"
 		smf.svgs[svgName] = smf.svgs[""]
 		delete(smf.svgs, "")
@@ -314,7 +313,7 @@ func (flow *Flow) respectMaxWidth() {
 func (flow *Flow) calcVerticalValues() {
 	height, lines := 0, 0
 	for i, cl := range flow.clusters {
-		if i > 0 && flow.mode != FlowModeSVGLinks {
+		if i > 0 && flow.mode != FlowModeMDLinks {
 			height += LineHeight - RowGap
 		}
 		lines, height = cl.calcVerticalValues(height, lines, flow.mode)

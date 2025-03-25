@@ -159,7 +159,7 @@ func breakToSVG(smf *svgMDFlow, line int, mode FlowMode, bd *drawData, number in
 	var svg *svgFlow
 
 	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
+	if mode == FlowModeMDLinks {
 		svg, _ = addNewSVGFlow(smf,
 			bd.x0, bd.y0, bd.height, bd.width,
 			"sequel", line,

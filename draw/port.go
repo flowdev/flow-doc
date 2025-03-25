@@ -127,7 +127,7 @@ func portToSVG(smf *svgMDFlow, line int, mode FlowMode, pd *drawData, name strin
 
 	idx := line - pd.minLine
 	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
+	if mode == FlowModeMDLinks {
 		svg, _ = addNewSVGFlow(smf,
 			pd.x0, pd.y0+idx*LineHeight, LineHeight, pd.width,
 			"port-"+name, line,

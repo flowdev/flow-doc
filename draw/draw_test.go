@@ -42,7 +42,7 @@ func drawBigTestFlowData(ts *testscript.TestScript, _ bool, args []string) {
 
 	flowMode := draw.FlowModeNoLinks
 	if splitMode {
-		flowMode = draw.FlowModeSVGLinks
+		flowMode = draw.FlowModeMDLinks
 	}
 	bigTestFlowData := buildBigTestFlowData()
 	bigTestFlowData.ChangeConfig("bigTestFlow"+args[2], flowMode, int(width), darkMode)

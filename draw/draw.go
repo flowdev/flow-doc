@@ -211,7 +211,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 	}
 	fd := f.getDrawData()
 
-	if f.mode != FlowModeSVGLinks {
+	if f.mode != FlowModeMDLinks {
 		smf.md.Flow = svgLink{
 			Name: f.name,
 			SVG:  smf.svgFilePrefix + ".svg",
@@ -226,7 +226,7 @@ func flowToSVGs(f *Flow) *svgMDFlow {
 		smf.lastX = 0
 		f.toSVG(smf, line, f.mode)
 
-		if f.mode == FlowModeSVGLinks &&
+		if f.mode == FlowModeMDLinks &&
 			smf.lastX < fd.width {
 
 			addFillerSVG(smf, line, smf.lastX, LineHeight,

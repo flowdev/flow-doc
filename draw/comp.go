@@ -252,7 +252,7 @@ func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, 
 	height += cd.y0
 	lines += cd.minLine
 	for i, out := range comp.outputs {
-		if i > 0 && mode != FlowModeSVGLinks {
+		if i > 0 && mode != FlowModeMDLinks {
 			y0 += RowGap
 		}
 		minLine, y0 = out.calcVerticalValues(y0, minLine, mode)
@@ -333,13 +333,13 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 
 	// add filler if necessary:
 	xDiff := cd.x0 - smf.lastX
-	if mode == FlowModeSVGLinks && xDiff > 0 {
+	if mode == FlowModeMDLinks && xDiff > 0 {
 		addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
 		smf.lastX += xDiff
 	}
 
 	// get or create correct SVG flow:
-	if mode == FlowModeSVGLinks {
+	if mode == FlowModeMDLinks {
 		svg, link = addNewSVGFlow(smf,
 			cd.x0, cd.y0+idx*LineHeight, LineHeight, cd.width,
 			comp.ID(), line,
@@ -348,7 +348,7 @@ func (comp *Comp) allToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 		svg = smf.svgs[""]
 	}
 
-	if mode == FlowModeSVGLinks || idx == 0 { // outer rect
+	if mode == FlowModeMDLinks || idx == 0 { // outer rect
 		rectToSVG(svg, cd, false, false, false)
 	}
 	if comp.mainToSVG(svg, link, line) { // main data type
@@ -437,7 +437,7 @@ func pluginGroupToSVG(svg *svgFlow, link *svgLink, line int, mode FlowMode, p *P
 		return false
 	}
 
-	if mode == FlowModeSVGLinks || line == pd.minLine { // plugin rect
+	if mode == FlowModeMDLinks || line == pd.minLine { // plugin rect
 		rectToSVG(svg, pd, true, false, false)
 	}
 	if p.title != "" && line == pd.minLine {
