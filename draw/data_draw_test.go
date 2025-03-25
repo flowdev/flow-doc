@@ -8,7 +8,6 @@ func buildBigTestFlowData() *draw.Flow {
 
 func buildBigTestFlowData5() *draw.Flow {
 	cl1 := draw.NewCluster()
-	brk1 := draw.NewBreakStart(99)
 	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
 		cl1.AddStartComp(
 			draw.NewStartPort("in").AddOutput(
@@ -61,21 +60,15 @@ func buildBigTestFlowData5() *draw.Flow {
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
 							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-								draw.NewArrow("", "").AddDataType(
+								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									brk1,
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+										draw.NewArrow("out", "in2").AddDataType(
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+									),
 								),
 							),
 						),
-					),
-				),
-			),
-		).AddStartComp(
-			brk1.End().AddOutput(
-				draw.NewArrow("", "in").AddDestination(
-					draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-						draw.NewArrow("out", "in2").AddDataType(
-							"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
 					),
 				),
 			),
@@ -109,7 +102,6 @@ func buildBigTestFlowData5() *draw.Flow {
 
 func buildBigTestFlowData4() *draw.Flow {
 	cl1 := draw.NewCluster()
-	brk1 := draw.NewBreakStart(1)
 	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
 		cl1.AddStartComp(
 			draw.NewStartPort("in").AddOutput(
@@ -139,21 +131,15 @@ func buildBigTestFlowData4() *draw.Flow {
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
 							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-								draw.NewArrow("", "").AddDataType(
+								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									brk1,
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+										draw.NewArrow("out", "in2").AddDataType(
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+									),
 								),
 							),
 						),
-					),
-				),
-			),
-		).AddStartComp(
-			brk1.End().AddOutput(
-				draw.NewArrow("", "in").AddDestination(
-					draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-						draw.NewArrow("out", "in2").AddDataType(
-							"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
 					),
 				),
 			),
@@ -248,7 +234,6 @@ func buildBigTestFlowData2() *draw.Flow {
 
 func buildBigTestFlowData1() *draw.Flow {
 	cl1 := draw.NewCluster()
-	brk1 := draw.NewBreakStart(99)
 	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
 		cl1.AddStartComp(
 			draw.NewStartPort("in").AddOutput(
@@ -303,21 +288,15 @@ func buildBigTestFlowData1() *draw.Flow {
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
 							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-								draw.NewArrow("", "").AddDataType(
+								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									brk1,
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+										draw.NewArrow("out", "in2").AddDataType(
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+									),
 								),
 							),
 						),
-					),
-				),
-			),
-		).AddStartComp(
-			brk1.End().AddOutput(
-				draw.NewArrow("", "in").AddDestination(
-					draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
-						draw.NewArrow("out", "in2").AddDataType(
-							"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
 					),
 				),
 			),
