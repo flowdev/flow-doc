@@ -7,16 +7,16 @@ func buildBigTestFlowData() *draw.Flow {
 }
 
 func buildBigTestFlowData5() *draw.Flow {
-	cl1 := draw.NewCluster()
-	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
-		cl1.AddStartComp(
+	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false)
+	flow.AddCluster(
+		draw.NewCluster().AddStartComp(
 			draw.NewStartPort("in").AddOutput(
 				draw.NewArrow("", "").AddDataType(
 					"data", "Data", "https://google.com?q=Data").AddDestination(
-					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", cl1).AddOutput( // 1. split
+					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", flow).AddOutput( // 1. split
 						draw.NewArrow("special", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("", "To", "https://google.com?q=To", cl1).AddPluginGroup(
+							draw.NewComp("", "To", "https://google.com?q=To", flow).AddPluginGroup(
 								draw.NewPluginGroup("semantics").AddPlugin(
 									draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 								),
@@ -29,25 +29,25 @@ func buildBigTestFlowData5() *draw.Flow {
 							).AddOutput(
 								draw.NewArrow("out", "in1").AddDataType(
 									"bigData", "BigDataType", "https://google.com?q=BigDataType").AddDestination(
-									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", cl1).AddOutput(
+									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", flow).AddOutput(
 										draw.NewArrow("", "").AddDataType(
 											"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-											draw.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", cl1).AddOutput( // 2. split
+											draw.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", flow).AddOutput( // 2. split
 												draw.NewArrow("", "").AddDataType(
 													"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-													draw.NewComp("", "Split1", "https://google.com?q=Split1", cl1).AddOutput(
+													draw.NewComp("", "Split1", "https://google.com?q=Split1", flow).AddOutput(
 														draw.NewArrow("", "").AddDataType(
 															"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-															draw.NewComp("", "lastMerge", "https://google.com?q=lastMerge", cl1),
+															draw.NewComp("", "lastMerge", "https://google.com?q=lastMerge", flow),
 														),
 													),
 												),
 											).AddOutput( // 2. split again
 												draw.NewArrow("longNamedOutputPort", "inputPort").AddDataType(
 													"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-													draw.NewComp("", "Split2", "https://google.com?q=Split2", cl1).AddOutput(
+													draw.NewComp("", "Split2", "https://google.com?q=Split2", flow).AddOutput(
 														draw.NewArrow("", "").AddDataType(
-															"data", "MergedData", "https://google.com?q=MergedData").MustLinkComp("lastMerge", cl1),
+															"data", "MergedData", "https://google.com?q=MergedData").MustLinkComp("lastMerge", flow),
 													),
 												),
 											),
@@ -59,12 +59,12 @@ func buildBigTestFlowData5() *draw.Flow {
 					).AddOutput( // 1. split again
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 										draw.NewArrow("out", "in2").AddDataType(
-											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", flow),
 									),
 								),
 							),
@@ -76,7 +76,7 @@ func buildBigTestFlowData5() *draw.Flow {
 			draw.NewStartPort("in2").AddOutput(
 				draw.NewArrow("", "in").AddDataType(
 					"data3", "Data3", "https://google.com?q=Data3").AddDestination(
-					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", cl1).AddPluginGroup(
+					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", flow).AddPluginGroup(
 						draw.NewPluginGroup("semantics").AddPlugin(
 							draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 						),
@@ -90,7 +90,7 @@ func buildBigTestFlowData5() *draw.Flow {
 						draw.NewArrow("out", "in3").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDataType(
 							"data2", "Data2", "https://google.com?q=Data2").AddDataType(
-							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", cl1),
+							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", flow),
 					),
 				),
 			),
@@ -101,16 +101,16 @@ func buildBigTestFlowData5() *draw.Flow {
 }
 
 func buildBigTestFlowData4() *draw.Flow {
-	cl1 := draw.NewCluster()
-	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
-		cl1.AddStartComp(
+	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false)
+	flow.AddCluster(
+		draw.NewCluster().AddStartComp(
 			draw.NewStartPort("in").AddOutput(
 				draw.NewArrow("", "").AddDataType(
 					"data", "Data", "https://google.com?q=Data").AddDestination(
-					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", cl1).AddOutput( // 1. split
+					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", flow).AddOutput( // 1. split
 						draw.NewArrow("special", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("", "To", "https://google.com?q=To", cl1).AddPluginGroup(
+							draw.NewComp("", "To", "https://google.com?q=To", flow).AddPluginGroup(
 								draw.NewPluginGroup("semantics").AddPlugin(
 									draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 								),
@@ -123,19 +123,19 @@ func buildBigTestFlowData4() *draw.Flow {
 							).AddOutput(
 								draw.NewArrow("out", "in1").AddDataType(
 									"bigData", "BigDataType", "https://google.com?q=BigDataType").AddDestination(
-									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", cl1),
+									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", flow),
 								),
 							),
 						),
 					).AddOutput( // 1. split again
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 										draw.NewArrow("out", "in2").AddDataType(
-											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", flow),
 									),
 								),
 							),
@@ -147,7 +147,7 @@ func buildBigTestFlowData4() *draw.Flow {
 			draw.NewStartPort("in2").AddOutput(
 				draw.NewArrow("", "in").AddDataType(
 					"data3", "Data3", "https://google.com?q=Data3").AddDestination(
-					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", cl1).AddPluginGroup(
+					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", flow).AddPluginGroup(
 						draw.NewPluginGroup("semantics").AddPlugin(
 							draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 						),
@@ -161,7 +161,7 @@ func buildBigTestFlowData4() *draw.Flow {
 						draw.NewArrow("out", "in3").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDataType(
 							"data2", "Data2", "https://google.com?q=Data2").AddDataType(
-							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", cl1),
+							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", flow),
 					),
 				),
 			),
@@ -202,16 +202,16 @@ func buildBigTestFlowData3() *draw.Flow {
 }
 
 func buildBigTestFlowData2() *draw.Flow {
-	cl1 := draw.NewCluster()
-	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
-		cl1.AddStartComp(
+	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false)
+	flow.AddCluster(
+		draw.NewCluster().AddStartComp(
 			draw.NewStartPort("in").AddOutput(
 				draw.NewArrow("", "").AddDataType(
 					"data", "Data", "https://google.com?q=Data").AddDestination(
-					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", cl1).AddOutput( // 1. split
+					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", flow).AddOutput( // 1. split
 						draw.NewArrow("special", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("", "To", "https://google.com?q=To", cl1).AddPluginGroup(
+							draw.NewComp("", "To", "https://google.com?q=To", flow).AddPluginGroup(
 								draw.NewPluginGroup("semantics").AddPlugin(
 									draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 								),
@@ -233,16 +233,16 @@ func buildBigTestFlowData2() *draw.Flow {
 }
 
 func buildBigTestFlowData1() *draw.Flow {
-	cl1 := draw.NewCluster()
-	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false).AddCluster(
-		cl1.AddStartComp(
+	flow := draw.NewFlow("bigTestFlow", draw.FlowModeNoLinks, 1500, false)
+	flow.AddCluster(
+		draw.NewCluster().AddStartComp(
 			draw.NewStartPort("in").AddOutput(
 				draw.NewArrow("", "").AddDataType(
 					"data", "Data", "https://google.com?q=Data").AddDestination(
-					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", cl1).AddOutput( // 1. split
+					draw.NewComp("Xa", "MiSo", "https://google.com?q=Data", flow).AddOutput( // 1. split
 						draw.NewArrow("special", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("", "To", "https://google.com?q=To", cl1).AddPluginGroup(
+							draw.NewComp("", "To", "https://google.com?q=To", flow).AddPluginGroup(
 								draw.NewPluginGroup("semantics").AddPlugin(
 									draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 								),
@@ -255,16 +255,16 @@ func buildBigTestFlowData1() *draw.Flow {
 							).AddOutput(
 								draw.NewArrow("out", "in1").AddDataType(
 									"bigData", "BigDataType", "https://google.com?q=BigDataType").AddDestination(
-									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", cl1).AddOutput(
+									draw.NewComp("", "bigMerge", "https://google.com?q=bigMerge", flow).AddOutput(
 										draw.NewArrow("", "").AddDataType(
 											"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-											draw.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", cl1).AddOutput( // 2. split
+											draw.NewComp("postMerge", "PostMerge", "https://google.com?q=PostMerge", flow).AddOutput( // 2. split
 												draw.NewArrow("", "").AddDataType(
 													"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-													draw.NewComp("", "Split1", "https://google.com?q=Split1", cl1).AddOutput(
+													draw.NewComp("", "Split1", "https://google.com?q=Split1", flow).AddOutput(
 														draw.NewArrow("", "").AddDataType(
 															"md1", "MergedData", "https://google.com?q=MergedData").AddDestination(
-															draw.NewComp("", "lastMerge", "https://google.com?q=lastMerge", cl1).AddOutput(
+															draw.NewComp("", "lastMerge", "https://google.com?q=lastMerge", flow).AddOutput(
 																draw.NewArrow("", "").AddDestination(draw.NewEndPort("error")),
 															),
 														),
@@ -273,9 +273,9 @@ func buildBigTestFlowData1() *draw.Flow {
 											).AddOutput( // 2. split again
 												draw.NewArrow("longNamedOutputPort", "inputPort").AddDataType(
 													"data", "MergedData", "https://google.com?q=MergedData").AddDestination(
-													draw.NewComp("", "Split2", "https://google.com?q=Split2", cl1).AddOutput(
+													draw.NewComp("", "Split2", "https://google.com?q=Split2", flow).AddOutput(
 														draw.NewArrow("", "").AddDataType(
-															"md2", "MergedData", "https://google.com?q=MergedData").MustLinkComp("lastMerge", cl1),
+															"md2", "MergedData", "https://google.com?q=MergedData").MustLinkComp("lastMerge", flow),
 													),
 												),
 											),
@@ -287,12 +287,12 @@ func buildBigTestFlowData1() *draw.Flow {
 					).AddOutput( // 1. split again
 						draw.NewArrow("out", "in").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDestination(
-							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+							draw.NewComp("Mla", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 								draw.NewArrow("", "in").AddDataType(
 									"data2", "Data2", "https://google.com?q=Data2").AddDestination(
-									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", cl1).AddOutput(
+									draw.NewComp("bla2", "Blue", "https://google.com?q=Blue", flow).AddOutput(
 										draw.NewArrow("out", "in2").AddDataType(
-											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", cl1),
+											"data", "Data", "https://google.com?q=Data").MustLinkComp("bigMerge", flow),
 									),
 								),
 							),
@@ -304,7 +304,7 @@ func buildBigTestFlowData1() *draw.Flow {
 			draw.NewStartPort("in2").AddOutput(
 				draw.NewArrow("", "in").AddDataType(
 					"data3", "Data3", "https://google.com?q=Data3").AddDestination(
-					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", cl1).AddPluginGroup(
+					draw.NewComp("megaParser", "MegaParser", "https://google.com?q=MegaParser", flow).AddPluginGroup(
 						draw.NewPluginGroup("semantics").AddPlugin(
 							draw.NewPlugin("TextSemantics", "https://google.com?q=TextSemantics"),
 						),
@@ -318,7 +318,7 @@ func buildBigTestFlowData1() *draw.Flow {
 						draw.NewArrow("out", "in3").AddDataType(
 							"data", "Data", "https://google.com?q=Data").AddDataType(
 							"data2", "Data2", "https://google.com?q=Data2").AddDataType(
-							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", cl1),
+							"data3", "Data3", "https://google.com?q=Data3").MustLinkComp("bigMerge", flow),
 					),
 				),
 			),

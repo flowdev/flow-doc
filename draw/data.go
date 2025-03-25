@@ -107,62 +107,52 @@ type CompRegistry interface {
 	lookup(id string) *Comp
 }
 
-type ShapeCluster struct {
+type Cluster struct {
 	withDrawData
-	shapeRows    []StartComp
-	compRegistry map[string]*Comp
+	starts []StartComp
 }
 
-func NewCluster() *ShapeCluster {
-	return &ShapeCluster{
-		shapeRows:    make([]StartComp, 0, 32),
-		compRegistry: make(map[string]*Comp, 128),
+func NewCluster() *Cluster {
+	return &Cluster{
+		starts: make([]StartComp, 0, 32),
 	}
 }
 
-func (cl *ShapeCluster) AddStartComp(comp StartComp) *ShapeCluster {
-	cl.shapeRows = append(cl.shapeRows, comp)
+func (cl *Cluster) AddStartComp(comp StartComp) *Cluster {
+	cl.starts = append(cl.starts, comp)
 	return cl
 }
 
-func (cl *ShapeCluster) lookup(id string) *Comp {
-	return cl.compRegistry[id]
-}
-
-func (cl *ShapeCluster) register(comp *Comp) {
-	cl.compRegistry[comp.ID()] = comp
-}
-
-func (cl *ShapeCluster) resetDrawData() {
-	for _, cl := range cl.shapeRows {
+func (cl *Cluster) resetDrawData() {
+	for _, cl := range cl.starts {
 		cl.resetDrawData()
 	}
 	cl.withDrawData.resetDrawData()
 }
 
-func (cl *ShapeCluster) calcHorizontalValues() {
-	for _, comp := range cl.shapeRows {
+func (cl *Cluster) calcHorizontalValues() {
+	for _, comp := range cl.starts {
 		comp.calcHorizontalValues(0)
 	}
 }
 
-func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int) {
+func (cl *Cluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int) {
 	var newRows []StartComp
 	addRows := make([]StartComp, 0, 64)
 	width := 0
 
-	for _, comp := range cl.shapeRows {
+	for _, comp := range cl.starts {
 		newRows, num, width = comp.respectMaxWidth(maxWidth, num)
 		addRows = append(addRows, newRows...)
 		newWidth = max(newWidth, width)
 	}
 
 	for len(addRows) > 0 {
-		n := len(cl.shapeRows)
-		cl.shapeRows = append(cl.shapeRows, addRows...)
+		n := len(cl.starts)
+		cl.starts = append(cl.starts, addRows...)
 		addRows = addRows[:0]
-		for i := n; i < len(cl.shapeRows); i++ {
-			start := cl.shapeRows[i]
+		for i := n; i < len(cl.starts); i++ {
+			start := cl.starts[i]
 			start.resetDrawData()
 			start.calcHorizontalValues(0)
 			newRows, num, width = start.respectMaxWidth(maxWidth, num)
@@ -174,11 +164,11 @@ func (cl *ShapeCluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int
 	return num, newWidth
 }
 
-func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
+func (cl *Cluster) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, newHeight int) {
 	cd := cl.drawData
 	cd.y0 = y0
 	cd.minLine = minLine
-	for i, comp := range cl.shapeRows {
+	for i, comp := range cl.starts {
 		if i > 0 && mode != FlowModeMDLinks {
 			y0 += RowGap
 		}
@@ -189,32 +179,34 @@ func (cl *ShapeCluster) calcVerticalValues(y0, minLine int, mode FlowMode) (maxL
 	return minLine, y0
 }
 
-func (cl *ShapeCluster) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
+func (cl *Cluster) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	if !cl.drawData.drawLine(line) {
 		return
 	}
-	for i := len(cl.shapeRows) - 1; i >= 0; i-- {
-		cl.shapeRows[i].toSVG(smf, line, mode)
+	for i := len(cl.starts) - 1; i >= 0; i-- {
+		cl.starts[i].toSVG(smf, line, mode)
 	}
 	cl.drawData.drawnLines[line] = true
 }
 
 type Flow struct {
 	withDrawData
-	name     string
-	mode     FlowMode
-	width    int
-	dark     bool
-	clusters []*ShapeCluster
+	name         string
+	mode         FlowMode
+	width        int
+	dark         bool
+	clusters     []*Cluster
+	compRegistry map[string]*Comp
 }
 
 func NewFlow(name string, mode FlowMode, width int, dark bool) *Flow {
 	return &Flow{
-		name:     name,
-		mode:     mode,
-		width:    width,
-		dark:     dark,
-		clusters: make([]*ShapeCluster, 0, 64),
+		name:         name,
+		mode:         mode,
+		width:        width,
+		dark:         dark,
+		clusters:     make([]*Cluster, 0, 64),
+		compRegistry: make(map[string]*Comp, 128),
 	}
 }
 
@@ -223,11 +215,6 @@ func (flow *Flow) ChangeConfig(name string, mode FlowMode, width int, dark bool)
 	flow.mode = mode
 	flow.width = width
 	flow.dark = dark
-}
-
-func (flow *Flow) AddCluster(cl *ShapeCluster) *Flow {
-	flow.clusters = append(flow.clusters, cl)
-	return flow
 }
 
 // Draw creates a set of SVG diagrams and a MarkDown file for this flow.
@@ -276,12 +263,25 @@ func (flow *Flow) validate() error {
 	}
 
 	for i, cl := range flow.clusters {
-		if len(cl.shapeRows) == 0 {
+		if len(cl.starts) == 0 {
 			return fmt.Errorf("no shapes found in the %d-th cluster of the flow", i+1)
 		}
 	}
 
 	return nil
+}
+
+func (flow *Flow) AddCluster(cl *Cluster) *Flow {
+	flow.clusters = append(flow.clusters, cl)
+	return flow
+}
+
+func (flow *Flow) lookup(id string) *Comp {
+	return flow.compRegistry[id]
+}
+
+func (flow *Flow) register(comp *Comp) {
+	flow.compRegistry[comp.ID()] = comp
 }
 
 func (flow *Flow) resetDrawData() {
