@@ -6,7 +6,7 @@ cat > "$script" <<-"HEADER"
 # width values:
 # 1550 (no break at all)
 # 50 (break everywhere)
-# 750 (break short after bigMerge and ...)
+# 750 (break short after bigMerge and long after Split1 and short after Split2)
 # 850 (break long after bigMerge)
 # 1150 (break before Split1 and Split2)
 # 1250 (break after Split1 and before Split2)
