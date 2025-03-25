@@ -5,18 +5,13 @@ import "math"
 // Comp holds all data to describe a single component including possible plugins.
 type Comp struct {
 	withDrawData
-	name   string
-	typ    string
-	link   string
-	goLink bool
-
+	name    string
+	typ     string
+	link    string
+	goLink  bool
 	plugins []*PluginGroup
-
-	inputs []*Arrow
-	inIdx  int
-
+	inputs  []*Arrow
 	outputs []*Arrow
-	outIdx  int
 }
 
 func NewComp(name, typ, link string, registry CompRegistry) *Comp {

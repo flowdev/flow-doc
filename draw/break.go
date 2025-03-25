@@ -10,10 +10,9 @@ import (
 
 type BreakStart struct {
 	withDrawData
-	number     int
-	input      *Arrow
-	inReturned bool
-	end        *BreakEnd
+	number int
+	input  *Arrow
+	end    *BreakEnd
 }
 
 func NewBreakStart(num int) *BreakStart {
@@ -71,9 +70,8 @@ func (brk *BreakStart) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 
 type BreakEnd struct {
 	withDrawData
-	number      int
-	output      *Arrow
-	outReturned bool
+	number int
+	output *Arrow
 }
 
 func (brk *BreakEnd) AddOutput(arr *Arrow) *BreakEnd {

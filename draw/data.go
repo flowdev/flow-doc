@@ -233,6 +233,8 @@ func (flow *Flow) AddCluster(cl *ShapeCluster) *Flow {
 // Draw creates a set of SVG diagrams and a MarkDown file for this flow.
 // If the flow data isn't valid or the SVG diagrams or the MarkDown file
 // can't be created with their template, an error is returned.
+// The flow data will be altered!
+// You can't call Draw multiple times with different configurations.
 func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err error) {
 	err = flow.validate()
 	if err != nil {

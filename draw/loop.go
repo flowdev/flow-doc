@@ -2,12 +2,11 @@ package draw
 
 type Loop struct {
 	withDrawData
-	name       string
-	port       string
-	link       string
-	input      *Arrow
-	inReturned bool
-	goLink     bool
+	name   string
+	port   string
+	link   string
+	goLink bool
+	input  *Arrow
 }
 
 func NewLoop(name, port, link string) *Loop {
