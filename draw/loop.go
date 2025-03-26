@@ -24,6 +24,7 @@ func (loop *Loop) GoLink() *Loop {
 
 func (loop *Loop) addInput(arr *Arrow) {
 	loop.input = arr
+	arr.dstComp = loop
 }
 
 func (loop *Loop) switchInput(oldArr, newArr *Arrow) {
@@ -43,6 +44,10 @@ func (loop *Loop) calcHorizontalValues(x0 int) {
 	}
 
 	loop.withDrawData.drawData = newDrawData(x0, width)
+}
+
+func (loop *Loop) extendArrows() {
+	loop.input.extendTo(loop.drawData.x0)
 }
 
 func (loop *Loop) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {

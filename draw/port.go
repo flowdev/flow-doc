@@ -17,9 +17,12 @@ func NewStartPort(name string) *StartPort {
 }
 
 func (prt *StartPort) AddOutput(arr *Arrow) *StartPort {
+	prt.addOutput(arr)
+	return prt
+}
+func (prt *StartPort) addOutput(arr *Arrow) {
 	arr.srcComp = prt
 	prt.output = arr
-	return prt
 }
 
 func (prt *StartPort) minRestOfRowWidth(num int) int {
@@ -29,6 +32,10 @@ func (prt *StartPort) minRestOfRowWidth(num int) int {
 func (prt *StartPort) calcHorizontalValues(x0 int) {
 	prt.drawData = portHorizontalValues(x0, prt.name)
 	prt.output.calcHorizontalValues(prt.drawData.x0 + prt.drawData.width)
+}
+
+func (prt *StartPort) extendArrows() {
+	prt.output.extendArrows()
 }
 
 func (prt *StartPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
@@ -75,6 +82,7 @@ func NewEndPort(name string) *EndPort {
 
 func (prt *EndPort) addInput(arr *Arrow) {
 	prt.input = arr
+	arr.dstComp = prt
 }
 
 func (prt *EndPort) switchInput(oldArr, newArr *Arrow) {
@@ -88,6 +96,10 @@ func (prt *EndPort) minRestOfRowWidth(num int) int {
 
 func (prt *EndPort) calcHorizontalValues(x0 int) {
 	prt.drawData = portHorizontalValues(x0, prt.name)
+}
+
+func (prt *EndPort) extendArrows() {
+	prt.input.extendTo(prt.drawData.x0)
 }
 
 func (prt *EndPort) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {

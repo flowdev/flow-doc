@@ -133,6 +133,10 @@ func calcDataTypeWidth(dt *DataType) {
 	dt.drawData.width = dt.w1 + (len(dt.typ)+1)*CharWidth + ParenWidth
 }
 
+func (arr *Arrow) extendArrows() {
+	arr.dstComp.extendArrows()
+}
+
 func (arr *Arrow) extendTo(xn int) {
 	arr.drawData.width = max(arr.drawData.width, xn-arr.drawData.x0)
 }

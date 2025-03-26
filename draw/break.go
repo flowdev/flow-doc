@@ -23,6 +23,7 @@ func NewBreakStart(num int) *BreakStart {
 
 func (brk *BreakStart) addInput(arr *Arrow) {
 	brk.input = arr
+	arr.dstComp = brk
 }
 
 func (brk *BreakStart) switchInput(oldArr, newArr *Arrow) {
@@ -36,6 +37,10 @@ func (brk *BreakStart) minRestOfRowWidth(num int) int {
 
 func (brk *BreakStart) calcHorizontalValues(x0 int) {
 	brk.drawData = breakHorizontalValues(x0, brk.number)
+}
+
+func (brk *BreakStart) extendArrows() {
+	brk.input.extendTo(brk.drawData.x0)
 }
 
 func (brk *BreakStart) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {
@@ -75,9 +80,12 @@ type BreakEnd struct {
 }
 
 func (brk *BreakEnd) AddOutput(arr *Arrow) *BreakEnd {
+	brk.addOutput(arr)
+	return brk
+}
+func (brk *BreakEnd) addOutput(arr *Arrow) {
 	arr.srcComp = brk
 	brk.output = arr
-	return brk
 }
 
 func (brk *BreakEnd) minRestOfRowWidth(num int) int {
@@ -87,6 +95,10 @@ func (brk *BreakEnd) minRestOfRowWidth(num int) int {
 func (brk *BreakEnd) calcHorizontalValues(x0 int) {
 	brk.withDrawData.drawData = breakHorizontalValues(x0, brk.number)
 	brk.output.calcHorizontalValues(brk.drawData.x0 + brk.drawData.width)
+}
+
+func (brk *BreakEnd) extendArrows() {
+	brk.output.extendArrows()
 }
 
 func (brk *BreakEnd) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int) {

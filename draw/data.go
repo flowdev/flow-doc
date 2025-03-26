@@ -38,6 +38,7 @@ const (
 
 type anyComp interface {
 	calcHorizontalValues(x0 int)
+	extendArrows()
 
 	// maxWidth is constant and newWidth the full width (x0 + width)
 	respectMaxWidth(maxWidth, num int) (newStartComps []StartComp, newNum, newWidth int)
@@ -51,6 +52,7 @@ type anyComp interface {
 
 type StartComp interface {
 	anyComp
+	addOutput(*Arrow)
 }
 
 type EndComp interface {
@@ -118,21 +120,15 @@ func NewCluster() *Cluster {
 	}
 }
 
-func (cl *Cluster) AddStartComp(comp StartComp) *Cluster {
-	cl.starts = append(cl.starts, comp)
-	return cl
-}
-
-func (cl *Cluster) resetDrawData() {
-	for _, cl := range cl.starts {
-		cl.resetDrawData()
-	}
-	cl.withDrawData.resetDrawData()
-}
-
 func (cl *Cluster) calcHorizontalValues() {
 	for _, comp := range cl.starts {
 		comp.calcHorizontalValues(0)
+	}
+}
+
+func (cl *Cluster) extendArrows() {
+	for _, comp := range cl.starts {
+		comp.extendArrows()
 	}
 }
 
@@ -151,10 +147,21 @@ func (cl *Cluster) respectMaxWidth(maxWidth, num int) (newNum, newWidth int) {
 		n := len(cl.starts)
 		cl.starts = append(cl.starts, addRows...)
 		addRows = addRows[:0]
+		// phases have to run independently one after the other!!!
 		for i := n; i < len(cl.starts); i++ {
 			start := cl.starts[i]
 			start.resetDrawData()
+		}
+		for i := n; i < len(cl.starts); i++ {
+			start := cl.starts[i]
 			start.calcHorizontalValues(0)
+		}
+		for i := n; i < len(cl.starts); i++ {
+			start := cl.starts[i]
+			start.extendArrows()
+		}
+		for i := n; i < len(cl.starts); i++ {
+			start := cl.starts[i]
 			newRows, num, width = start.respectMaxWidth(maxWidth, num)
 			addRows = append(addRows, newRows...)
 			newWidth = max(newWidth, width)
@@ -195,6 +202,7 @@ type Flow struct {
 	mode         FlowMode
 	width        int
 	dark         bool
+	starts       []StartComp
 	clusters     []*Cluster
 	compRegistry map[string]*Comp
 }
@@ -205,7 +213,6 @@ func NewFlow(name string, mode FlowMode, width int, dark bool) *Flow {
 		mode:         mode,
 		width:        width,
 		dark:         dark,
-		clusters:     make([]*Cluster, 0, 64),
 		compRegistry: make(map[string]*Comp, 128),
 	}
 }
@@ -217,19 +224,23 @@ func (flow *Flow) ChangeConfig(name string, mode FlowMode, width int, dark bool)
 	flow.dark = dark
 }
 
+func (flow *Flow) AddStart(comp StartComp) *Flow {
+	flow.starts = append(flow.starts, comp)
+	return flow
+}
+
 // Draw creates a set of SVG diagrams and a MarkDown file for this flow.
 // If the flow data isn't valid or the SVG diagrams or the MarkDown file
 // can't be created with their template, an error is returned.
-// The flow data will be altered!
-// You can't call Draw multiple times with different configurations.
 func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err error) {
 	err = flow.validate()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	flow.resetDrawData()
+	flow.copyAllClusters()
 	flow.calcHorizontalValues()
+	flow.extendArrows()
 	flow.respectMaxWidth()
 	flow.calcVerticalValues()
 
@@ -258,14 +269,8 @@ func (flow *Flow) Draw() (svgContents map[string][]byte, mdContent []byte, err e
 }
 
 func (flow *Flow) validate() error {
-	if len(flow.clusters) == 0 {
-		return fmt.Errorf("no shape clusters found in flow")
-	}
-
-	for i, cl := range flow.clusters {
-		if len(cl.starts) == 0 {
-			return fmt.Errorf("no shapes found in the %d-th cluster of the flow", i+1)
-		}
+	if len(flow.starts) == 0 {
+		return fmt.Errorf("nothing to draw in the flow")
 	}
 
 	return nil
@@ -284,16 +289,15 @@ func (flow *Flow) register(comp *Comp) {
 	flow.compRegistry[comp.ID()] = comp
 }
 
-func (flow *Flow) resetDrawData() {
-	for _, cl := range flow.clusters {
-		cl.resetDrawData()
-	}
-	flow.withDrawData.resetDrawData()
-}
-
 func (flow *Flow) calcHorizontalValues() {
 	for _, cl := range flow.clusters {
 		cl.calcHorizontalValues()
+	}
+}
+
+func (flow *Flow) extendArrows() {
+	for _, cl := range flow.clusters {
+		cl.extendArrows()
 	}
 }
 
@@ -328,4 +332,136 @@ func (flow *Flow) toSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	for _, cl := range flow.clusters {
 		cl.toSVG(smf, line, mode)
 	}
+}
+
+// --------------------------------------------------------------------------
+// Here comes the ugliness of performing a manual deep copy of the flow data.
+// But this has some advantages:
+// - The code is straight forward and readable.
+// - No third party (with additional security vulnerabilities) is needed.
+// - It's quite memory efficient and fast.
+
+func (flow *Flow) copyAllClusters() {
+	flow.clusters = make([]*Cluster, 0, 64)
+	i := 0
+	for i < len(flow.starts) {
+		j := len(flow.clusters)
+		flow.copyCluster(flow.starts[i])
+		i += len(flow.clusters[j].starts)
+	}
+}
+func (flow *Flow) copyCluster(start anyComp) {
+	cl := NewCluster()
+	cache := make(map[anyComp]anyComp)
+	breakCache := make(map[int]*BreakStart)
+	flow.copyComp(start, nil, nil, cl, cache, breakCache)
+	flow.AddCluster(cl)
+}
+func (flow *Flow) copyComp(
+	comp anyComp, inArr, outArr *Arrow, cl *Cluster,
+	cache map[anyComp]anyComp, breakCache map[int]*BreakStart,
+) anyComp {
+	if dst, ok := cache[comp]; ok {
+		return dst
+	}
+	switch src := comp.(type) {
+	case *BreakStart:
+		dst := NewBreakStart(src.number)
+		cache[comp] = dst
+		breakCache[src.number] = dst
+		dst.addInput(flow.copyArrow(src.input, cl, false, cache, breakCache))
+		return dst
+	case *BreakEnd:
+		dst := breakCache[src.number].End()
+		cache[comp] = dst
+		cl.starts = append(cl.starts, dst)
+		dst.AddOutput(flow.copyArrow(src.output, cl, true, cache, breakCache))
+		return dst
+	case *Comp:
+		dst := NewComp(src.name, src.typ, src.link, nil)
+		dst.goLink = src.goLink
+		cache[comp] = dst
+		for _, srcpg := range src.plugins {
+			dstpg := NewPluginGroup(srcpg.title)
+			for _, srcp := range srcpg.types {
+				dstp := NewPlugin(srcp.typ, srcp.link)
+				dstp.goLink = srcp.goLink
+				dstpg.AddPlugin(dstp)
+			}
+			dst.AddPluginGroup(dstpg)
+		}
+		if len(src.inputs) <= 0 {
+			cl.starts = append(cl.starts, dst)
+		}
+		if inArr != nil {
+			dst.addInput(inArr)
+		}
+	INPUTS:
+		for _, in := range src.inputs {
+			arr := flow.copyArrow(in, cl, false, cache, breakCache)
+			for _, dstin := range dst.inputs {
+				if dstin == arr {
+					continue INPUTS
+				}
+			}
+			dst.addInput(arr)
+		}
+		for i, in := range src.inputs { // order inputs correctly
+			dst.inputs[i] = cache[in].(*Arrow)
+		}
+		if outArr != nil {
+			dst.AddOutput(outArr)
+		}
+	OUTPUTS:
+		for _, out := range src.outputs {
+			arr := flow.copyArrow(out, cl, true, cache, breakCache)
+			for _, dstout := range dst.outputs {
+				if dstout == arr {
+					continue OUTPUTS
+				}
+			}
+			dst.AddOutput(arr)
+		}
+		for i, out := range src.outputs { // order outputs correctly
+			dst.outputs[i] = cache[out].(*Arrow)
+		}
+		return dst
+	case *Loop:
+		dst := NewLoop(src.name, src.port, src.link)
+		dst.goLink = src.goLink
+		cache[comp] = dst
+		dst.addInput(flow.copyArrow(src.input, cl, false, cache, breakCache))
+		return dst
+	case *StartPort:
+		dst := NewStartPort(src.name)
+		cache[comp] = dst
+		cl.starts = append(cl.starts, dst)
+		dst.AddOutput(flow.copyArrow(src.output, cl, true, cache, breakCache))
+		return dst
+	case *EndPort:
+		dst := NewEndPort(src.name)
+		cache[comp] = dst
+		dst.addInput(flow.copyArrow(src.input, cl, false, cache, breakCache))
+		return dst
+	default:
+		panic(fmt.Sprintf("unable to copy unknown anyComp: %T", comp))
+	}
+}
+func (flow *Flow) copyArrow(
+	arr *Arrow, cl *Cluster, noSrc bool, cache map[anyComp]anyComp, breakCache map[int]*BreakStart,
+) *Arrow {
+	if dst, ok := cache[arr]; ok {
+		return dst.(*Arrow)
+	}
+	dst := NewArrow(arr.srcPort, arr.dstPort)
+	for _, dt := range arr.dataTypes {
+		dst.AddDataType(dt.name, dt.typ, dt.link)
+	}
+	cache[arr] = dst
+	if noSrc {
+		flow.copyComp(arr.dstComp, dst, nil, cl, cache, breakCache)
+	} else {
+		flow.copyComp(arr.srcComp, nil, dst, cl, cache, breakCache)
+	}
+	return dst
 }

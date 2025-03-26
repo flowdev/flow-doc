@@ -1,6 +1,10 @@
 package draw
 
-import "math"
+import (
+	"fmt"
+	"math"
+	"os"
+)
 
 // Comp holds all data to describe a single component including possible plugins.
 type Comp struct {
@@ -28,9 +32,12 @@ func NewComp(name, typ, link string, registry CompRegistry) *Comp {
 }
 
 func (comp *Comp) AddOutput(arr *Arrow) *Comp {
+	comp.addOutput(arr)
+	return comp
+}
+func (comp *Comp) addOutput(arr *Arrow) {
 	arr.srcComp = comp
 	comp.outputs = append(comp.outputs, arr)
-	return comp
 }
 
 func (comp *Comp) GoLink() *Comp {
@@ -216,6 +223,15 @@ func (comp *Comp) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 	return newLines, num, newWidth
 }
 
+func (comp *Comp) extendArrows() {
+	for _, in := range comp.inputs {
+		in.extendTo(comp.drawData.x0)
+	}
+	for _, out := range comp.outputs {
+		out.extendArrows()
+	}
+}
+
 func (comp *Comp) resetDrawData() {
 	comp.withDrawData.resetDrawData()
 	for _, out := range comp.outputs {
@@ -259,22 +275,50 @@ func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, 
 	}
 	height, lines = max(height, y0), max(lines, minLine)
 
-	// we shouldn't do this too early:
-	for _, in := range comp.inputs {
-		in.extendTo(cd.x0)
+	yMax, yMaxIdx := 0, -1
+	maxLines, maxLinesIdx := 0, -1
+	for i, in := range comp.inputs {
+		ind := in.drawData
+		if ind.ymax() > yMax {
+			yMax = ind.ymax()
+			yMaxIdx = i
+		}
+		if ind.maxLines() > maxLines {
+			maxLines = ind.maxLines()
+			maxLinesIdx = i
+		}
+	}
+	cd.height = max(cd.height, yMax-cd.y0)
+	cd.lines = max(cd.lines, maxLines-cd.minLine)
+	height = max(height, yMax)
+	lines = max(lines, maxLines)
+	if yMaxIdx != len(comp.inputs)-1 {
+		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(inputs) expected yMaxIdx=%d, got: %d\n", comp.ID(), len(comp.inputs)-1, yMaxIdx)
+	}
+	if maxLinesIdx != len(comp.inputs)-1 {
+		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(inputs) expected maxLinesIdx=%d, got: %d\n", comp.ID(), len(comp.inputs)-1, maxLinesIdx)
 	}
 
-	if len(comp.inputs) > 0 {
-		ind := comp.inputs[len(comp.inputs)-1].drawData
-		cd.height = max(cd.height, ind.ymax()-cd.y0)
-		cd.lines = max(cd.lines, ind.maxLines()-cd.minLine)
-		height = max(height, ind.ymax())
-		lines = max(lines, ind.maxLines())
+	yMax, yMaxIdx = 0, -1
+	maxLines, maxLinesIdx = 0, -1
+	for i, out := range comp.outputs {
+		outd := out.drawData
+		if outd.ymax() > yMax {
+			yMax = outd.ymax()
+			yMaxIdx = i
+		}
+		if outd.maxLines() > maxLines {
+			maxLines = outd.maxLines()
+			maxLinesIdx = i
+		}
 	}
-	if len(comp.outputs) > 0 {
-		outd := comp.outputs[len(comp.outputs)-1].drawData
-		cd.height = max(cd.height, outd.ymax()-cd.y0)
-		cd.lines = max(cd.lines, outd.maxLines()-cd.minLine)
+	cd.height = max(cd.height, yMax-cd.y0)
+	cd.lines = max(cd.lines, maxLines-cd.minLine)
+	if yMaxIdx != len(comp.outputs)-1 {
+		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(outputs) expected yMaxIdx=%d, got: %d\n", comp.ID(), len(comp.outputs)-1, yMaxIdx)
+	}
+	if maxLinesIdx != len(comp.outputs)-1 {
+		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(outputs) expected maxLinesIdx=%d, got: %d\n", comp.ID(), len(comp.outputs)-1, maxLinesIdx)
 	}
 	return lines, height
 }
