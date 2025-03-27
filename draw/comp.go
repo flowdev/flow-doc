@@ -1,9 +1,7 @@
 package draw
 
 import (
-	"fmt"
 	"math"
-	"os"
 )
 
 // Comp holds all data to describe a single component including possible plugins.
@@ -275,50 +273,17 @@ func (comp *Comp) calcVerticalValues(y0, minLine int, mode FlowMode) (maxLines, 
 	}
 	height, lines = max(height, y0), max(lines, minLine)
 
-	yMax, yMaxIdx := 0, -1
-	maxLines, maxLinesIdx := 0, -1
-	for i, in := range comp.inputs {
+	for _, in := range comp.inputs {
 		ind := in.drawData
-		if ind.ymax() > yMax {
-			yMax = ind.ymax()
-			yMaxIdx = i
-		}
-		if ind.maxLines() > maxLines {
-			maxLines = ind.maxLines()
-			maxLinesIdx = i
-		}
+		cd.height = max(cd.height, ind.ymax()-cd.y0)
+		cd.lines = max(cd.lines, ind.maxLines()-cd.minLine)
+		height = max(height, ind.ymax())
+		lines = max(lines, ind.maxLines())
 	}
-	cd.height = max(cd.height, yMax-cd.y0)
-	cd.lines = max(cd.lines, maxLines-cd.minLine)
-	height = max(height, yMax)
-	lines = max(lines, maxLines)
-	if yMaxIdx != len(comp.inputs)-1 {
-		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(inputs) expected yMaxIdx=%d, got: %d\n", comp.ID(), len(comp.inputs)-1, yMaxIdx)
-	}
-	if maxLinesIdx != len(comp.inputs)-1 {
-		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(inputs) expected maxLinesIdx=%d, got: %d\n", comp.ID(), len(comp.inputs)-1, maxLinesIdx)
-	}
-
-	yMax, yMaxIdx = 0, -1
-	maxLines, maxLinesIdx = 0, -1
-	for i, out := range comp.outputs {
+	for _, out := range comp.outputs {
 		outd := out.drawData
-		if outd.ymax() > yMax {
-			yMax = outd.ymax()
-			yMaxIdx = i
-		}
-		if outd.maxLines() > maxLines {
-			maxLines = outd.maxLines()
-			maxLinesIdx = i
-		}
-	}
-	cd.height = max(cd.height, yMax-cd.y0)
-	cd.lines = max(cd.lines, maxLines-cd.minLine)
-	if yMaxIdx != len(comp.outputs)-1 {
-		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(outputs) expected yMaxIdx=%d, got: %d\n", comp.ID(), len(comp.outputs)-1, yMaxIdx)
-	}
-	if maxLinesIdx != len(comp.outputs)-1 {
-		_, _ = fmt.Fprintf(os.Stderr, "WARN: Comp:%q(outputs) expected maxLinesIdx=%d, got: %d\n", comp.ID(), len(comp.outputs)-1, maxLinesIdx)
+		cd.height = max(cd.height, outd.ymax()-cd.y0)
+		cd.lines = max(cd.lines, outd.maxLines()-cd.minLine)
 	}
 	return lines, height
 }

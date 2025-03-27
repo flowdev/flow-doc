@@ -173,12 +173,6 @@ func (arr *Arrow) respectMaxWidth(maxWidth, num int) (newStartComps []StartComp,
 
 		newStart := brk.End()
 		newStart.AddOutput(newArr)
-		//newStart.resetDrawData()
-		//newStart.calcHorizontalValues(0)
-		//newStartComps2, newNum2, newWidth2 := newStart.respectMaxWidth(maxWidth, num+1)
-		//
-		//newStartComps = append(newStartComps, newStart)
-		//return append(newStartComps, newStartComps2...), newNum2, max(newWidth, newWidth2)
 		return append(newStartComps, newStart), num + 1, newWidth
 	}
 
