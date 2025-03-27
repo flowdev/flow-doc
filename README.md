@@ -1,2 +1,2 @@
-# ea-flow-doc
-EngineeringAngel project for checking and documenting flows.
+# flow-doc
+Project for checking and documenting flows.
