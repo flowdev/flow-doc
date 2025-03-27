@@ -309,6 +309,13 @@ func (arr *Arrow) arrowToSVG(smf *svgMDFlow, line int, mode FlowMode) {
 	ad := arr.drawData
 	maxLine := ad.maxLines() - 1
 
+	// add filler if necessary:
+	xDiff := ad.x0 - smf.lastX
+	if mode == FlowModeMDLinks && xDiff > 0 && line < ad.maxLines()-1 {
+		addFillerSVG(smf, line, smf.lastX, LineHeight, xDiff)
+		smf.lastX += xDiff
+	}
+
 	// get or create correct SVG flow:
 	if mode == FlowModeMDLinks {
 		x0, y0, height, width := svgDimensionsForLine(line, arr, ad, maxLine)
